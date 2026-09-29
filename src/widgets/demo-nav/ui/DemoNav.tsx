@@ -10,21 +10,33 @@ const links = [
 
 export function DemoNav() {
   return (
-    <nav className="flex gap-1 py-3">
+    <nav 
+      aria-label="Основная навигация" 
+      className="flex items-center gap-1.5 p-1 bg-muted/40 backdrop-blur-sm rounded-lg border border-border/50"
+    >
       {links.map((l) => (
         <NavLink
           key={l.to}
           to={l.to}
           className={({ isActive }) =>
             cn(
-              "px-3 py-1.5 rounded-md text-sm transition-colors",
+              "relative px-3.5 py-1.5 rounded-md text-sm font-medium transition-all duration-200 outline-none select-none",
+              "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
               isActive
-                ? "bg-primary text-white"
-                : "text-tundora hover:bg-alto/40",
+                ? "bg-background text-foreground shadow-sm font-semibold"
+                : "text-muted-foreground hover:text-foreground hover:bg-background/50"
             )
           }
         >
-          {l.label}
+          {({ isActive }) => (
+            <>
+              <span className="relative z-10">{l.label}</span>
+              {/* Акцентная точка/линия для активного состояния */}
+              {isActive && (
+                <span className="absolute bottom-1 left-1/2 -translate-x-1/2 w-4 h-0.5 bg-primary rounded-full transition-all duration-300" />
+              )}
+            </>
+          )}
         </NavLink>
       ))}
     </nav>

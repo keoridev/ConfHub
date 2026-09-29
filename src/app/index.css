@@ -1,10 +1,10 @@
 @import url("https://fonts.googleapis.com/css2?family=Geologica:wght@300..700&display=swap");
+
 @import "tailwindcss";
+
+@plugin "./hero.ts";
 @import "tw-animate-css";
 
-@import "tailwindcss";
-
-@tailwind utilities;
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
@@ -46,15 +46,16 @@
 }
 
 :root {
-  --radius: 0.625rem;
+  --radius: 0.5rem;
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.145 0 0);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
+  /* primary перекрашен в navy */
+  --primary: oklch(0.36 0.08 253);
+  --primary-foreground: oklch(0.98 0 0);
   --secondary: oklch(0.97 0 0);
   --secondary-foreground: oklch(0.205 0 0);
   --muted: oklch(0.97 0 0);
@@ -121,35 +122,4 @@
   body {
     @apply bg-background text-foreground;
   }
-}
-
-@keyframes blob {
-  0% {
-    transform: translate(0px, 0px) scale(1);
-  }
-  33% {
-    transform: translate(30px, -50px) scale(1.1);
-  }
-  66% {
-    transform: translate(-20px, 20px) scale(0.9);
-  }
-  100% {
-    transform: translate(0px, 0px) scale(1);
-  }
-}
-
-.animate-blob {
-  animation: blob 7s infinite;
-}
-
-.animation-delay-2000 {
-  animation-delay: 2s;
-}
-
-.animation-delay-4000 {
-  animation-delay: 4s;
-}
-
-.perspective-1000 {
-  perspective: 1000px;
 }

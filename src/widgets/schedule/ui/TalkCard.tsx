@@ -1,6 +1,9 @@
-import { Badge, Clock, MapPin, Radio } from "lucide-react";
-import { Card, CardContent } from "~app/components/ui/card";
+import { Link } from "react-router-dom";
+import { Clock, MapPin } from "lucide-react";
+import { Card, Chip } from "@heroui/react";
+
 import type { Section, Talk } from "~entities/talk/model/types";
+import { pathKeys } from "~shared/lib";
 
 interface TalkCardProps {
   talk: Talk;
@@ -9,53 +12,87 @@ interface TalkCardProps {
 }
 
 const fmtTime = (iso: string) =>
-  new Date(iso).toLocaleTimeString("ru-RU", {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  iso
+    ? new Date(iso).toLocaleTimeString("ru-RU", {
+        hour: "2-digit",
+        minute: "2-digit",
+      })
+    : "—";
 
 export function TalkCard({ talk, section, isLive = false }: TalkCardProps) {
   return (
-    <Card>
-      <CardContent className="flex flex-col gap-3 p-4">
-        <div className="flex items-center gap-2 flex-wrap">
-          <Badge variant="secondary" className="gap-1">
-            <Clock className="size-3" />
-            {fmtTime(talk.startTime)} – {fmtTime(talk.endTime)}
-          </Badge>
-          <Badge variant="outline" className="gap-1">
-            <MapPin className="size-3" />
-            Ауд. {talk.hallNumber}
-          </Badge>
-          {section && (
-            <Badge
-              variant="outline"
-              style={{ borderColor: section.color, color: section.color }}
+    <Link to={pathKeys.talk.byId(talk.id)} className="block">
+      <Card
+        isHoverable
+        className="border border-default-200 shadow-sm transition-all duration-200"
+      >
+        {/* Заменяем отсутствующий CardBody на обычный div */}
+        <div className="flex flex-col gap-3 p-4">
+          <div className="flex items-center gap-2 flex-wrap">
+            <Chip
+              size="sm"
+              variant="flat"
+              color="default"
+              startContent={<Clock className="size-3" />}
             >
-              {section.title}
-            </Badge>
-          )}
-          {isLive && (
-            <Badge className="gap-1 bg-red-600 hover:bg-red-600 animate-pulse">
-              <Radio className="size-3" />
-              Live
-            </Badge>
-          )}
+              {fmtTime(talk.startTime)} – {fmtTime(talk.endTime)}
+            </Chip>
+
+            {talk.hallNumber && (
+              <Chip
+                size="sm"
+                variant="bordered"
+                startContent={<MapPin className="size-3" />}
+              >
+                Ауд. {talk.hallNumber}
+              </Chip>
+            )}
+
+            {section && (
+              <Chip
+                size="sm"
+                variant="flat"
+                style={{
+                  backgroundColor: `${section.color}15`,
+                  color: section.color,
+                  border: `1px solid ${section.color}30`,
+                }}
+              >
+                {section.title}
+              </Chip>
+            )}
+
+            {isLive && (
+              <Chip
+                size="sm"
+                color="danger"
+                variant="dot"
+                className="font-semibold animate-pulse"
+              >
+                Live
+              </Chip>
+            )}
+          </div>
+
+          <div>
+            <h3 className="font-semibold text-foreground leading-snug text-base">
+              {talk.title}
+            </h3>
+            <p className="text-sm text-default-500 mt-1">{talk.speakerName}</p>
+          </div>
+
+          <div className="flex gap-1.5 flex-wrap">
+            {talk.tags.map((tag) => (
+              <span
+                key={tag}
+                className="text-xs text-default-400 bg-default-100 px-2 py-0.5 rounded-md"
+              >
+                #{tag}
+              </span>
+            ))}
+          </div>
         </div>
-        <div>
-          <h3 className="font-semibold leading-snug">{talk.title}</h3>
-          <p className="text-sm text-muted-foreground mt-1">
-            {talk.speakerName}
-          </p>
-        </div>
-        <div className="flex gap-1.5 flex-wrap">
-          {talk.tags.map((tag) => (
-            <span key={tag} className="text-xs text-dove">
-              #{tag}
-            </span>
-          ))}
-        </div>
-      </CardContent>
-    </Card>
+      </Card>
+    </Link>
   );
 }

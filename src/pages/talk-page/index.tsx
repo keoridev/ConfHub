@@ -1,12 +1,10 @@
 import { Link, useParams } from "react-router-dom";
 import { ArrowLeft, Clock, MapPin } from "lucide-react";
+import { Card, CardHeader, Chip, Skeleton } from "@heroui/react";
 
 import { useTalkQuery } from "~entities/talk/api/queries";
-import { Skeleton } from "~app/components/ui/skeleton";
 import { pathKeys } from "~shared/lib";
-import { Card, CardContent } from "~app/components/ui/card";
 import { sections } from "~shared/mocks/demoServer";
-import { Badge } from "~app/components/ui/badge";
 
 const fmtTime = (iso: string) =>
   iso
@@ -20,60 +18,65 @@ export function TalkPage() {
   const { talkId = "" } = useParams();
   const { data: talk, isLoading } = useTalkQuery(talkId);
 
-  if (isLoading) return <Skeleton className="h-64 w-full mt-6" />;
-  if (!talk) return <p className="py-10 text-center">Доклад не найден</p>;
+  if (isLoading) return <Skeleton className="h-64 w-full mt-6 rounded-xl" />;
+  if (!talk) return <p className="py-10 text-center text-default-500">Доклад не найден</p>;
 
   const section = sections.find((s) => s.id === talk.sectionId);
 
   return (
-    <div className="py-6 flex flex-col gap-4">
+    <div className="py-8 max-w-3xl mx-auto flex flex-col gap-6">
       <Link
         to={pathKeys.conference.byId("demo")}
-        className="text-sm text-dove flex items-center gap-1 w-fit hover:text-tundora"
+        className="text-sm text-default-500 flex items-center gap-1 w-fit hover:text-foreground transition-colors"
       >
         <ArrowLeft className="size-4" /> К программе
       </Link>
-      <Card>
-        <CardContent className="flex flex-col gap-4 p-6">
+      
+      <Card className="border border-default-200 shadow-md">
+        <CardHeader className="flex flex-col gap-4 pb-2 px-6 pt-6">
           <div className="flex gap-2 flex-wrap">
-            <Badge variant="secondary" className="gap-1">
-              <Clock className="size-3" />
+            <Chip size="sm" variant="flat" color="primary" startContent={<Clock className="size-3" />}>
               {fmtTime(talk.startTime)} – {fmtTime(talk.endTime)}
-            </Badge>
-            <Badge variant="outline" className="gap-1">
-              <MapPin className="size-3" />
-              {talk.hallNumber
-                ? `Ауд. ${talk.hallNumber}`
-                : "Аудитория будет назначена"}
-            </Badge>
+            </Chip>
+            <Chip size="sm" variant="bordered" startContent={<MapPin className="size-3" />}>
+              {talk.hallNumber ? `Ауд. ${talk.hallNumber}` : "Аудитория будет назначена"}
+            </Chip>
             {section && (
-              <Badge
-                variant="outline"
-                style={{ borderColor: section.color, color: section.color }}
+              <Chip 
+                size="sm" 
+                variant="flat"
+                style={{ backgroundColor: `${section.color}15`, color: section.color }}
               >
                 {section.title}
-              </Badge>
+              </Chip>
             )}
           </div>
+          
           <div>
-            <h1 className="text-2xl font-semibold leading-snug">
+            <h1 className="text-2xl sm:text-3xl font-bold leading-tight text-foreground">
               {talk.title}
             </h1>
-            <p className="text-muted-foreground mt-2">{talk.speakerName}</p>
+            <p className="text-lg text-default-600 mt-3 font-medium">{talk.speakerName}</p>
           </div>
-          <p>{talk.abstract}</p>
-          <div className="flex gap-2 flex-wrap">
+        </CardHeader>
+        
+        {/* Заменяем отсутствующий CardBody на обычный div для сохранения отступов и flex */}
+        <div className="flex flex-col gap-6 px-6 pb-6">
+          <div className="prose prose-sm max-w-none text-default-700 leading-relaxed">
+            <p>{talk.abstract}</p>
+          </div>
+          
+          <div className="flex gap-2 flex-wrap pt-4 border-t border-default-200">
             {talk.tags.map((tag) => (
-              <Badge key={tag} variant="outline">
+              <Chip key={tag} size="sm" variant="flat" color="default">
                 #{tag}
-              </Badge>
+              </Chip>
             ))}
           </div>
-        </CardContent>
+        </div>
       </Card>
     </div>
   );
 }
 
-// eslint-disable-next-line react-refresh/only-export-components
 export const talkPageRoute = { element: <TalkPage /> };

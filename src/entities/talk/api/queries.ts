@@ -1,3 +1,4 @@
+// ~entities/talk/api/queries.ts
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   createTalk,
@@ -46,16 +47,19 @@ export function useSubmitTalkMutation() {
   });
 }
 
+// ОБНОВЛЕНО: Добавили опциональный параметр updates
 export function useReviewTalkMutation() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({
       id,
       status,
+      updates,
     }: {
       id: string;
       status: "approved" | "rejected";
-    }) => reviewTalk(id, status),
+      updates?: Partial<Talk>;
+    }) => reviewTalk(id, status, updates),
     onSuccess: () => qc.invalidateQueries({ queryKey: talkKeys.all }),
   });
 }

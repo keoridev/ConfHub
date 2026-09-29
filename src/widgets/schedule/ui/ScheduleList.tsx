@@ -1,7 +1,6 @@
-import type { Talk } from "~entities/talk/model/types";
-import type { Section } from "~entities/talk/model/types";
+import { Skeleton } from "@heroui/react";
+import type { Talk, Section } from "~entities/talk/model/types";
 import { TalkCard } from "./TalkCard";
-import { Skeleton } from "~app/components/ui/skeleton";
 
 interface ScheduleListProps {
   talks: Talk[];
@@ -21,22 +20,24 @@ export function ScheduleList({
 }: ScheduleListProps) {
   if (isLoading) {
     return (
-      <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-4">
         {[1, 2, 3].map((i) => (
-          <Skeleton key={i} className="h-28 w-full" />
+          <Skeleton key={i} className="h-32 w-full rounded-xl" />
         ))}
       </div>
     );
   }
+
   if (talks.length === 0) {
     return (
-      <p className="text-muted-foreground text-center py-10">
-        Доклады не найдены
-      </p>
+      <div className="text-center py-12">
+        <p className="text-default-500 text-lg">Доклады не найдены</p>
+      </div>
     );
   }
+
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-4">
       {talks.map((talk) => (
         <TalkCard
           key={talk.id}
