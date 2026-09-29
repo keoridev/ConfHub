@@ -7,6 +7,8 @@ import { AppLayout } from "~app/layout";
 import { conferencePageRoute } from "~pages/conference-page";
 import { submissionPageRoute } from "~pages/submission-page";
 import { pathKeys } from "~shared/lib";
+import { talkPageRoute } from "~pages/talk-page";
+import { juryPageRoute } from "~pages/jury-page";
 
 const router = createBrowserRouter([
   {
@@ -26,9 +28,10 @@ const router = createBrowserRouter([
         path: pathKeys.submission(),
         ...submissionPageRoute,
       },
+      { path: "talk/:talkId", ...talkPageRoute },
+      { path: "jury", ...juryPageRoute },
     ],
   },
-  // Сюда позже: отдельная ветка под auth (login) со своим layout
 ]);
 
 export function BrowserRouter() {

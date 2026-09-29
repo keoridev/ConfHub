@@ -1,5 +1,6 @@
 export const pathKeys = {
   root: "/",
+
   login: () => "/login",
   submission: () => "/submission",
   conference: {
@@ -9,4 +10,5 @@ export const pathKeys = {
   talk: {
     byId: (talkId: string) => `/talk/${talkId}`,
   },
+  jury: () => "/jury",
 } as const;
