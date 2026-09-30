@@ -8,7 +8,6 @@ import {
   Upload,
   CheckCircle2,
   AlertCircle,
-  Loader2,
   FileText,
   Sparkles,
 } from "lucide-react";
@@ -87,11 +86,15 @@ export function SubmissionPage() {
   const validate = useValidateMutation();
   const submit = useSubmitTalkMutation();
 
+  // 1. Добавляем register, watch и setValue в деструктуризацию useForm
   const {
+    register,
     control,
     handleSubmit,
     formState: { errors, isValid },
     getValues,
+    watch,
+    setValue,
   } = useForm<SubmissionFormValues>({
     resolver: zodResolver(submissionSchema),
     defaultValues: { speakerName: "", title: "", sectionId: "", abstract: "" },
@@ -150,28 +153,34 @@ export function SubmissionPage() {
               <Label>ФИО докладчика</Label>
               <Input
                 placeholder="Иванова Анна Сергеевна"
-                {...control.register("speakerName")}
+                {...register("speakerName")}
               />
-              {errors.speakerName?.message && <FieldError>{errors.speakerName.message}</FieldError>}
+              {errors.speakerName?.message && (
+                <FieldError>{errors.speakerName.message}</FieldError>
+              )}
             </TextField>
 
             <TextField isInvalid={!!errors.title}>
               <Label>Название темы</Label>
               <Input
                 placeholder="Например: Применение LLM для анализа научных текстов"
-                {...control.register("title")}
+                {...register("title")} 
               />
-              {errors.title?.message && <FieldError>{errors.title.message}</FieldError>}
+              {errors.title?.message && (
+                <FieldError>{errors.title.message}</FieldError>
+              )}
             </TextField>
 
             <TextField isInvalid={!!errors.sectionId}>
               <Label>Секция</Label>
               <Select
                 placeholder="Выберите секцию"
-                selectedKeys={control.watch("sectionId") ? [control.watch("sectionId")] : []}
+                // 3. Используем watch напрямую
+                selectedKeys={watch("sectionId") ? [watch("sectionId")] : []}
                 onSelectionChange={(keys) => {
                   const val = Array.from(keys)[0] as string;
-                  control.setValue("sectionId", val, { shouldValidate: true });
+                  // 4. Используем setValue напрямую
+                  setValue("sectionId", val, { shouldValidate: true });
                 }}
               >
                 <Select.Trigger>
@@ -188,7 +197,9 @@ export function SubmissionPage() {
                   </ListBox>
                 </Select.Popover>
               </Select>
-              {errors.sectionId?.message && <FieldError>{errors.sectionId.message}</FieldError>}
+              {errors.sectionId?.message && (
+                <FieldError>{errors.sectionId.message}</FieldError>
+              )}
             </TextField>
 
             <TextField isInvalid={!!errors.abstract}>
@@ -196,9 +207,11 @@ export function SubmissionPage() {
               <TextArea
                 placeholder="Цель, метод, ожидаемый результат (30–50 слов)"
                 rows={4}
-                {...control.register("abstract")}
+                {...register("abstract")}
               />
-              {errors.abstract?.message && <FieldError>{errors.abstract.message}</FieldError>}
+              {errors.abstract?.message && (
+                <FieldError>{errors.abstract.message}</FieldError>
+              )}
             </TextField>
           </div>
         </Card>
@@ -234,7 +247,9 @@ export function SubmissionPage() {
                 <>
                   <FileText className="size-10 text-primary transition-transform group-hover:scale-110 duration-300" />
                   <div className="text-center">
-                    <p className="text-sm font-semibold text-foreground">{file.name}</p>
+                    <p className="text-sm font-semibold text-foreground">
+                      {file.name}
+                    </p>
                     <p className="text-xs text-default-500 mt-1">
                       {(file.size / 1024 / 1024).toFixed(2)} МБ
                     </p>
@@ -258,8 +273,12 @@ export function SubmissionPage() {
                     <Upload className="size-6 text-default-500 group-hover:text-primary transition-colors" />
                   </div>
                   <div className="text-center">
-                    <p className="text-sm font-semibold">Нажмите для загрузки или перетащите файл</p>
-                    <p className="text-xs text-default-500 mt-1">Поддерживаются форматы PDF, DOCX (до 10 МБ)</p>
+                    <p className="text-sm font-semibold">
+                      Нажмите для загрузки или перетащите файл
+                    </p>
+                    <p className="text-xs text-default-500 mt-1">
+                      Поддерживаются форматы PDF, DOCX (до 10 МБ)
+                    </p>
                   </div>
                 </>
               )}
@@ -295,8 +314,8 @@ export function SubmissionPage() {
                     ai.matchScore >= 80
                       ? "success"
                       : ai.matchScore >= 60
-                      ? "warning"
-                      : "danger"
+                        ? "warning"
+                        : "danger"
                   }
                   className="flex-1"
                   size="sm"
@@ -310,8 +329,8 @@ export function SubmissionPage() {
                     ai.matchScore >= 80
                       ? "text-success"
                       : ai.matchScore >= 60
-                      ? "text-warning"
-                      : "text-danger"
+                        ? "text-warning"
+                        : "text-danger"
                   }`}
                 >
                   {ai.matchScore}%
@@ -320,13 +339,17 @@ export function SubmissionPage() {
 
               <div className="grid gap-4 sm:grid-cols-2">
                 <AlertBox
-                  variant={ai.sectionMatch.isMatching ? "default" : "destructive"}
+                  variant={
+                    ai.sectionMatch.isMatching ? "default" : "destructive"
+                  }
                   title="Соответствие секции"
                   description={ai.sectionMatch.explanation}
                   icon={<CheckCircle2 className="size-4" />}
                 />
                 <AlertBox
-                  variant={ai.abstractMatch.isMatching ? "default" : "destructive"}
+                  variant={
+                    ai.abstractMatch.isMatching ? "default" : "destructive"
+                  }
                   title="Качество аннотации"
                   description={ai.abstractMatch.explanation}
                   icon={<AlertCircle className="size-4" />}

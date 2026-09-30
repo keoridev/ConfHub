@@ -1,28 +1,29 @@
-import { Skeleton } from "@heroui/react";
-import type { Talk, Section } from "~entities/talk/model/types";
-import { TalkCard } from "./TalkCard";
+// ScheduleList.tsx
+import { Card, Skeleton } from "@heroui/react";
+import { ScheduleCard } from "./ScheduleCard";
 
 interface ScheduleListProps {
-  talks: Talk[];
-  sections: Section[];
-  isLoading?: boolean;
+  talks: any[];
+  sections: any[];
+  isLoading: boolean;
+  viewMode?: 'compact' | 'card';
 }
 
-const isLiveNow = (talk: Talk) => {
-  const now = Date.now();
-  return now >= Date.parse(talk.startTime) && now <= Date.parse(talk.endTime);
-};
-
-export function ScheduleList({
-  talks,
-  sections,
-  isLoading,
+export function ScheduleList({ 
+  talks, 
+  sections, 
+  isLoading, 
+  viewMode = 'compact' 
 }: ScheduleListProps) {
   if (isLoading) {
     return (
-      <div className="flex flex-col gap-4">
+      <div className="space-y-4">
         {[1, 2, 3].map((i) => (
-          <Skeleton key={i} className="h-32 w-full rounded-xl" />
+          <Card key={i} className="p-6">
+            <Skeleton className="h-4 w-1/4 mb-3 rounded-lg" />
+            <Skeleton className="h-6 w-3/4 mb-2 rounded-lg" />
+            <Skeleton className="h-4 w-1/2 rounded-lg" />
+          </Card>
         ))}
       </div>
     );
@@ -30,22 +31,34 @@ export function ScheduleList({
 
   if (talks.length === 0) {
     return (
-      <div className="text-center py-12">
-        <p className="text-default-500 text-lg">Доклады не найдены</p>
-      </div>
+      <Card className="p-12 text-center bg-[#f5f3ed]">
+        <div className="size-16 mx-auto mb-4 rounded-full bg-[#1a4d3e]/10 flex items-center justify-center">
+          <span className="text-3xl">🔍</span>
+        </div>
+        <h3 className="text-lg font-semibold mb-2 text-[#1a4d3e]">Ничего не найдено</h3>
+        <p className="text-muted-foreground">Попробуйте изменить параметры поиска</p>
+      </Card>
     );
   }
 
   return (
-    <div className="flex flex-col gap-4">
-      {talks.map((talk) => (
-        <TalkCard
-          key={talk.id}
-          talk={talk}
-          section={sections.find((s) => s.id === talk.sectionId)}
-          isLive={isLiveNow(talk)}
-        />
-      ))}
+    <div className={`space-y-4 ${viewMode === 'compact' ? 'space-y-3' : 'space-y-4'}`}>
+      {talks.map((talk, index) => {
+        const section = sections.find((s) => s.id === talk.sectionId);
+        return (
+          <div 
+            key={talk.id}
+            className="animate-slide-up"
+            style={{ animationDelay: `${index * 0.05}s` }}
+          >
+            <ScheduleCard 
+              talk={talk} 
+              section={section} 
+              isCompact={viewMode === 'compact'}
+            />
+          </div>
+        );
+      })}
     </div>
   );
 }
