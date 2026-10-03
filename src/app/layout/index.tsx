@@ -1,19 +1,19 @@
 import { Outlet } from "react-router-dom";
 import "~app/index.css";
-import { DemoNav } from "~widgets/demo-nav/ui/DemoNav";
+import { AppNavigation } from "~widgets/demo-nav/ui/DemoNav";
 
 export const AppLayout = () => {
   return (
-    <div className="bg-[#F0F0F0] min-h-screen">
-      <div className="flex flex-col max-w-[1168px] min-h-screen mx-auto">
-        <header className="py-4">
-          <DemoNav />
-        </header>
+    <div className="min-h-screen bg-background text-foreground">
+      {/* Глобальная навигация (Сайдбар на десктопе, Bottom Bar на мобильном) */}
+      <AppNavigation />
 
-        <main className="flex-grow">
+      {/* Основной контент */}
+      <main className="flex-grow w-full">
+        <div className="max-w-6xl mx-auto px-4 py-6 md:px-8 md:py-10">
           <Outlet />
-        </main>
-      </div>
+        </div>
+      </main>
     </div>
   );
 };

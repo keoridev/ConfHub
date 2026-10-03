@@ -1,4 +1,3 @@
-// ScheduleCard.tsx
 import { Clock, MapPin } from "lucide-react";
 import { Card, Chip } from "@heroui/react";
 import { Link } from "react-router-dom";
@@ -37,40 +36,48 @@ export function ScheduleCard({
   section,
   isCompact = false,
 }: ScheduleCardProps) {
+  // --- РЕЖИМ СПИСКА (Compact) ---
   if (isCompact) {
     return (
       <Link to={pathKeys.talk.byId(talk.id)}>
-        <div className="group flex items-start gap-6 p-6 bg-white rounded-xl border border-border/30 hover:border-[#1a4d3e]/50 hover:shadow-lg transition-all duration-300">
-          {/* Time */}
-          <div className="flex-shrink-0 w-32">
-            <div className="flex items-center gap-2 text-[#1a4d3e] font-semibold">
+        <div className="group flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6 p-5 bg-white rounded-xl border border-[#1a4d3e]/10 hover:border-[#d4a84b]/50 hover:shadow-md transition-all duration-300">
+          {/* Time Block */}
+          <div className="flex-shrink-0 flex sm:flex-col items-center sm:items-start gap-2 sm:gap-1 min-w-[100px]">
+            <div className="flex items-center gap-2 text-[#1a4d3e] font-bold text-base">
               <Clock className="size-4" />
               <span>{fmtTime(talk.startTime)}</span>
             </div>
-            <div className="text-sm text-muted-foreground mt-1">
-              {fmtTime(talk.endTime)}
+            <div className="text-sm text-muted-foreground font-medium">
+              до {fmtTime(talk.endTime)}
             </div>
           </div>
 
-          {/* Content */}
+          {/* Divider for mobile */}
+          <div className="w-full h-px bg-[#1a4d3e]/10 sm:hidden" />
+
+          {/* Content Block */}
           <div className="flex-1 min-w-0">
             <h3 className="text-lg font-bold text-[#1a4d3e] group-hover:text-[#1a4d3e]/80 transition-colors mb-2 line-clamp-2">
               {talk.title}
             </h3>
-            <div className="flex items-center gap-3 flex-wrap">
-              <span className="text-muted-foreground font-medium">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
+              <span className="font-semibold text-[#1a4d3e]/80">
                 {talk.speakerName}
               </span>
               {talk.company && (
                 <>
-                  <span className="text-muted-foreground">·</span>
+                  <span className="text-muted-foreground hidden sm:inline">
+                    ·
+                  </span>
                   <span className="text-muted-foreground">{talk.company}</span>
                 </>
               )}
               {talk.hallNumber && (
                 <>
-                  <span className="text-muted-foreground">·</span>
-                  <span className="flex items-center gap-1 text-sm text-muted-foreground">
+                  <span className="text-muted-foreground hidden sm:inline">
+                    ·
+                  </span>
+                  <span className="flex items-center gap-1 text-muted-foreground bg-[#f5f3ed] px-2 py-0.5 rounded-md">
                     <MapPin className="size-3" />
                     Зал {talk.hallNumber}
                   </span>
@@ -79,15 +86,15 @@ export function ScheduleCard({
             </div>
           </div>
 
-          {/* Tags */}
+          {/* Tags Block */}
           {talk.tags.length > 0 && (
-            <div className="flex-shrink-0 flex gap-2">
+            <div className="flex-shrink-0 flex gap-2 flex-wrap sm:justify-end">
               {talk.tags.slice(0, 2).map((tag) => (
                 <Chip
                   key={tag}
                   size="sm"
                   variant="flat"
-                  className="bg-[#f5f3ed] text-[#1a4d3e] text-xs"
+                  className="bg-[#f5f3ed] text-[#1a4d3e] text-xs font-medium border border-[#1a4d3e]/10"
                 >
                   {tag}
                 </Chip>
@@ -99,24 +106,24 @@ export function ScheduleCard({
     );
   }
 
-  // Full card version
+  // --- РЕЖИМ КАРТОЧЕК (Full) ---
   return (
     <Link to={pathKeys.talk.byId(talk.id)}>
-      <Card className="group relative border border-border/50 bg-white hover:border-[#1a4d3e]/30 hover:shadow-xl transition-all duration-300">
+      <Card className="group relative border border-[#1a4d3e]/10 bg-white hover:border-[#d4a84b]/40 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 h-full flex flex-col">
         {section && (
           <div
-            className="absolute left-0 top-0 bottom-0 w-1 rounded-l-lg"
+            className="absolute left-0 top-0 bottom-0 w-1.5 rounded-l-xl"
             style={{ backgroundColor: section.color || "#1a4d3e" }}
           />
         )}
 
-        <div className="p-6 pl-7">
+        <div className="p-6 pl-8 flex flex-col flex-1">
           <div className="flex items-center gap-3 mb-4 flex-wrap">
             <Chip
               size="sm"
               variant="flat"
-              className="bg-[#1a4d3e] text-white font-medium"
-              startContent={<Clock className="size-3" />}
+              className="bg-[#1a4d3e] text-white font-semibold"
+              startContent={<Clock className="size-3.5" />}
             >
               {fmtTime(talk.startTime)} – {fmtTime(talk.endTime)}
             </Chip>
@@ -125,20 +132,22 @@ export function ScheduleCard({
               <Chip
                 size="sm"
                 variant="bordered"
-                startContent={<MapPin className="size-3" />}
-                className="border-[#1a4d3e]/30 text-[#1a4d3e]"
+                startContent={<MapPin className="size-3.5" />}
+                className="border-[#1a4d3e]/30 text-[#1a4d3e] font-medium"
               >
                 Зал {talk.hallNumber}
               </Chip>
             )}
           </div>
 
-          <div className="space-y-3">
-            <h3 className="text-xl font-bold text-[#1a4d3e] group-hover:text-[#1a4d3e]/80 transition-colors line-clamp-2">
+          <div className="space-y-3 flex-1">
+            <h3 className="text-xl font-bold text-[#1a4d3e] group-hover:text-[#1a4d3e]/80 transition-colors line-clamp-3">
               {talk.title}
             </h3>
             <div className="flex items-center gap-2 text-muted-foreground">
-              <span className="font-medium">{talk.speakerName}</span>
+              <span className="font-semibold text-[#1a4d3e]/70">
+                {talk.speakerName}
+              </span>
               {talk.company && (
                 <>
                   <span>·</span>
@@ -149,13 +158,13 @@ export function ScheduleCard({
           </div>
 
           {talk.tags.length > 0 && (
-            <div className="flex gap-2 mt-4 flex-wrap">
+            <div className="flex gap-2 mt-6 flex-wrap">
               {talk.tags.slice(0, 3).map((tag) => (
                 <Chip
                   key={tag}
                   size="sm"
                   variant="flat"
-                  className="bg-[#f5f3ed] text-[#1a4d3e] text-xs"
+                  className="bg-[#f5f3ed] text-[#1a4d3e] text-xs font-medium border border-[#1a4d3e]/10"
                 >
                   {tag}
                 </Chip>

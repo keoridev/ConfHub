@@ -1,16 +1,10 @@
-import { useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
-import {
-  Upload,
-  CheckCircle2,
-  AlertCircle,
-  FileText,
-  Sparkles,
-} from "lucide-react";
+import { Upload, CheckCircle2, AlertCircle, FileText, X } from "lucide-react";
 
 import {
   useSubmitTalkMutation,
@@ -19,20 +13,18 @@ import {
 import { pathKeys } from "~shared/lib";
 import { sections } from "~shared/mocks/demoServer";
 
-// Импорты из HeroUI v3
 import {
   Card,
   Button,
-  TextField,
   Input,
   TextArea,
-  ProgressBar,
   Chip,
   Select,
   ListBox,
-  Label,
-  FieldError,
 } from "@heroui/react";
+
+const MAX_FILE_SIZE_MB = 10;
+const ALLOWED_EXTENSIONS = [".pdf", ".docx"];
 
 const submissionSchema = z.object({
   speakerName: z.string().min(3, "Минимум 3 символа"),
@@ -46,50 +38,51 @@ const submissionSchema = z.object({
 
 type SubmissionFormValues = z.infer<typeof submissionSchema>;
 
-function AlertBox({
-  variant,
-  title,
-  description,
-  icon,
+type FileError = { type: "type" | "size" } | null;
+
+/* ---------- маленький хелпер: подпись под полем ---------- */
+function FieldHint({
+  message,
+  counter,
 }: {
-  variant: "default" | "destructive";
-  title: string;
-  description: string;
-  icon: React.ReactNode;
+  message?: string;
+  counter?: string;
 }) {
-  const isDestructive = variant === "destructive";
   return (
-    <div
-      className={`p-4 rounded-lg border flex gap-3 ${
-        isDestructive
-          ? "bg-danger-50 border-danger-200 text-danger-800"
-          : "bg-default-50 border-default-200 text-default-800"
-      }`}
-    >
-      <div
-        className={`mt-0.5 ${isDestructive ? "text-danger" : "text-primary"}`}
+    <div className="flex items-center justify-between gap-2 mt-1 min-h-4">
+      <p
+        role={message ? "alert" : undefined}
+        className={`text-xs ${message ? "text-danger" : "text-transparent"}`}
       >
-        {icon}
-      </div>
-      <div>
-        <p className="text-sm font-semibold">{title}</p>
-        <p className="text-xs mt-1 opacity-80">{description}</p>
-      </div>
+        {message ?? "·"}
+      </p>
+      {counter && (
+        <p className="text-xs text-muted-foreground tabular-nums shrink-0">
+          {counter}
+        </p>
+      )}
     </div>
   );
 }
 
+const inputClassNames = {
+  input: "text-[#1a4d3e]",
+  inputWrapper:
+    "border-[#1a4d3e]/20 bg-white hover:border-[#d4a84b]/50 focus-within:border-[#d4a84b] data-[invalid=true]:border-danger",
+};
+
 export function SubmissionPage() {
   const navigate = useNavigate();
   const [file, setFile] = useState<File | null>(null);
+  const [fileError, setFileError] = useState<FileError>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const validate = useValidateMutation();
   const submit = useSubmitTalkMutation();
 
-  // 1. Добавляем register, watch и setValue в деструктуризацию useForm
   const {
     register,
-    control,
     handleSubmit,
     formState: { errors, isValid },
     getValues,
@@ -101,16 +94,55 @@ export function SubmissionPage() {
     mode: "onChange",
   });
 
+  const abstractValue = watch("abstract");
+  const sectionId = watch("sectionId");
+
   const ai = validate.data;
-  const isFormValid = isValid && !!file;
+  // Результат AI считается "протухшим", если форма изменилась после проверки
+  const [aiSnapshot, setAiSnapshot] = useState<string | null>(null);
+  const currentSnapshot = JSON.stringify(getValues());
+  const isAiStale = !!ai && aiSnapshot !== currentSnapshot;
+  const isFormValid = isValid && !!file && !fileError;
+
+  /* ---------- загрузка файла с валидацией ---------- */
+  const acceptFile = useCallback((candidate: File | null | undefined) => {
+    if (!candidate) return;
+    const ext = "." + candidate.name.split(".").pop()?.toLowerCase();
+    if (!ALLOWED_EXTENSIONS.includes(ext)) {
+      setFileError({ type: "type" });
+      setFile(null);
+      return;
+    }
+    if (candidate.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
+      setFileError({ type: "size" });
+      setFile(null);
+      return;
+    }
+    setFileError(null);
+    setFile(candidate);
+  }, []);
+
+  const clearFile = useCallback(() => {
+    setFile(null);
+    setFileError(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  }, []);
 
   const handleValidate = () => {
+    if (!file) {
+      toast.error("Сначала загрузите файл с материалами");
+      return;
+    }
     const values = getValues();
+    setAiSnapshot(JSON.stringify(values));
     validate.mutate({ ...values, file });
   };
 
   const onSubmit = (values: SubmissionFormValues) => {
-    if (!ai) return;
+    if (!ai) {
+      toast.error("Сначала запустите AI-проверку");
+      return;
+    }
     submit.mutate(
       { ...values, tags: ai.extractedKeywords },
       {
@@ -118,292 +150,466 @@ export function SubmissionPage() {
           toast.success("Заявка успешно отправлена жюри!");
           navigate(pathKeys.conference.byId("demo"));
         },
+        onError: () => toast.error("Не удалось отправить заявку. Попробуйте ещё раз."),
       },
     );
   };
 
+  /* ---------- подсказка под кнопкой сабмита ---------- */
+  const submitHint = !isValid
+    ? "Заполните все поля формы"
+    : !file
+      ? "Загрузите файл с материалами"
+      : !ai
+        ? "Запустите AI-проверку перед отправкой"
+        : isAiStale
+          ? "Данные изменились — повторите AI-проверку"
+          : null;
+
   return (
-    <div className="py-10 max-w-2xl mx-auto space-y-8 bg-gradient-to-b from-background to-default-100/50 min-h-screen p-4">
-      <div className="space-y-2 text-center sm:text-left">
-        <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
-          Подать заявку на доклад
-        </h1>
-        <p className="text-default-500 text-lg">
-          Заполните информацию и загрузите материал для AI-проверки.
-        </p>
-      </div>
+    <div className="min-h-screen bg-[#f5f3ed]">
+      {/* Header */}
+      <div className="bg-[#1a4d3e] text-white py-12 px-4">
+        <div className="max-w-4xl mx-auto">
+          <p className="text-[#d4a84b] text-sm font-semibold mb-2 uppercase tracking-wide">
+            CALL FOR PAPERS · ДО 1 МАЯ
+          </p>
+          <h1 className="text-5xl font-bold mb-4 leading-tight">
+            Подать заявку
+            <br />
+            на доклад
+          </h1>
+          <p className="text-white/80 text-lg max-w-2xl">
+            Заполните информацию и загрузите материал — мы проверим заявку перед
+            отправкой жюри.
+          </p>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-        {/* Карточка 1: Информация */}
-        <Card className="border border-default-200 bg-background/80 backdrop-blur-sm shadow-lg shadow-primary/5 transition-all duration-300 hover:shadow-xl hover:shadow-primary/10">
-          <div className="p-6 space-y-5">
-            <div className="space-y-1">
-              <h2 className="text-xl font-semibold flex items-center gap-2">
-                <span className="flex size-8 items-center justify-center rounded-full bg-primary/10 text-primary">
-                  1
-                </span>
-                Информация о докладе
-              </h2>
-              <p className="text-sm text-default-500">
-                Основные метаданные для программы конференции
-              </p>
-            </div>
-
-            <TextField isInvalid={!!errors.speakerName}>
-              <Label>ФИО докладчика</Label>
-              <Input
-                placeholder="Иванова Анна Сергеевна"
-                {...register("speakerName")}
-              />
-              {errors.speakerName?.message && (
-                <FieldError>{errors.speakerName.message}</FieldError>
-              )}
-            </TextField>
-
-            <TextField isInvalid={!!errors.title}>
-              <Label>Название темы</Label>
-              <Input
-                placeholder="Например: Применение LLM для анализа научных текстов"
-                {...register("title")} 
-              />
-              {errors.title?.message && (
-                <FieldError>{errors.title.message}</FieldError>
-              )}
-            </TextField>
-
-            <TextField isInvalid={!!errors.sectionId}>
-              <Label>Секция</Label>
-              <Select
-                placeholder="Выберите секцию"
-                // 3. Используем watch напрямую
-                selectedKeys={watch("sectionId") ? [watch("sectionId")] : []}
-                onSelectionChange={(keys) => {
-                  const val = Array.from(keys)[0] as string;
-                  // 4. Используем setValue напрямую
-                  setValue("sectionId", val, { shouldValidate: true });
-                }}
-              >
-                <Select.Trigger>
-                  <Select.Value />
-                  <Select.Indicator />
-                </Select.Trigger>
-                <Select.Popover>
-                  <ListBox>
-                    {sections.map((s) => (
-                      <ListBox.Item key={s.id} id={s.id} textValue={s.title}>
-                        {s.title}
-                      </ListBox.Item>
-                    ))}
-                  </ListBox>
-                </Select.Popover>
-              </Select>
-              {errors.sectionId?.message && (
-                <FieldError>{errors.sectionId.message}</FieldError>
-              )}
-            </TextField>
-
-            <TextField isInvalid={!!errors.abstract}>
-              <Label>Аннотация</Label>
-              <TextArea
-                placeholder="Цель, метод, ожидаемый результат (30–50 слов)"
-                rows={4}
-                {...register("abstract")}
-              />
-              {errors.abstract?.message && (
-                <FieldError>{errors.abstract.message}</FieldError>
-              )}
-            </TextField>
-          </div>
-        </Card>
-
-        {/* Карточка 2: Материалы */}
-        <Card className="border border-default-200 bg-background/80 backdrop-blur-sm shadow-lg shadow-primary/5 transition-all duration-300 hover:shadow-xl hover:shadow-primary/10">
-          <div className="p-6 space-y-5">
-            <div className="space-y-1">
-              <h2 className="text-xl font-semibold flex items-center gap-2">
-                <span className="flex size-8 items-center justify-center rounded-full bg-primary/10 text-primary">
-                  2
-                </span>
-                Материалы
-              </h2>
-              <p className="text-sm text-default-500">
-                Загрузите PDF или DOCX файл с полным текстом доклада
-              </p>
-            </div>
-
-            <div
-              className={`group relative flex flex-col items-center justify-center gap-3 border-2 border-dashed rounded-xl p-10 transition-all cursor-pointer
-                ${file ? "border-primary/40 bg-primary/5" : "border-default-300 hover:border-primary/50 hover:bg-primary/5"}`}
-              onClick={() => document.getElementById("file-upload")?.click()}
-            >
-              <input
-                id="file-upload"
-                type="file"
-                accept=".pdf,.docx"
-                className="hidden"
-                onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-              />
-              {file ? (
-                <>
-                  <FileText className="size-10 text-primary transition-transform group-hover:scale-110 duration-300" />
-                  <div className="text-center">
-                    <p className="text-sm font-semibold text-foreground">
-                      {file.name}
-                    </p>
-                    <p className="text-xs text-default-500 mt-1">
-                      {(file.size / 1024 / 1024).toFixed(2)} МБ
-                    </p>
-                  </div>
-                  <Button
-                    type="button"
-                    variant="danger-soft"
-                    size="sm"
-                    className="h-7 text-xs mt-2"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setFile(null);
-                    }}
-                  >
-                    Удалить файл
-                  </Button>
-                </>
-              ) : (
-                <>
-                  <div className="flex size-12 items-center justify-center rounded-full bg-default-100 group-hover:bg-primary/10 transition-colors duration-300">
-                    <Upload className="size-6 text-default-500 group-hover:text-primary transition-colors" />
-                  </div>
-                  <div className="text-center">
-                    <p className="text-sm font-semibold">
-                      Нажмите для загрузки или перетащите файл
-                    </p>
-                    <p className="text-xs text-default-500 mt-1">
-                      Поддерживаются форматы PDF, DOCX (до 10 МБ)
-                    </p>
-                  </div>
-                </>
-              )}
-            </div>
-
-            <Button
-              type="button"
-              variant="primary"
-              className="w-full sm:w-auto gap-2 bg-gradient-to-r from-primary to-primary-600 shadow-md shadow-primary/20 transition-all active:scale-[0.98]"
-              isPending={validate.isPending}
-              isDisabled={!isValid || validate.isPending}
-              onClick={handleValidate}
-            >
-              {!validate.isPending && <Sparkles className="size-4" />}
-              Запустить AI-проверку
-            </Button>
-          </div>
-        </Card>
-
-        {/* Карточка 3: Результат AI */}
-        {ai && (
-          <Card className="border border-primary/20 bg-gradient-to-br from-primary/5 to-background shadow-lg shadow-primary/5 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="p-6 space-y-5">
-              <h2 className="text-xl font-semibold flex items-center gap-2 text-primary">
-                <CheckCircle2 className="size-5" />
-                Результат AI-проверки
-              </h2>
-
-              <div className="flex items-center gap-4">
-                <ProgressBar
-                  value={ai.matchScore}
-                  color={
-                    ai.matchScore >= 80
-                      ? "success"
-                      : ai.matchScore >= 60
-                        ? "warning"
-                        : "danger"
-                  }
-                  className="flex-1"
-                  size="sm"
-                >
-                  <ProgressBar.Track>
-                    <ProgressBar.Fill />
-                  </ProgressBar.Track>
-                </ProgressBar>
+          {/* Прогресс: 3 шага */}
+          <ol className="flex items-center gap-2 mt-8 text-xs font-medium">
+            {[
+              { n: 1, label: "Информация", done: isValid },
+              { n: 2, label: "Материалы", done: !!file },
+              { n: 3, label: "AI-проверка", done: !!ai && !isAiStale },
+            ].map((s, i) => (
+              <li key={s.n} className="flex items-center gap-2">
                 <span
-                  className={`text-xl font-bold w-16 text-right ${
-                    ai.matchScore >= 80
-                      ? "text-success"
-                      : ai.matchScore >= 60
-                        ? "text-warning"
-                        : "text-danger"
+                  className={`flex size-6 items-center justify-center rounded-full border transition-colors ${
+                    s.done
+                      ? "bg-[#d4a84b] border-[#d4a84b] text-[#1a4d3e]"
+                      : "border-white/40 text-white/70"
                   }`}
                 >
-                  {ai.matchScore}%
+                  {s.done ? <CheckCircle2 className="size-4" /> : s.n}
                 </span>
-              </div>
+                <span className={s.done ? "text-white" : "text-white/60"}>
+                  {s.label}
+                </span>
+                {i < 2 && <span className="w-6 h-px bg-white/30 mx-1" />}
+              </li>
+            ))}
+          </ol>
+        </div>
+      </div>
 
-              <div className="grid gap-4 sm:grid-cols-2">
-                <AlertBox
-                  variant={
-                    ai.sectionMatch.isMatching ? "default" : "destructive"
-                  }
-                  title="Соответствие секции"
-                  description={ai.sectionMatch.explanation}
-                  icon={<CheckCircle2 className="size-4" />}
-                />
-                <AlertBox
-                  variant={
-                    ai.abstractMatch.isMatching ? "default" : "destructive"
-                  }
-                  title="Качество аннотации"
-                  description={ai.abstractMatch.explanation}
-                  icon={<AlertCircle className="size-4" />}
-                />
-              </div>
+      <div className="max-w-4xl mx-auto px-4 py-10 space-y-8">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-8" noValidate>
+          {/* ===== Шаг 1: Информация ===== */}
+          <Card className="border border-[#1a4d3e]/20 bg-[#f5f3ed] shadow-sm">
+            <fieldset className="p-8 space-y-6">
+              <legend className="flex items-start gap-4 float-left w-full mb-6">
+                <span className="flex-shrink-0 w-8 h-8 bg-[#d4a84b] rounded-md flex items-center justify-center text-[#1a4d3e] font-bold text-sm">
+                  1
+                </span>
+                <span>
+                  <span className="block text-xl font-bold text-[#1a4d3e]">
+                    Информация о докладе
+                  </span>
+                  <span className="block text-sm text-muted-foreground mt-1">
+                    Данные для программы конференции
+                  </span>
+                </span>
+              </legend>
 
-              <div className="space-y-3 p-4 rounded-lg bg-default-50 border border-default-200">
-                <p className="text-sm font-semibold flex items-center gap-2">
-                  <Sparkles className="size-4 text-primary" />
-                  Извлеченные ключевые слова:
-                </p>
-                <div className="flex gap-2 flex-wrap">
-                  {ai.extractedKeywords.map((k) => (
-                    <Chip
-                      key={k}
-                      className="bg-background border border-default-200 font-normal shadow-sm"
-                    >
-                      {k}
-                    </Chip>
-                  ))}
+              <div className="space-y-5 pl-12">
+                <div>
+                  <label
+                    htmlFor="speakerName"
+                    className="block text-sm font-semibold text-[#1a4d3e] mb-2"
+                  >
+                    ФИО докладчика
+                  </label>
+                  <Input
+                    id="speakerName"
+                    placeholder="Иванова Анна Сергеевна"
+                    aria-invalid={!!errors.speakerName}
+                    {...register("speakerName")}
+                    className="bg-white w-full"
+                    classNames={inputClassNames}
+                  />
+                  <FieldHint message={errors.speakerName?.message} />
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="title"
+                    className="block text-sm font-semibold text-[#1a4d3e] mb-2"
+                  >
+                    Название темы
+                  </label>
+                  <Input
+                    id="title"
+                    placeholder="Например: Дизайн-токены в масштабе"
+                    aria-invalid={!!errors.title}
+                    {...register("title")}
+                    className="bg-white w-full"
+                    classNames={inputClassNames}
+                  />
+                  <FieldHint message={errors.title?.message} />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-[#1a4d3e] mb-2">
+                    Секция
+                  </label>
+                  <Select
+                    aria-label="Секция"
+                    placeholder="Выберите секцию"
+                    selectedKeys={sectionId ? [sectionId] : []}
+                    onSelectionChange={(keys) => {
+                      const val = Array.from(keys)[0] as string;
+                      setValue("sectionId", val, { shouldValidate: true });
+                    }}
+                    className="bg-white w-full"
+                    classNames={{
+                      trigger:
+                        "border-[#1a4d3e]/20 bg-white hover:border-[#d4a84b]/50 data-[hover=true]:border-[#d4a84b]",
+                      value: "text-[#1a4d3e]",
+                    }}
+                  >
+                    <Select.Trigger>
+                      <Select.Value />
+                      <Select.Indicator />
+                    </Select.Trigger>
+                    <Select.Popover>
+                      <ListBox>
+                        {sections.map((s) => (
+                          <ListBox.Item key={s.id} id={s.id} textValue={s.title}>
+                            {s.title}
+                          </ListBox.Item>
+                        ))}
+                      </ListBox>
+                    </Select.Popover>
+                  </Select>
+                  <FieldHint message={errors.sectionId?.message} />
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="abstract"
+                    className="block text-sm font-semibold text-[#1a4d3e] mb-2"
+                  >
+                    Аннотация
+                  </label>
+                  <TextArea
+                    id="abstract"
+                    placeholder="Цель, метод, ожидаемый результат (30–50 слов)"
+                    rows={4}
+                    aria-invalid={!!errors.abstract}
+                    {...register("abstract")}
+                    className="bg-white w-full"
+                    classNames={inputClassNames}
+                  />
+                  <FieldHint
+                    message={errors.abstract?.message}
+                    counter={`${abstractValue.length}/1000`}
+                  />
                 </div>
               </div>
-
-              <div className="space-y-2">
-                <p className="text-sm font-semibold">Рекомендации:</p>
-                <ul className="text-sm text-default-600 space-y-2">
-                  {ai.feedback.map((f, i) => (
-                    <li
-                      key={i}
-                      className="flex items-start gap-3 bg-background/50 p-3 rounded-md border border-default-200"
-                    >
-                      <span className="mt-1.5 size-1.5 rounded-full bg-primary shrink-0" />
-                      {f}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </div>
+            </fieldset>
           </Card>
-        )}
 
-        <div className="flex justify-end pt-4 pb-10">
-          <Button
-            type="submit"
-            size="lg"
-            variant="primary"
-            isDisabled={!isFormValid || !ai || submit.isPending}
-            isPending={submit.isPending}
-            className="w-full sm:w-auto px-10 bg-gradient-to-r from-primary to-primary-600 shadow-lg shadow-primary/25 transition-all active:scale-[0.98] text-base font-semibold"
-          >
-            Отправить на рассмотрение жюри
-          </Button>
-        </div>
-      </form>
+          {/* ===== Шаг 2: Материалы ===== */}
+          <Card className="border border-[#1a4d3e]/20 bg-[#f5f3ed] shadow-sm">
+            <fieldset className="p-8 space-y-6">
+              <legend className="flex items-start gap-4 float-left w-full mb-6">
+                <span className="flex-shrink-0 w-8 h-8 bg-[#d4a84b] rounded-md flex items-center justify-center text-[#1a4d3e] font-bold text-sm">
+                  2
+                </span>
+                <span>
+                  <span className="block text-xl font-bold text-[#1a4d3e]">
+                    Материалы
+                  </span>
+                  <span className="block text-sm text-muted-foreground mt-1">
+                    PDF или DOCX с полным текстом доклада
+                  </span>
+                </span>
+              </legend>
+
+              <div className="pl-12 space-y-4">
+                {/* Drag & Drop зона — кликабельна через label, доступна с клавиатуры */}
+                <label
+                  htmlFor="file-upload"
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    setIsDragging(true);
+                  }}
+                  onDragLeave={() => setIsDragging(false)}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    setIsDragging(false);
+                    acceptFile(e.dataTransfer.files?.[0]);
+                  }}
+                  className={`group relative flex flex-col items-center justify-center gap-4 border-2 border-dashed rounded-xl p-12 transition-all cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-[#d4a84b] focus-visible:ring-offset-2
+                    ${
+                      file
+                        ? "border-[#1a4d3e]/40 bg-[#1a4d3e]/5"
+                        : isDragging
+                          ? "border-[#d4a84b] bg-[#d4a84b]/10 scale-[1.01]"
+                          : "border-[#1a4d3e]/20 hover:border-[#d4a84b]/50 hover:bg-[#d4a84b]/5"
+                    }`}
+                >
+                  <input
+                    ref={fileInputRef}
+                    id="file-upload"
+                    type="file"
+                    accept=".pdf,.docx"
+                    className="sr-only"
+                    onChange={(e) => acceptFile(e.target.files?.[0])}
+                  />
+
+                  {file ? (
+                    <>
+                      <FileText className="size-12 text-[#1a4d3e]" />
+                      <div className="text-center">
+                        <p className="text-sm font-semibold text-[#1a4d3e]">
+                          {file.name}
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {(file.size / 1024 / 1024).toFixed(2)} МБ
+                        </p>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="flat"
+                        size="sm"
+                        aria-label="Удалить файл"
+                        className="bg-danger/10 text-danger hover:bg-danger/20"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          clearFile();
+                        }}
+                      >
+                        <X className="size-4 mr-1" />
+                        Удалить файл
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <div
+                        className={`flex size-16 items-center justify-center rounded-full transition-colors ${
+                          isDragging
+                            ? "bg-[#d4a84b]/30"
+                            : "bg-[#1a4d3e]/10 group-hover:bg-[#d4a84b]/20"
+                        }`}
+                      >
+                        <Upload
+                          className={`size-7 transition-colors ${
+                            isDragging
+                              ? "text-[#1a4d3e]"
+                              : "text-[#1a4d3e]/60 group-hover:text-[#1a4d3e]"
+                          }`}
+                        />
+                      </div>
+                      <div className="text-center">
+                        <p className="text-sm font-semibold text-[#1a4d3e]">
+                          {isDragging
+                            ? "Отпустите файл здесь"
+                            : "Перетащите файл или нажмите для выбора"}
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          PDF или DOCX до {MAX_FILE_SIZE_MB} МБ
+                        </p>
+                      </div>
+                    </>
+                  )}
+                </label>
+
+                {fileError && (
+                  <p role="alert" className="text-xs text-danger flex items-center gap-1.5">
+                    <AlertCircle className="size-4 shrink-0" />
+                    {fileError.type === "type"
+                      ? "Неподдерживаемый формат. Загрузите PDF или DOCX."
+                      : `Файл больше ${MAX_FILE_SIZE_MB} МБ. Сожмите его и попробуйте снова.`}
+                  </p>
+                )}
+
+                <Button
+                  type="button"
+                  variant="flat"
+                  className="w-full bg-[#1a4d3e] text-white hover:bg-[#1a4d3e]/90 font-semibold"
+                  isPending={validate.isPending}
+                  isDisabled={!isFormValid || validate.isPending}
+                  onClick={handleValidate}
+                >
+                  {ai && !isAiStale ? "Проверить заново" : "Запустить AI-проверку"}
+                </Button>
+                {!file && isValid && (
+                  <p className="text-xs text-muted-foreground text-center">
+                    Для проверки нужен загруженный файл
+                  </p>
+                )}
+              </div>
+            </fieldset>
+          </Card>
+
+          {/* ===== Результат AI-проверки ===== */}
+          {ai && (
+            <Card
+              className={`border bg-white shadow-sm animate-in fade-in slide-in-from-bottom-4 duration-500 ${
+                isAiStale
+                  ? "border-warning/40 opacity-80"
+                  : "border-[#1a4d3e]/20"
+              }`}
+            >
+              <div className="p-8 space-y-6">
+                <div className="flex items-center gap-3">
+                  {isAiStale ? (
+                    <AlertCircle className="size-6 text-warning" />
+                  ) : (
+                    <CheckCircle2 className="size-6 text-success" />
+                  )}
+                  <h2 className="text-xl font-bold text-[#1a4d3e]">
+                    Результат AI-проверки
+                  </h2>
+                  {isAiStale && (
+                    <Chip className="bg-warning/10 text-warning-800 border border-warning/30 text-xs">
+                      Данные изменились — проверьте заново
+                    </Chip>
+                  )}
+                </div>
+
+                {/* Score */}
+                <div className="flex items-center gap-4 p-4 bg-[#f5f3ed] rounded-lg">
+                  <div className="flex-1">
+                    <div className="h-3 bg-[#1a4d3e]/10 rounded-full overflow-hidden">
+                      <div
+                        className={`h-full rounded-full transition-all duration-500 ${
+                          ai.matchScore >= 80
+                            ? "bg-success"
+                            : ai.matchScore >= 60
+                              ? "bg-warning"
+                              : "bg-danger"
+                        }`}
+                        style={{ width: `${ai.matchScore}%` }}
+                      />
+                    </div>
+                  </div>
+                  <span
+                    className={`text-2xl font-bold tabular-nums ${
+                      ai.matchScore >= 80
+                        ? "text-success"
+                        : ai.matchScore >= 60
+                          ? "text-warning"
+                          : "text-danger"
+                    }`}
+                  >
+                    {ai.matchScore}%
+                  </span>
+                </div>
+
+                {/* Alerts */}
+                <div className="grid gap-4 sm:grid-cols-2">
+                  {(
+                    [
+                      {
+                        label: "Соответствие секции",
+                        data: ai.sectionMatch,
+                      },
+                      { label: "Качество аннотации", data: ai.abstractMatch },
+                    ] as const
+                  ).map(({ label, data }) => (
+                    <div
+                      key={label}
+                      className={`p-4 rounded-lg border flex gap-3 ${
+                        data.isMatching
+                          ? "bg-success/5 border-success/20 text-success-800"
+                          : "bg-danger/5 border-danger/20 text-danger-800"
+                      }`}
+                    >
+                      {data.isMatching ? (
+                        <CheckCircle2 className="size-5 shrink-0 mt-0.5" />
+                      ) : (
+                        <AlertCircle className="size-5 shrink-0 mt-0.5" />
+                      )}
+                      <div>
+                        <p className="text-sm font-semibold">{label}</p>
+                        <p className="text-xs mt-1 opacity-80">
+                          {data.explanation}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Keywords */}
+                <div className="space-y-3 p-4 rounded-lg bg-[#f5f3ed] border border-[#1a4d3e]/10">
+                  <p className="text-sm font-semibold text-[#1a4d3e]">
+                    Извлеченные ключевые слова:
+                  </p>
+                  <div className="flex gap-2 flex-wrap">
+                    {ai.extractedKeywords.map((k) => (
+                      <Chip
+                        key={k}
+                        className="bg-white border border-[#1a4d3e]/20 text-[#1a4d3e] text-xs"
+                      >
+                        {k}
+                      </Chip>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Recommendations */}
+                <div className="space-y-3">
+                  <p className="text-sm font-semibold text-[#1a4d3e]">
+                    Рекомендации:
+                  </p>
+                  <ul className="space-y-2">
+                    {ai.feedback.map((f, i) => (
+                      <li
+                        key={i}
+                        className="flex items-start gap-3 text-sm text-muted-foreground bg-[#f5f3ed] p-3 rounded-md"
+                      >
+                        <span className="mt-1.5 size-1.5 rounded-full bg-[#d4a84b] shrink-0" />
+                        {f}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            </Card>
+          )}
+
+          {/* ===== Submit ===== */}
+          <div className="flex flex-col items-end gap-2 pt-4">
+            <Button
+              type="submit"
+              size="lg"
+              isDisabled={!isFormValid || !ai || isAiStale || submit.isPending}
+              isPending={submit.isPending}
+              className="bg-[#1a4d3e] text-white hover:bg-[#1a4d3e]/90 px-12 font-semibold text-base"
+            >
+              {submit.isPending ? "Отправка…" : "Отправить на рассмотрение жюри"}
+            </Button>
+            {submitHint && (
+              <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                <AlertCircle className="size-3.5" />
+                {submitHint}
+              </p>
+            )}
+          </div>
+        </form>
+      </div>
     </div>
   );
 }

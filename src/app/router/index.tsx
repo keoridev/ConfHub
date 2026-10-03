@@ -28,12 +28,18 @@ const router = createBrowserRouter([
         path: pathKeys.submission(),
         ...submissionPageRoute,
       },
-      { path: "talk/:talkId", ...talkPageRoute },
-      { path: "jury", ...juryPageRoute },
+      {
+        path: "talk/:talkId",
+        ...talkPageRoute,
+      },
+      {
+        path: "jury",
+        ...juryPageRoute,
+      },
     ],
   },
 ]);
 
-export function BrowserRouter() {
+export function AppRouter() {
   return <RouterProvider router={router} />;
 }
