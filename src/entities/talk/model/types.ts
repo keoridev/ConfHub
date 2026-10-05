@@ -1,3 +1,10 @@
+export interface Conference {
+  id: string;
+  title: string;
+  dateLabel: string;   
+  location: string;
+}
+
 export interface Section {
   id: string;
   title: string;
@@ -10,7 +17,7 @@ export interface Talk {
   speakerName: string;
   sectionId: string;
   hallNumber: string;
-  startTime: string; // "2026-10-05T10:00:00+06:00"
+  startTime: string; // ISO 8601, e.g., "2026-10-05T10:00:00+06:00"
   endTime: string;
   abstract: string;
   tags: string[];

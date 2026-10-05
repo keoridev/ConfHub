@@ -1,36 +1,21 @@
-// CurrentTalkCard.tsx
 import { Clock } from "lucide-react";
 import { Card, Chip } from "@heroui/react";
 import { Link } from "react-router-dom";
 import { pathKeys } from "~shared/lib";
+import type { Talk } from "~entities/talk/model/types"; // <-- ИМПОРТ ТИПА
+import { fmtTime } from "~entities/talk";
 
 interface CurrentTalkCardProps {
-  talk: {
-    id: string;
-    title: string;
-    speakerName: string;
-    startTime: string;
-    endTime: string;
-    company?: string;
-  };
+  talk: Talk;
   variant: "current" | "next";
   hallName: string;
 }
-
-const fmtTime = (iso: string) =>
-  iso
-    ? new Date(iso).toLocaleTimeString("ru-RU", {
-        hour: "2-digit",
-        minute: "2-digit",
-      })
-    : "—";
 
 const getTimeRemaining = (endTime: string) => {
   const end = new Date(endTime).getTime();
   const now = new Date().getTime();
   const diff = Math.max(0, end - now);
-  const minutes = Math.floor(diff / 60000);
-  return minutes;
+  return Math.floor(diff / 60000);
 };
 
 export function CurrentTalkCard({
@@ -41,8 +26,20 @@ export function CurrentTalkCard({
   const isCurrent = variant === "current";
   const minutesLeft = isCurrent ? getTimeRemaining(talk.endTime) : 30;
 
+  // Динамический расчёт прогресса на основе реальной длительности доклада
+  const progressPercentage = isCurrent ? (() => {
+    const start = new Date(talk.startTime).getTime();
+    const end = new Date(talk.endTime).getTime();
+    const now = new Date().getTime();
+    const totalDuration = end - start;
+    const elapsed = now - start;
+    
+    if (totalDuration <= 0) return 100;
+    return Math.max(0, Math.min(100, (elapsed / totalDuration) * 100));
+  })() : 0;
+
   return (
-    <Link to={pathKeys.talk.byId(talk.id)}>
+    <Link to={pathKeys.talk.build(talk.id)}>
       <Card
         className={`p-6 rounded-xl transition-all duration-300 hover:shadow-lg ${
           isCurrent
@@ -61,8 +58,8 @@ export function CurrentTalkCard({
               }`}
             >
               {isCurrent
-                ? `СЕЙЧАС · ОСТАЛОСЬ ${minutesLeft} МИНУТ`
-                : `ДАЛЕЕ · ЧЕРЕЗ ${minutesLeft} МИНУТ`}
+                ? `СЕЙЧАС · ОСТАЛОСЬ ${minutesLeft} МИН`
+                : `ДАЛЕЕ · ЧЕРЕЗ ${minutesLeft} МИН`}
             </span>
           </div>
         </div>
@@ -80,7 +77,7 @@ export function CurrentTalkCard({
             isCurrent ? "text-[#1a4d3e]/80" : "text-muted-foreground"
           }`}
         >
-          {talk.speakerName} {talk.company && `· ${talk.company}`}
+          {talk.speakerName}
         </p>
 
         <div className="flex items-center justify-between">
@@ -107,9 +104,7 @@ export function CurrentTalkCard({
           <div className="mt-4 h-1 bg-[#1a4d3e]/20 rounded-full overflow-hidden">
             <div
               className="h-full bg-[#1a4d3e] rounded-full transition-all duration-1000"
-              style={{
-                width: `${Math.max(0, Math.min(100, (1 - minutesLeft / 45) * 100))}%`,
-              }}
+              style={{ width: `${progressPercentage}%` }}
             />
           </div>
         )}

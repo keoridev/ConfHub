@@ -11,7 +11,7 @@ import {
   useValidateMutation,
 } from "~entities/talk/api/queries";
 import { pathKeys } from "~shared/lib";
-import { sections } from "~shared/mocks/demoServer";
+import { mockSections } from "~shared/mocks/mockData";
 
 import {
   Card,
@@ -148,9 +148,10 @@ export function SubmissionPage() {
       {
         onSuccess: () => {
           toast.success("Заявка успешно отправлена жюри!");
-          navigate(pathKeys.conference.byId("demo"));
+          navigate(pathKeys.conference.build("demo"));
         },
-        onError: () => toast.error("Не удалось отправить заявку. Попробуйте ещё раз."),
+        onError: () =>
+          toast.error("Не удалось отправить заявку. Попробуйте ещё раз."),
       },
     );
   };
@@ -212,7 +213,11 @@ export function SubmissionPage() {
       </div>
 
       <div className="max-w-4xl mx-auto px-4 py-10 space-y-8">
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-8" noValidate>
+        <form
+          onSubmit={handleSubmit(onSubmit)}
+          className="space-y-8"
+          noValidate
+        >
           {/* ===== Шаг 1: Информация ===== */}
           <Card className="border border-[#1a4d3e]/20 bg-[#f5f3ed] shadow-sm">
             <fieldset className="p-8 space-y-6">
@@ -292,8 +297,12 @@ export function SubmissionPage() {
                     </Select.Trigger>
                     <Select.Popover>
                       <ListBox>
-                        {sections.map((s) => (
-                          <ListBox.Item key={s.id} id={s.id} textValue={s.title}>
+                        {mockSections.map((s) => (
+                          <ListBox.Item
+                            key={s.id}
+                            id={s.id}
+                            textValue={s.title}
+                          >
                             {s.title}
                           </ListBox.Item>
                         ))}
@@ -436,7 +445,10 @@ export function SubmissionPage() {
                 </label>
 
                 {fileError && (
-                  <p role="alert" className="text-xs text-danger flex items-center gap-1.5">
+                  <p
+                    role="alert"
+                    className="text-xs text-danger flex items-center gap-1.5"
+                  >
                     <AlertCircle className="size-4 shrink-0" />
                     {fileError.type === "type"
                       ? "Неподдерживаемый формат. Загрузите PDF или DOCX."
@@ -452,7 +464,9 @@ export function SubmissionPage() {
                   isDisabled={!isFormValid || validate.isPending}
                   onClick={handleValidate}
                 >
-                  {ai && !isAiStale ? "Проверить заново" : "Запустить AI-проверку"}
+                  {ai && !isAiStale
+                    ? "Проверить заново"
+                    : "Запустить AI-проверку"}
                 </Button>
                 {!file && isValid && (
                   <p className="text-xs text-muted-foreground text-center">
@@ -599,7 +613,9 @@ export function SubmissionPage() {
               isPending={submit.isPending}
               className="bg-[#1a4d3e] text-white hover:bg-[#1a4d3e]/90 px-12 font-semibold text-base"
             >
-              {submit.isPending ? "Отправка…" : "Отправить на рассмотрение жюри"}
+              {submit.isPending
+                ? "Отправка…"
+                : "Отправить на рассмотрение жюри"}
             </Button>
             {submitHint && (
               <p className="text-xs text-muted-foreground flex items-center gap-1.5">

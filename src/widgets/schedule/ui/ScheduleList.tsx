@@ -1,9 +1,10 @@
 import { Card, Skeleton } from "@heroui/react";
 import { ScheduleCard } from "./ScheduleCard";
+import type { Section, Talk } from "~entities/talk/model/types";
 
 interface ScheduleListProps {
-  talks: any[];
-  sections: any[];
+  talks: Talk[];
+  sections: Section[];
   isLoading: boolean;
   viewMode: "card" | "list";
 }

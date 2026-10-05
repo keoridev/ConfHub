@@ -1,53 +1,83 @@
-// ~entities/talk/api/queries.ts
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   createTalk,
   getAIResult,
+  getConference,
   getTalk,
+  listSections,
   listTalks,
   reviewTalk,
   runAIValidation,
 } from "~shared/mocks/demoServer";
-import type { Talk } from "../model/types";
+import type { AIValidationResult, Conference, Section, Talk } from "../model/types";
+
+// === Query Keys ===
+export const conferenceKeys = {
+  all: ["conferences"] as const,
+  detail: (id: string) => [...conferenceKeys.all, id] as const,
+};
+
+export const sectionKeys = {
+  all: ["sections"] as const,
+};
 
 export const talkKeys = {
   all: ["talks"] as const,
-  detail: (id: string) => ["talks", "detail", id] as const,
-  ai: (id: string) => ["talks", "ai", id] as const,
+  detail: (id: string) => [...talkKeys.all, "detail", id] as const,
+  ai: (id: string) => [...talkKeys.all, "ai", id] as const,
 };
 
+// === Queries ===
+export function useConferenceQuery(id: string) {
+  return useQuery<Conference>({ 
+    queryKey: conferenceKeys.detail(id), 
+    queryFn: () => getConference(id) 
+  });
+}
+
+export function useSectionsQuery() {
+  return useQuery<Section[]>({ 
+    queryKey: sectionKeys.all, 
+    queryFn: listSections 
+  });
+}
+
 export function useTalksQuery() {
-  return useQuery({ queryKey: talkKeys.all, queryFn: listTalks });
+  return useQuery<Talk[]>({ 
+    queryKey: talkKeys.all, 
+    queryFn: listTalks 
+  });
 }
 
 export function useTalkQuery(id: string) {
-  return useQuery({
+  return useQuery<Talk>({
     queryKey: talkKeys.detail(id),
     queryFn: () => getTalk(id),
   });
 }
 
 export function useAIResultQuery(talkId: string) {
-  return useQuery({
+  return useQuery<AIValidationResult>({
     queryKey: talkKeys.ai(talkId),
     queryFn: () => getAIResult(talkId),
+    // Опционально: enabled: !!talkId, если talkId может быть пустым
   });
 }
 
-type SubmitInput = Pick<
-  Talk,
-  "title" | "speakerName" | "sectionId" | "abstract" | "tags"
->;
+// === Mutations ===
+type SubmitTalkInput = Pick<Talk, "title" | "speakerName" | "sectionId" | "abstract" | "tags">;
 
 export function useSubmitTalkMutation() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (input: SubmitInput) => createTalk(input),
-    onSuccess: () => qc.invalidateQueries({ queryKey: talkKeys.all }),
+    mutationFn: (input: SubmitTalkInput) => createTalk(input),
+    onSuccess: () => {
+      // Инвалидируем весь список, чтобы подтянуть новый доклад
+      qc.invalidateQueries({ queryKey: talkKeys.all });
+    },
   });
 }
 
-// ОБНОВЛЕНО: Добавили опциональный параметр updates
 export function useReviewTalkMutation() {
   const qc = useQueryClient();
   return useMutation({
@@ -60,16 +90,22 @@ export function useReviewTalkMutation() {
       status: "approved" | "rejected";
       updates?: Partial<Talk>;
     }) => reviewTalk(id, status, updates),
-    onSuccess: () => qc.invalidateQueries({ queryKey: talkKeys.all }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: talkKeys.all });
+      // Хорошая практика: инвалидировать и конкретный элемент, если он открыт
+    },
   });
 }
 
+type ValidateMutationVariables = { talkId: string };
+
 export function useValidateMutation() {
   const qc = useQueryClient();
-  return useMutation({
+  return useMutation<AIValidationResult, Error, ValidateMutationVariables>({
     mutationFn: runAIValidation,
-    onSuccess: (result, vars) => {
-      if (vars.talkId) qc.setQueryData(talkKeys.ai(vars.talkId), result);
+    onSuccess: (result, variables) => {
+      // Функциональное обновление безопаснее, чем прямая перезапись
+      qc.setQueryData(talkKeys.ai(variables.talkId), result);
     },
   });
 }

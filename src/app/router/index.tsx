@@ -18,22 +18,22 @@ const router = createBrowserRouter([
     children: [
       {
         index: true,
-        element: <Navigate to={pathKeys.conference.byId("demo")} replace />,
+        element: <Navigate to={pathKeys.conference.build("demo")} replace />,
       },
       {
-        path: pathKeys.conference.root(),
+        path: pathKeys.conference.route,
         ...conferencePageRoute,
       },
       {
-        path: pathKeys.submission(),
+        path: pathKeys.submission,
         ...submissionPageRoute,
       },
       {
-        path: "talk/:talkId",
+        path: pathKeys.talk.route,
         ...talkPageRoute,
       },
       {
-        path: "jury",
+        path: pathKeys.jury,
         ...juryPageRoute,
       },
     ],

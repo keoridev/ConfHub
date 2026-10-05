@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { toast } from "sonner";
-import { Check, X, } from "lucide-react";
+import { Check, X } from "lucide-react";
 
 import {
   useAIResultQuery,
@@ -8,7 +8,7 @@ import {
   useTalksQuery,
 } from "~entities/talk/api/queries";
 import type { Talk } from "~entities/talk/model/types";
-import { sections } from "~shared/mocks/demoServer";
+import { mockSections } from "~shared/mocks/mockData";
 
 // Импорты из HeroUI v3
 import {
@@ -26,7 +26,7 @@ import {
 function JuryCard({ talk }: { talk: Talk }) {
   const { data: ai, isLoading: aiLoading } = useAIResultQuery(talk.id);
   const review = useReviewTalkMutation();
-  const section = sections.find((s) => s.id === talk.sectionId);
+  const section = mockSections.find((s) => s.id === talk.sectionId); 
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [hallNumber, setHallNumber] = useState(talk.hallNumber || "");
@@ -36,7 +36,7 @@ function JuryCard({ talk }: { talk: Talk }) {
   const handleReject = () => {
     review.mutate(
       { id: talk.id, status: "rejected" },
-      { onSuccess: () => toast.error("Заявка отклонена") }
+      { onSuccess: () => toast.error("Заявка отклонена") },
     );
   };
 
@@ -61,7 +61,7 @@ function JuryCard({ talk }: { talk: Talk }) {
           toast.success("Заявка одобрена и добавлена в расписание");
           setIsDialogOpen(false);
         },
-      }
+      },
     );
   };
 
@@ -81,7 +81,7 @@ function JuryCard({ talk }: { talk: Talk }) {
               {section?.title}
             </Chip>
           </div>
-          
+
           <p className="text-base text-default-600 font-medium">
             {talk.speakerName}
           </p>
@@ -106,9 +106,9 @@ function JuryCard({ talk }: { talk: Talk }) {
                   {ai.matchScore}%
                 </span>
               </div>
-              <ProgressBar 
-                value={ai.matchScore} 
-                color={ai.matchScore >= 80 ? "success" : "warning"} 
+              <ProgressBar
+                value={ai.matchScore}
+                color={ai.matchScore >= 80 ? "success" : "warning"}
                 size="sm"
               >
                 <ProgressBar.Track>
@@ -157,10 +157,11 @@ function JuryCard({ talk }: { talk: Talk }) {
                   <Modal.Header>
                     <Modal.Heading>Назначение доклада</Modal.Heading>
                     <p className="text-sm text-default-500 font-normal mt-1">
-                      Укажите аудиторию и время для утвержденного доклада «{talk.title}».
+                      Укажите аудиторию и время для утвержденного доклада «
+                      {talk.title}».
                     </p>
                   </Modal.Header>
-                  
+
                   <Modal.Body className="px-6 py-2 space-y-4">
                     <TextField isRequired>
                       <Label>Аудитория</Label>
@@ -191,16 +192,16 @@ function JuryCard({ talk }: { talk: Talk }) {
                   </Modal.Body>
 
                   <Modal.Footer>
-                    <Button 
-                      variant="tertiary" 
+                    <Button
+                      variant="tertiary"
                       onPress={close}
                       isDisabled={review.isPending}
                     >
                       Отмена
                     </Button>
-                    <Button 
-                      variant="primary" 
-                      type="submit" 
+                    <Button
+                      variant="primary"
+                      type="submit"
                       isPending={review.isPending}
                     >
                       {!review.isPending && <Check className="size-4" />}

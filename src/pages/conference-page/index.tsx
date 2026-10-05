@@ -1,15 +1,15 @@
 import { Search } from "lucide-react";
 import { useMemo, useState } from "react";
 
+import { CurrentTalkCard } from "~widgets/schedule/ui/CurrentTalk"; 
 import { ScheduleList } from "~widgets/schedule/ui/ScheduleList";
 import { ViewToggle } from "~widgets/schedule/ui/ViewToggle";
-import { CurrentTalkCard } from "~widgets/schedule/ui/TalkCard"; // Убедитесь, что путь верный
 
-import { mockSections } from "~shared/mocks/schedule";
 import { useTalksQuery } from "~entities/talk/api/queries";
 import { useTalkFilters } from "~features/filter-talk/model/useTalkFilters";
+import { mockSections } from "~shared/mocks/schedule";
 
-import { Input, InputGroup, Select, ListBox, Card, Chip } from "@heroui/react";
+import { Card, Chip, Input, InputGroup, ListBox, Select } from "@heroui/react";
 
 export function ConferencePage() {
   const { data: talks = [], isLoading, isError } = useTalksQuery();

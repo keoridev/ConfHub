@@ -1,14 +1,16 @@
 export const pathKeys = {
   root: "/",
-
-  login: () => "/login",
-  submission: () => "/submission",
+  login: "/login",
+  submission: "/submission",
+  jury: "/jury",
+  
   conference: {
-    root: () => "/conference/:conferenceId",
-    byId: (conferenceId: string) => `/conference/${conferenceId}`,
+    route: "/conference/:conferenceId",
+    build: (conferenceId: string) => `/conference/${conferenceId}`,
   },
+  
   talk: {
-    byId: (talkId: string) => `/talk/${talkId}`,
+    route: "/talk/:talkId",
+    build: (talkId: string) => `/talk/${talkId}`,
   },
-  jury: () => "/jury",
 } as const;

@@ -4,9 +4,9 @@ import { cn } from "~app/lib/utils";
 import { pathKeys } from "~shared/lib";
 
 const links = [
-  { to: pathKeys.conference.byId("demo"), label: "Программа", icon: CalendarDays },
-  { to: pathKeys.submission(), label: "Подать заявку", icon: FilePenLine },
-  { to: pathKeys.jury(), label: "Жюри", icon: Users },
+  { to: pathKeys.conference.build("demo"), label: "Программа", icon: CalendarDays },
+  { to: pathKeys.submission, label: "Подать заявку", icon: FilePenLine },
+  { to: pathKeys.jury, label: "Жюри", icon: Users },
 ];
 
 export function AppNavigation() {
@@ -50,7 +50,7 @@ export function AppNavigation() {
       {/* ДЕСКТОПНАЯ НАВИГАЦИЯ (Верхний Header) */}
       <header className="hidden md:flex sticky top-0 z-40 w-full bg-[#f5f3ed]/80 backdrop-blur-md border-b border-[#1a4d3e]/10">
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between w-full">
-          <NavLink to={pathKeys.conference.byId("demo")} className="flex items-center gap-3 group">
+          <NavLink to={pathKeys.conference.build("demo")} className="flex items-center gap-3 group">
             <div className="w-9 h-9 rounded-lg bg-[#1a4d3e] flex items-center justify-center shadow-sm group-hover:shadow-md transition-shadow">
               <Sparkles className="size-4 text-[#d4a84b]" />
             </div>

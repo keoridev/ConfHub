@@ -2,44 +2,23 @@ import { Clock, MapPin } from "lucide-react";
 import { Card, Chip } from "@heroui/react";
 import { Link } from "react-router-dom";
 import { pathKeys } from "~shared/lib";
+import type { Section, Talk } from "~entities/talk/model/types"; // <-- ИМПОРТ ТИПОВ
+import { fmtTime } from "~entities/talk";
 
 interface ScheduleCardProps {
-  talk: {
-    id: string;
-    title: string;
-    speakerName: string;
-    startTime: string;
-    endTime: string;
-    hallNumber?: string;
-    sectionId: string;
-    tags: string[];
-    company?: string;
-  };
-  section?: {
-    id: string;
-    title: string;
-    color: string;
-  };
+  talk: Talk;
+  section?: Section;
   isCompact?: boolean;
 }
-
-const fmtTime = (iso: string) =>
-  iso
-    ? new Date(iso).toLocaleTimeString("ru-RU", {
-        hour: "2-digit",
-        minute: "2-digit",
-      })
-    : "—";
 
 export function ScheduleCard({
   talk,
   section,
   isCompact = false,
 }: ScheduleCardProps) {
-  // --- РЕЖИМ СПИСКА (Compact) ---
   if (isCompact) {
     return (
-      <Link to={pathKeys.talk.byId(talk.id)}>
+      <Link to={pathKeys.talk.build(talk.id)}>
         <div className="group flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6 p-5 bg-white rounded-xl border border-[#1a4d3e]/10 hover:border-[#d4a84b]/50 hover:shadow-md transition-all duration-300">
           {/* Time Block */}
           <div className="flex-shrink-0 flex sm:flex-col items-center sm:items-start gap-2 sm:gap-1 min-w-[100px]">
@@ -52,7 +31,6 @@ export function ScheduleCard({
             </div>
           </div>
 
-          {/* Divider for mobile */}
           <div className="w-full h-px bg-[#1a4d3e]/10 sm:hidden" />
 
           {/* Content Block */}
@@ -64,14 +42,6 @@ export function ScheduleCard({
               <span className="font-semibold text-[#1a4d3e]/80">
                 {talk.speakerName}
               </span>
-              {talk.company && (
-                <>
-                  <span className="text-muted-foreground hidden sm:inline">
-                    ·
-                  </span>
-                  <span className="text-muted-foreground">{talk.company}</span>
-                </>
-              )}
               {talk.hallNumber && (
                 <>
                   <span className="text-muted-foreground hidden sm:inline">
@@ -108,7 +78,7 @@ export function ScheduleCard({
 
   // --- РЕЖИМ КАРТОЧЕК (Full) ---
   return (
-    <Link to={pathKeys.talk.byId(talk.id)}>
+    <Link to={pathKeys.talk.build(talk.id)}>
       <Card className="group relative border border-[#1a4d3e]/10 bg-white hover:border-[#d4a84b]/40 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 h-full flex flex-col">
         {section && (
           <div
@@ -148,12 +118,6 @@ export function ScheduleCard({
               <span className="font-semibold text-[#1a4d3e]/70">
                 {talk.speakerName}
               </span>
-              {talk.company && (
-                <>
-                  <span>·</span>
-                  <span>{talk.company}</span>
-                </>
-              )}
             </div>
           </div>
 
