@@ -1,0 +1,88 @@
+import axios, { AxiosInstance, AxiosRequestConfig } from 'axios';
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
+
+class ApiClient {
+  private instance: AxiosInstance;
+  private token: string | null = null;
+
+  constructor() {
+    this.instance = axios.create({
+      baseURL: API_URL,
+      timeout: 30000,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    this.token = localStorage.getItem('token');
+
+    // Интерсептор запросов
+    this.instance.interceptors.request.use(
+      (config) => {
+        if (this.token) {
+          config.headers.Authorization = `Bearer ${this.token}`;
+        }
+        return config;
+      },
+      (error) => Promise.reject(error)
+    );
+
+    // Интерсептор ответов
+    this.instance.interceptors.response.use(
+      (response) => response,
+      (error) => {
+        if (error.response?.status === 401) {
+          this.logout();
+          window.location.href = '/login';
+        }
+        return Promise.reject(error);
+      }
+    );
+  }
+
+  setToken(token: string) {
+    this.token = token;
+    localStorage.setItem('token', token);
+  }
+
+  logout() {
+    this.token = null;
+    localStorage.removeItem('token');
+  }
+
+  // HTTP методы
+  get<T>(url: string, config?: AxiosRequestConfig) {
+    return this.instance.get<T>(url, config);
+  }
+
+  post<T>(url: string, data?: any, config?: AxiosRequestConfig) {
+    return this.instance.post<T>(url, data, config);
+  }
+
+  patch<T>(url: string, data?: any, config?: AxiosRequestConfig) {
+    return this.instance.patch<T>(url, data, config);
+  }
+
+  delete<T>(url: string, config?: AxiosRequestConfig) {
+    return this.instance.delete<T>(url, config);
+  }
+
+  // Для загрузки файлов
+  upload<T>(url: string, file: File, onProgress?: (progress: number) => void) {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    return this.instance.post<T>(url, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      onUploadProgress: (progressEvent) => {
+        if (progressEvent.total && onProgress) {
+          const progress = (progressEvent.loaded / progressEvent.total) * 100;
+          onProgress(progress);
+        }
+      },
+    });
+  }
+}
+
+export const apiClient = new ApiClient();

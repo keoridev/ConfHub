@@ -1,0 +1,59 @@
+export interface User {
+  id: number;
+  login: string;
+  fullName: string;
+  groupName: string;
+  role: 'student' | 'jury' | 'admin';
+  mustChangePassword: boolean;
+}
+
+export interface Section {
+  id: number;
+  conferenceId: number;
+  title: string;
+  sortOrder: number;
+}
+
+export interface Room {
+  id: number;
+  conferenceId: number;
+  name: string;
+}
+
+export interface Talk {
+  id: number;
+  conferenceId: number;
+  sectionId: number;
+  authorId: number;
+  title: string;
+  speakerName: string;
+  gradeOrGroup: string;
+  supervisor: string;
+  abstract: string;
+  tags: string[];
+  status: 'pending_review' | 'approved' | 'rejected' | 'needs_revision';
+  section: Section;
+  room?: Room; // Вместо hallNumber
+  startTime?: string;
+  endTime?: string;
+  createdAt: string;
+  updatedAt: string;
+  aiAttempts: number;
+  aiResult?: {
+    id: number;
+    attemptNo: number;
+    result: {
+      sectionFit: { score: number; verdict: string; comment: string };
+      annotationMatch: { score: number; verdict: string; comment: string };
+      issues: Array<{ type: string; severity: string; description: string }>;
+      suggestions: string[];
+      overallVerdict: string;
+    };
+  };
+  document?: {
+    id: number;
+    originalName: string;
+    mime: string;
+    sizeBytes: number;
+  };
+}
