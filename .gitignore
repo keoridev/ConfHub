@@ -1,1 +1,8 @@
-Add-Content .gitignore "backend/"
+# Backend
+backend/
+
+# Frontend
+frontend/
+
+# Database
+confhub-db/
