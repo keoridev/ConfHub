@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "~shared/lib/api/client";
-import type { Talk, Section, Room } from "../model/types";
+import type { Talk, Section, Room, User } from "../model/types";
 
 export const queryKeys = {
   talks: {
@@ -21,17 +21,72 @@ export function useLoginMutation() {
   return useMutation({
     mutationFn: (data: { login: string; password: string }) =>
       apiClient
-        .post<{ user: any; token?: string }>("/auth/login", data)
+        .post<{ user: User; token?: string }>("/auth/login", data)
         .then((res) => res.data),
     onSuccess: (data) => {
       // Сохраняем данные пользователя в кэш
       qc.setQueryData(queryKeys.auth.user, data.user);
-      // Сохраняем токен, если он приходит с бэкенда
+      // Сохраняем токен в клиенте и хранилище
       if (data.token) {
-        localStorage.setItem("token", data.token);
+        apiClient.setToken(data.token);
+      }
+      if (data.user) {
+        localStorage.setItem("user", JSON.stringify(data.user));
       }
     },
   });
+}
+
+export function useCurrentUserQuery() {
+  return useQuery({
+    queryKey: queryKeys.auth.user,
+    queryFn: async (): Promise<User | null> => {
+      const token = apiClient.getToken();
+      if (!token) {
+        const saved = localStorage.getItem("user");
+        if (saved) {
+          try {
+            return JSON.parse(saved) as User;
+          } catch {}
+        }
+        return null;
+      }
+      try {
+        const res = await apiClient.get<User>("/auth/me");
+        if (res.data) {
+          localStorage.setItem("user", JSON.stringify(res.data));
+          return res.data;
+        }
+      } catch {
+        const saved = localStorage.getItem("user");
+        if (saved) {
+          try {
+            return JSON.parse(saved) as User;
+          } catch {}
+        }
+      }
+      return null;
+    },
+    initialData: () => {
+      const saved = localStorage.getItem("user");
+      if (saved) {
+        try {
+          return JSON.parse(saved) as User;
+        } catch {}
+      }
+      return null;
+    },
+    staleTime: 1000 * 60 * 5,
+  });
+}
+
+export function useLogout() {
+  const qc = useQueryClient();
+  return () => {
+    apiClient.logout();
+    qc.setQueryData(queryKeys.auth.user, null);
+    qc.removeQueries({ queryKey: queryKeys.auth.user });
+  };
 }
 
 export function useCreateTalkMutation() {
@@ -82,8 +137,9 @@ export function useReviewTalkMutation() {
       apiClient.patch(`/jury/talks/${id}/review`, data).then((res) => res.data),
     onSuccess: (_, { id }) => {
       qc.invalidateQueries({ queryKey: queryKeys.talks.detail(id) });
-      // Инвалидируем список, чтобы карточка исчезла из очереди
+      // Инвалидируем очередь жюри и публичные списки
       qc.invalidateQueries({ queryKey: ["talks", "jury-queue"] });
+      qc.invalidateQueries({ queryKey: queryKeys.talks.all });
     },
   });
 }
@@ -113,13 +169,13 @@ export function useTalksQuery(conferenceId: number = 1, status?: string) {
 }
 
 // Жюри получает список через общий эндпоинт конференций с фильтром статуса
-export function useJuryQueueQuery(conferenceId: number = 1) {
+export function useJuryQueueQuery(conferenceId: number = 1, status: string = "pending_review") {
   return useQuery({
-    queryKey: ["talks", "jury-queue", conferenceId],
+    queryKey: ["talks", "jury-queue", conferenceId, status],
     queryFn: () =>
       apiClient
         .get<Talk[]>(`/conferences/${conferenceId}/talks`, {
-          params: { status: "pending_review" },
+          params: { status },
         })
         .then((res) => res.data),
   });
@@ -140,5 +196,30 @@ export function useRoomsQuery(conferenceId: number = 1) {
       apiClient
         .get<Room[]>(`/rooms?conferenceId=${conferenceId}`)
         .then((res) => res.data),
+  });
+}
+
+// Получение AI-результата для конкретного доклада (используется в JuryPage)
+export function useAIResultQuery(talkId: number) {
+  return useQuery({
+    queryKey: ["talks", "ai-result", talkId] as const,
+    queryFn: () =>
+      apiClient
+        .get(`/talks/${talkId}/ai-result`)
+        .then((res) => res.data),
+    enabled: !!talkId,
+    retry: false,
+  });
+}
+
+// Получение полной информации о докладе для жюри
+export function useJuryTalkQuery(talkId: number) {
+  return useQuery({
+    queryKey: ["talks", "jury-detail", talkId] as const,
+    queryFn: () =>
+      apiClient
+        .get<Talk>(`/jury/talks/${talkId}`)
+        .then((res) => res.data),
+    enabled: !!talkId,
   });
 }

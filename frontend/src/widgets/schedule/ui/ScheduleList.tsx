@@ -54,7 +54,8 @@ export function ScheduleList({
       }
     >
       {talks.map((talk, index) => {
-        const section = sections.find((s) => s.id === talk.sectionId);
+        const secId = talk.sectionId ?? talk.section?.id;
+        const section = sections.find((s) => s.id === secId) || talk.section;
         return (
           <div
             key={talk.id}

@@ -1,19 +1,19 @@
 import type { AIValidationResult, Section, Talk } from "~entities/talk/model/types";
 
 export const mockSections: Section[] = [
-  { id: "it", title: "IT и ИИ", color: "#0589c7" },
-  { id: "eng", title: "Инженерия", color: "#72c200" },
-  { id: "eco", title: "Экология", color: "#0D9488" },
+  { id: 1, title: "IT и ИИ", color: "#0589c7", conferenceId: 1, sortOrder: 1 },
+  { id: 2, title: "Инженерия", color: "#72c200", conferenceId: 1, sortOrder: 2 },
+  { id: 3, title: "Экология", color: "#0D9488", conferenceId: 1, sortOrder: 3 },
 ];
 
 // Объединяем все тестовые доклады в один массив
-export const mockTalks: Talk[] = [
+export const mockTalks = [
   {
-    id: "t1",
+    id: 101,
     title: "Применение LLM для анализа научных текстов",
     speakerName: "Данилов А.С.",
-    sectionId: "it",
-    hallNumber: "302",
+    sectionId: 1,
+    room: { id: 1, conferenceId: 1, name: "302" },
     startTime: "2026-10-05T10:00:00+06:00",
     endTime: "2026-10-05T10:30:00+06:00",
     abstract: "Обзор подходов к автоматической классификации и рецензированию статей с помощью больших языковых моделей.",
@@ -21,11 +21,10 @@ export const mockTalks: Talk[] = [
     status: "approved",
   },
   {
-    id: "p1",
+    id: 102,
     title: "Нейросетевые методы прогнозирования отказов оборудования",
     speakerName: "Козлов М.А.",
-    sectionId: "eng",
-    hallNumber: "",
+    sectionId: 2,
     startTime: "",
     endTime: "",
     abstract: "Применение LSTM-сетей для предиктивной аналитики в промышленности.",
@@ -33,11 +32,11 @@ export const mockTalks: Talk[] = [
     status: "pending_review",
   },
   {
-    id: "t2",
+    id: 103,
     title: "Оптимизация микросервисной архитектуры с помощью eBPF",
     speakerName: "Сидоров В.Е.",
-    sectionId: "it",
-    hallNumber: "304",
+    sectionId: 1,
+    room: { id: 2, conferenceId: 1, name: "304" },
     startTime: "2026-10-05T11:00:00+06:00",
     endTime: "2026-10-05T11:30:00+06:00",
     abstract: "Практический опыт внедрения eBPF для низкоуровневого мониторинга трафика.",
@@ -45,17 +44,16 @@ export const mockTalks: Talk[] = [
     status: "approved",
   },
   {
-    id: "r1",
+    id: 104,
     title: "Использование квантовых вычислений для взлома RSA",
     speakerName: "Алексеев К.В.",
-    sectionId: "it",
-    hallNumber: "",
+    sectionId: 1,
     startTime: "",
     endTime: "",
     abstract: "Теоретический обзор алгоритма Шора.",
     tags: ["Кванты", "Безопасность"],
     status: "rejected",
   },
-];
+] as unknown as Talk[];
 
-export const initialAIResults = new Map<string, AIValidationResult>();
+export const initialAIResults = new Map<number, AIValidationResult>();

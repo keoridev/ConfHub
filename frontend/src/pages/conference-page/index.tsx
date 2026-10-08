@@ -6,20 +6,22 @@ import { ScheduleList } from "~widgets/schedule/ui/ScheduleList";
 import { ViewToggle } from "~widgets/schedule/ui/ViewToggle";
 
 import { useTalkFilters } from "~features/filter-talk/model/useTalkFilters";
-import { useTalksQuery } from "~entities/talk/api/queries"; // <-- ИСПРАВЛЕНО: правильный импорт
+import { useTalksQuery, useSectionsQuery } from "~entities/talk/api/queries";
 import { mockSections } from "~shared/mocks/schedule";
 
 import { Card, Chip, Input, InputGroup, ListBox, Select } from "@heroui/react";
 
 export function ConferencePage() {
   const { data: talks = [], isLoading, isError } = useTalksQuery();
+  const { data: serverSections = [] } = useSectionsQuery();
+  const sections = serverSections.length > 0 ? serverSections : mockSections;
   const f = useTalkFilters(talks);
   const [viewMode, setViewMode] = useState<"card" | "list">("list");
 
   const halls = useMemo(
     () =>
       [
-        ...new Set(talks.map((t) => t.hallNumber).filter(Boolean)),
+        ...new Set(talks.map((t) => t.room?.name).filter(Boolean)),
       ].sort() as string[],
     [talks],
   );
@@ -108,7 +110,7 @@ export function ConferencePage() {
                 {["Дизайн", "Интерфейсы", "Системы", "Код"].map((tag) => (
                   <Chip
                     key={tag}
-                    variant="bordered"
+                    variant="soft"
                     className="border-white/30 text-white bg-transparent hover:bg-white/10 transition-colors"
                   >
                     {tag}
@@ -160,32 +162,21 @@ export function ConferencePage() {
                     placeholder="Тема, спикер или тег..."
                     value={f.search}
                     onChange={(e) => f.setSearch(e.target.value)}
-                    classNames={{
-                      base: "w-full",
-                      inputWrapper:
-                        "bg-[#f5f3ed] border-2 border-[#1a4d3e]/10 hover:border-[#d4a84b]/50 focus-within:border-[#d4a84b] focus-within:ring-4 focus-within:ring-[#d4a84b]/10 transition-all duration-200 rounded-xl h-12",
-                      input:
-                        "text-[#1a4d3e] placeholder:text-muted-foreground/60 text-base font-medium",
-                    }}
+                    className="w-full bg-[#f5f3ed] border-2 border-[#1a4d3e]/10 hover:border-[#d4a84b]/50 focus-within:border-[#d4a84b] focus-within:ring-4 focus-within:ring-[#d4a84b]/10 transition-all duration-200 rounded-xl h-12 text-[#1a4d3e] placeholder:text-muted-foreground/60 text-base font-medium"
                   />
                 </InputGroup>
 
                 <Select
-                  selectedKeys={f.hall ? [f.hall] : ["all"]}
-                  onSelectionChange={(keys) => {
-                    const val = Array.from(keys)[0] as string;
+                  selectedKey={f.hall || "all"}
+                  onSelectionChange={(key) => {
+                    const val = String(key);
                     f.setHall(val === "all" ? "" : val);
                   }}
-                  className="w-full lg:w-56"
+                  className="w-full lg:w-56 bg-[#f5f3ed] border-2 border-[#1a4d3e]/10 hover:border-[#d4a84b]/50 data-[open=true]:border-[#d4a84b] data-[open=true]:ring-4 data-[open=true]:ring-[#d4a84b]/10 transition-all duration-200 rounded-xl h-12 text-[#1a4d3e] font-medium"
                   aria-label="Фильтр по залу"
-                  classNames={{
-                    trigger:
-                      "bg-[#f5f3ed] border-2 border-[#1a4d3e]/10 hover:border-[#d4a84b]/50 data-[open=true]:border-[#d4a84b] data-[open=true]:ring-4 data-[open=true]:ring-[#d4a84b]/10 transition-all duration-200 rounded-xl h-12",
-                    value: "text-[#1a4d3e] font-medium",
-                  }}
                 >
                   <Select.Trigger>
-                    <Select.Value placeholder="Все залы" />
+                    <Select.Value />
                     <Select.Indicator />
                   </Select.Trigger>
                   <Select.Popover>
@@ -209,7 +200,7 @@ export function ConferencePage() {
 
               <div className="flex gap-2 flex-wrap">
                 <Chip
-                  variant="flat"
+                  variant="soft"
                   className={`cursor-pointer px-4 py-5 h-auto font-semibold transition-all ${
                     f.sectionId === null
                       ? "bg-[#1a4d3e] text-white shadow-md"
@@ -219,12 +210,12 @@ export function ConferencePage() {
                 >
                   Все секции
                 </Chip>
-                {mockSections.map((s) => (
+                {sections.map((s) => (
                   <Chip
                     key={s.id}
-                    variant="flat"
+                    variant="soft"
                     className={`cursor-pointer px-4 py-5 h-auto font-semibold transition-all ${
-                      f.sectionId === s.id
+                      String(f.sectionId) === String(s.id)
                         ? "bg-[#1a4d3e] text-white shadow-md"
                         : "bg-[#f5f3ed] text-[#1a4d3e] border border-[#1a4d3e]/20 hover:border-[#d4a84b]/50"
                     }`}
@@ -239,7 +230,7 @@ export function ConferencePage() {
 
           <ScheduleList
             talks={f.filtered}
-            sections={mockSections}
+            sections={sections}
             isLoading={isLoading}
             viewMode={viewMode}
           />

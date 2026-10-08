@@ -18,7 +18,7 @@ export function ScheduleCard({
 }: ScheduleCardProps) {
   if (isCompact) {
     return (
-      <Link to={pathKeys.talk.build(talk.id)}>
+      <Link to={pathKeys.talk.build(String(talk.id))}>
         <div className="group flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6 p-5 bg-white rounded-xl border border-[#1a4d3e]/10 hover:border-[#d4a84b]/50 hover:shadow-md transition-all duration-300">
           {/* Time Block */}
           <div className="flex-shrink-0 flex sm:flex-col items-center sm:items-start gap-2 sm:gap-1 min-w-[100px]">
@@ -42,14 +42,14 @@ export function ScheduleCard({
               <span className="font-semibold text-[#1a4d3e]/80">
                 {talk.speakerName}
               </span>
-              {talk.hallNumber && (
+              {talk.room?.name && (
                 <>
                   <span className="text-muted-foreground hidden sm:inline">
                     ·
                   </span>
                   <span className="flex items-center gap-1 text-muted-foreground bg-[#f5f3ed] px-2 py-0.5 rounded-md">
                     <MapPin className="size-3" />
-                    Зал {talk.hallNumber}
+                    Зал {talk.room.name}
                   </span>
                 </>
               )}
@@ -63,7 +63,7 @@ export function ScheduleCard({
                 <Chip
                   key={tag}
                   size="sm"
-                  variant="flat"
+                  variant="soft"
                   className="bg-[#f5f3ed] text-[#1a4d3e] text-xs font-medium border border-[#1a4d3e]/10"
                 >
                   {tag}
@@ -78,7 +78,7 @@ export function ScheduleCard({
 
   // --- РЕЖИМ КАРТОЧЕК (Full) ---
   return (
-    <Link to={pathKeys.talk.build(talk.id)}>
+    <Link to={pathKeys.talk.build(String(talk.id))}>
       <Card className="group relative border border-[#1a4d3e]/10 bg-white hover:border-[#d4a84b]/40 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 h-full flex flex-col">
         {section && (
           <div
@@ -91,21 +91,19 @@ export function ScheduleCard({
           <div className="flex items-center gap-3 mb-4 flex-wrap">
             <Chip
               size="sm"
-              variant="flat"
-              className="bg-[#1a4d3e] text-white font-semibold"
-              startContent={<Clock className="size-3.5" />}
+              variant="soft"
+              className="bg-[#1a4d3e] text-white font-semibold flex items-center gap-1"
             >
-              {fmtTime(talk.startTime)} – {fmtTime(talk.endTime)}
+              <div className="flex items-center gap-1"><Clock className="size-3.5" /> {fmtTime(talk.startTime)} – {fmtTime(talk.endTime)}</div>
             </Chip>
 
-            {talk.hallNumber && (
+            {talk.room?.name && (
               <Chip
                 size="sm"
-                variant="bordered"
-                startContent={<MapPin className="size-3.5" />}
-                className="border-[#1a4d3e]/30 text-[#1a4d3e] font-medium"
+                variant="soft"
+                className="border-[#1a4d3e]/30 text-[#1a4d3e] font-medium flex items-center gap-1"
               >
-                Зал {talk.hallNumber}
+                <div className="flex items-center gap-1"><MapPin className="size-3.5" /> Зал {talk.room.name}</div>
               </Chip>
             )}
           </div>
@@ -127,7 +125,7 @@ export function ScheduleCard({
                 <Chip
                   key={tag}
                   size="sm"
-                  variant="flat"
+                  variant="soft"
                   className="bg-[#f5f3ed] text-[#1a4d3e] text-xs font-medium border border-[#1a4d3e]/10"
                 >
                   {tag}

@@ -20,8 +20,9 @@ class ApiClient {
     // Интерсептор запросов
     this.instance.interceptors.request.use(
       (config) => {
-        if (this.token) {
-          config.headers.Authorization = `Bearer ${this.token}`;
+        const token = this.token || localStorage.getItem('token');
+        if (token) {
+          config.headers.Authorization = `Bearer ${token}`;
         }
         return config;
       },
@@ -32,9 +33,16 @@ class ApiClient {
     this.instance.interceptors.response.use(
       (response) => response,
       (error) => {
-        if (error.response?.status === 401) {
+        const isLoginRequest = error.config?.url?.includes('/auth/login');
+        if (error.response?.status === 401 && !isLoginRequest) {
           this.logout();
-          window.location.href = '/login';
+          if (
+            typeof window !== 'undefined' &&
+            !window.location.pathname.startsWith('/login') &&
+            !window.location.pathname.startsWith('/submission')
+          ) {
+            window.location.href = '/login';
+          }
         }
         return Promise.reject(error);
       }
@@ -49,6 +57,11 @@ class ApiClient {
   logout() {
     this.token = null;
     localStorage.removeItem('token');
+    localStorage.removeItem('user');
+  }
+
+  getToken(): string | null {
+    return this.token || localStorage.getItem('token');
   }
 
   // HTTP методы

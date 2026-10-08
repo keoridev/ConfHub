@@ -12,6 +12,39 @@ export interface Section {
   conferenceId: number;
   title: string;
   sortOrder: number;
+  color?: string;
+}
+
+export interface Conference {
+  id: number;
+  title: string;
+  description: string;
+  startDate: string;
+  endDate: string;
+}
+
+export interface AuthResponse {
+  token: string;
+  user: User;
+}
+
+export interface Document {
+  id: number;
+  originalName: string;
+  mime: string;
+  sizeBytes: number;
+}
+
+export interface AIValidationResult {
+  id: number;
+  attemptNo: number;
+  result: {
+    sectionFit: { score: number; verdict: string; comment: string };
+    annotationMatch: { score: number; verdict: string; comment: string };
+    issues: Array<{ type: string; severity: string; description: string }>;
+    suggestions: string[];
+    overallVerdict: string;
+  };
 }
 
 export interface Room {
@@ -32,6 +65,7 @@ export interface Talk {
   abstract: string;
   tags: string[];
   status: 'pending_review' | 'approved' | 'rejected' | 'needs_revision';
+  juryComment?: string;
   section: Section;
   room?: Room; // Вместо hallNumber
   startTime?: string;

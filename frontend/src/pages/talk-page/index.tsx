@@ -9,7 +9,7 @@ import { fmtTime } from "~entities/talk";
 
 export function TalkPage() {
   const { talkId = "" } = useParams();
-  const { data: talk, isLoading } = useTalkQuery(talkId);
+  const { data: talk, isLoading } = useTalkQuery(Number(talkId));
 
   if (isLoading) return <Skeleton className="h-64 w-full mt-6 rounded-xl" />;
   if (!talk)
@@ -17,7 +17,7 @@ export function TalkPage() {
       <p className="py-10 text-center text-default-500">Доклад не найден</p>
     );
 
-  const section = mockSections.find((s) => s.id === talk.sectionId);
+  const section = talk.section || mockSections.find((s) => s.id === (talk.sectionId ?? talk.section?.id));
 
   return (
     <div className="py-8 max-w-3xl mx-auto flex flex-col gap-6 px-4">
@@ -38,27 +38,25 @@ export function TalkPage() {
           <div className="flex gap-2 flex-wrap">
             <Chip
               size="sm"
-              variant="flat"
-              color="primary"
-              startContent={<Clock className="size-3" />}
+              variant="soft"
+              color="accent"
             >
-              {fmtTime(talk.startTime)} – {fmtTime(talk.endTime)}
+              <div className="flex items-center gap-1"><Clock className="size-3" /> {fmtTime(talk.startTime)} – {fmtTime(talk.endTime)}</div>
             </Chip>
 
             <Chip
               size="sm"
-              variant="bordered"
-              startContent={<MapPin className="size-3" />}
+              variant="soft"
             >
-              {talk.hallNumber
-                ? `Ауд. ${talk.hallNumber}`
-                : "Аудитория будет назначена"}
+              <div className="flex items-center gap-1"><MapPin className="size-3" /> {talk.room?.name
+                ? `Ауд. ${talk.room.name}`
+                : "Аудитория будет назначена"}</div>
             </Chip>
 
             {section && (
               <Chip
                 size="sm"
-                variant="flat"
+                variant="soft"
                 style={{
                   backgroundColor: `${section.color}15`,
                   color: section.color,
@@ -94,7 +92,7 @@ export function TalkPage() {
               <Chip
                 key={tag}
                 size="sm"
-                variant="flat"
+                variant="soft"
                 color="default"
                 className="bg-background border border-default-200 font-normal shadow-sm"
               >

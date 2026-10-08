@@ -39,7 +39,7 @@ export function CurrentTalkCard({
   })() : 0;
 
   return (
-    <Link to={pathKeys.talk.build(talk.id)}>
+    <Link to={pathKeys.talk.build(String(talk.id))}>
       <Card
         className={`p-6 rounded-xl transition-all duration-300 hover:shadow-lg ${
           isCurrent

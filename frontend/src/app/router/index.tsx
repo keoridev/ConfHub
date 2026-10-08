@@ -10,6 +10,7 @@ import { conferencePageRoute } from "~pages/conference-page";
 import { submissionPageRoute } from "~pages/submission-page";
 import { talkPageRoute } from "~pages/talk-page";
 import { juryPageRoute } from "~pages/jury-page";
+import { adminPageRoute } from "~pages/admin-page";
 import { pathKeys } from "~shared/lib";
 
 const router = createBrowserRouter([
@@ -49,6 +50,10 @@ const router = createBrowserRouter([
       {
         path: pathKeys.jury,
         ...juryPageRoute,
+      },
+      {
+        path: pathKeys.admin,
+        ...adminPageRoute,
       },
     ],
   },

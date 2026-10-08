@@ -2,21 +2,22 @@ import type { AIValidationResult, Conference, Section, Talk } from "~entities/ta
 import { mockTalks, mockSections, initialAIResults } from "./mockData";
 
 // Локальное состояние мока (для имитации изменений на сервере)
-let talks = [...mockTalks];
+let talks: Talk[] = [...mockTalks];
 const aiResults = new Map(initialAIResults);
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 // === Conference ===
-export async function getConference(id: string): Promise<Conference | undefined> {
+export async function getConference(id: number | string): Promise<Conference | undefined> {
   await delay(100);
   // Возвращаем моковые данные конференции. 
   // В реальном приложении здесь был бы запрос к API по id.
   return {
-    id,
+    id: Number(id),
     title: "Международная научно-практическая конференция 2026",
-    dateLabel: "5–7 октября 2026",
-    location: "Москва, Конгресс-центр",
+    description: "Ежегодная конференция",
+    startDate: "2026-10-05T00:00:00Z",
+    endDate: "2026-10-07T00:00:00Z",
   };
 }
 
@@ -32,20 +33,19 @@ export async function listTalks(): Promise<Talk[]> {
   return [...talks]; // Возвращаем копию, чтобы предотвратить случайные мутации извне
 }
 
-export async function getTalk(id: string): Promise<Talk | undefined> {
+export async function getTalk(id: number): Promise<Talk | undefined> {
   await delay(150);
   return talks.find((t) => t.id === id);
 }
 
 export async function createTalk(
-  input: Omit<Talk, "id" | "status" | "hallNumber" | "startTime" | "endTime">
+  input: Omit<Talk, "id" | "status" | "room" | "startTime" | "endTime">
 ): Promise<Talk> {
   await delay(400);
   const newTalk: Talk = {
     ...input,
-    id: crypto.randomUUID(),
+    id: Date.now(),
     status: "pending_review",
-    hallNumber: "",
     startTime: "",
     endTime: "",
   };
@@ -54,7 +54,7 @@ export async function createTalk(
 }
 
 export async function reviewTalk(
-  id: string,
+  id: number,
   status: "approved" | "rejected",
   updates?: Partial<Talk>
 ): Promise<void> {
@@ -62,15 +62,15 @@ export async function reviewTalk(
   talks = talks.map((t) => (t.id === id ? { ...t, status, ...updates } : t));
 }
 
-export async function getAIResult(talkId: string): Promise<AIValidationResult | undefined> {
+export async function getAIResult(talkId: number): Promise<AIValidationResult | undefined> {
   await delay(100);
   return aiResults.get(talkId);
 }
 
 export async function runAIValidation(input: {
-  talkId?: string;
+  talkId?: number;
   title: string;
-  sectionId: string;
+  sectionId: number;
   abstract: string;
   file?: File | null;
 }): Promise<AIValidationResult> {
@@ -83,24 +83,15 @@ export async function runAIValidation(input: {
   const abstractOk = wordCount >= 30;
 
   const result: AIValidationResult = {
-    matchScore: score,
-    sectionMatch: {
-      isMatching: score > 75,
-      explanation: `Тематика доклада соответствует секции «${section?.title}». Ключевые термины обнаружены в тексте.`,
-    },
-    abstractMatch: {
-      isMatching: abstractOk,
-      explanation: abstractOk
-        ? `Аннотация (${wordCount} слов) содержит цель, методы и ожидаемые результаты.`
-        : `Аннотация слишком короткая (${wordCount} слов). Расширьте описание метода и результатов.`,
-    },
-    extractedKeywords: ["LLM", "Научный анализ", "Автоматизация", "Рецензирование"],
-    feedback: [
-      input.file
-        ? "✅ Документ успешно прочитан. Структура PDF соответствует требованиям конференции."
-        : "⚠️ Файл не загружен. Жюри может снизить оценку без полного текста доклада.",
-      abstractOk ? "✅ Аннотация соответствует требованиям." : "❌ Дополните аннотацию.",
-    ],
+    id: Date.now(),
+    attemptNo: 1,
+    result: {
+      sectionFit: { score, verdict: score > 75 ? "ok" : "attention", comment: `Тематика доклада соответствует секции «${section?.title}».` },
+      annotationMatch: { score: abstractOk ? 90 : 50, verdict: abstractOk ? "ok" : "attention", comment: abstractOk ? "Аннотация соответствует требованиям." : "Дополните аннотацию." },
+      issues: [],
+      suggestions: [],
+      overallVerdict: "ok",
+    }
   };
 
   if (input.talkId) aiResults.set(input.talkId, result);

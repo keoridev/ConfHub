@@ -1,3 +1,3 @@
-export { TalkCard } from "./ui/CurrentTalk";
+export { CurrentTalkCard } from "./ui/CurrentTalk";
 export { ScheduleList } from "./ui/ScheduleList";
 
