@@ -82,9 +82,13 @@ class ConfButton extends StatelessWidget {
                         Icon(icon, size: 18, color: fg),
                         const SizedBox(width: 8),
                       ],
-                      Text(
-                        text,
-                        style: AppTypography.labelLarge.copyWith(color: fg),
+                      Flexible(
+                        child: Text(
+                          text,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: AppTypography.labelLarge.copyWith(color: fg),
+                        ),
                       ),
                     ],
                   ),

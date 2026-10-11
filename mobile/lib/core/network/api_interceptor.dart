@@ -10,7 +10,7 @@ class ApiInterceptor extends Interceptor {
     options.headers['X-Client-Role'] = 'guest';
 
     developer.log(
-      '🌐 [DIO REQUEST] ${options.method} ${options.uri}',
+      '[DIO REQUEST] ${options.method} ${options.uri}',
       name: 'Network',
     );
 
@@ -20,7 +20,7 @@ class ApiInterceptor extends Interceptor {
   @override
   void onResponse(Response response, ResponseInterceptorHandler handler) {
     developer.log(
-      '✅ [DIO RESPONSE] ${response.statusCode} ${response.requestOptions.uri}',
+      '[DIO RESPONSE] ${response.statusCode} ${response.requestOptions.uri}',
       name: 'Network',
     );
     return handler.next(response);
@@ -29,7 +29,7 @@ class ApiInterceptor extends Interceptor {
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) {
     developer.log(
-      '❌ [DIO ERROR] ${err.response?.statusCode} ${err.requestOptions.uri}: ${err.message}',
+      '[DIO ERROR] ${err.response?.statusCode} ${err.requestOptions.uri}: ${err.message}',
       name: 'Network',
       error: err.error,
     );

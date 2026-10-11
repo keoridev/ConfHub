@@ -1,1 +1,0 @@
-export { useTalkFilters } from "./model/useTalkFilters";

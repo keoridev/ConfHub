@@ -1,8 +1,40 @@
-# Backend
+# Backend (separate git repo)
 backend/
 
-# Frontend
-frontend/
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Build & outputs
+dist/
+**/dist/
+build/
+**/build/
+
+# Flutter specific
+.dart_tool/
+**/.dart_tool/
+.flutter-plugins-dependencies
+**/.flutter-plugins-dependencies
 
 # Database
 confhub-db/
+
+# Logs
+*.log
+logs/
+
+# Environment
+*.env
+*.env.local
+!.env.example
+
+# Editor / OS
+.idea/
+.vscode/
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?

@@ -9,6 +9,15 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  server: {
+    host: true,
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+      },
+    },
+  },
   resolve: {
     alias: {
       "~app": path.resolve(__dirname, "src/app"),

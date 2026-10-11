@@ -97,11 +97,15 @@ class ConfBadge extends StatelessWidget {
             Icon(icon, size: fontSize + 2, color: textColor),
             const SizedBox(width: 5),
           ],
-          Text(
-            label,
-            style: AppTypography.labelSmall.copyWith(
-              color: textColor,
-              fontSize: fontSize,
+          Flexible(
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: AppTypography.labelSmall.copyWith(
+                color: textColor,
+                fontSize: fontSize,
+              ),
             ),
           ),
         ],

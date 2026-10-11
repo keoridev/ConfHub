@@ -51,59 +51,72 @@ class TimeBanner extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: AppColors.accent.withAlpha(220),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(
-                      Icons.festival_outlined,
-                      size: 13,
-                      color: AppColors.primaryDark,
-                    ),
-                    const SizedBox(width: 5),
-                    Text(
-                      'ГОСТЕВОЙ ДОСТУП',
-                      style: AppTypography.labelSmall.copyWith(
-                        color: AppColors.primaryDark,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              InkWell(
-                onTap: onOpenTopicPreferences,
-                borderRadius: BorderRadius.circular(20),
+              Flexible(
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
-                    color: Colors.white.withAlpha(35),
+                    color: AppColors.accent.withAlpha(220),
                     borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: Colors.white.withAlpha(45)),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       const Icon(
-                        Icons.tune_rounded,
+                        Icons.festival_outlined,
                         size: 13,
-                        color: Colors.white,
+                        color: AppColors.primaryDark,
                       ),
                       const SizedBox(width: 5),
-                      Text(
-                        preferredTopicsCount > 0
-                            ? 'Темы ($preferredTopicsCount)'
-                            : 'Выбрать темы',
-                        style: AppTypography.labelSmall.copyWith(
-                          color: Colors.white,
+                      Flexible(
+                        child: Text(
+                          'ГОСТЕВОЙ ДОСТУП',
+                          style: AppTypography.labelSmall.copyWith(
+                            color: AppColors.primaryDark,
+                            letterSpacing: 0.5,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                     ],
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Flexible(
+                child: InkWell(
+                  onTap: onOpenTopicPreferences,
+                  borderRadius: BorderRadius.circular(20),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withAlpha(35),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: Colors.white.withAlpha(45)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.tune_rounded,
+                          size: 13,
+                          color: Colors.white,
+                        ),
+                        const SizedBox(width: 5),
+                        Flexible(
+                          child: Text(
+                            preferredTopicsCount > 0
+                                ? 'Темы ($preferredTopicsCount)'
+                                : 'Выбрать темы',
+                            style: AppTypography.labelSmall.copyWith(
+                              color: Colors.white,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -160,13 +173,17 @@ class TimeBanner extends StatelessWidget {
                         children: [
                           Row(
                             children: [
-                              Text(
-                                'Ближайший доклад:',
-                                style: AppTypography.labelSmall.copyWith(
-                                  color: AppColors.accentLight,
+                              Flexible(
+                                child: Text(
+                                  'Ближайший доклад:',
+                                  style: AppTypography.labelSmall.copyWith(
+                                    color: AppColors.accentLight,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
                               ),
-                              const Spacer(),
+                              const SizedBox(width: 8),
                               Text(
                                 DateFormatter.formatTime(activeTalk!.startTime),
                                 style: AppTypography.monoTime.copyWith(

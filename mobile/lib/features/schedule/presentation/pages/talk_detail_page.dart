@@ -109,13 +109,20 @@ class _TalkDetailView extends StatelessWidget {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          ConfBadge.room(talk.room?.name ?? 'Ауд. уточняется'),
-                          ConfBadge(
-                            label: timeStatus.label,
-                            icon: timeStatus.icon,
-                            backgroundColor: timeStatus.badgeBg,
-                            textColor: timeStatus.badgeTextColor,
-                            isPulsing: timeStatus.urgency == TalkUrgency.live,
+                          Flexible(
+                            flex: 1,
+                            child: ConfBadge.room(talk.room?.name ?? 'Ауд. уточняется'),
+                          ),
+                          const SizedBox(width: 8),
+                          Flexible(
+                            flex: 1,
+                            child: ConfBadge(
+                              label: timeStatus.label,
+                              icon: timeStatus.icon,
+                              backgroundColor: timeStatus.badgeBg,
+                              textColor: timeStatus.badgeTextColor,
+                              isPulsing: timeStatus.urgency == TalkUrgency.live,
+                            ),
                           ),
                         ],
                       ),
@@ -337,17 +344,24 @@ class _TalkDetailView extends StatelessWidget {
                 child: Text(
                   'Успеете ли вы дойти?',
                   style: AppTypography.titleMedium.copyWith(color: estimate.color),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: estimate.color.withAlpha(40),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Text(
-                  '${state.walkingMinutes} мин пешком',
-                  style: AppTypography.labelSmall.copyWith(color: estimate.color),
+              const SizedBox(width: 6),
+              Flexible(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: estimate.color.withAlpha(40),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(
+                    '${state.walkingMinutes} мин пешком',
+                    style: AppTypography.labelSmall.copyWith(color: estimate.color),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
               ),
             ],

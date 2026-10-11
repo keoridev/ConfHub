@@ -63,22 +63,24 @@ class TalkCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     // Room badge
-                    ConfBadge.room(talk.room?.name ?? 'Ауд. не назначена'),
+                    Flexible(
+                      flex: 4,
+                      child: ConfBadge.room(talk.room?.name ?? 'Ауд. не назначена'),
+                    ),
                     const SizedBox(width: 8),
 
                     // Time awareness badge
-                    Expanded(
-                      child: Align(
-                        alignment: Alignment.centerLeft,
-                        child: ConfBadge(
-                          label: status.label,
-                          icon: status.icon,
-                          backgroundColor: status.badgeBg,
-                          textColor: status.badgeTextColor,
-                          isPulsing: status.urgency == TalkUrgency.live,
-                        ),
+                    Flexible(
+                      flex: 5,
+                      child: ConfBadge(
+                        label: status.label,
+                        icon: status.icon,
+                        backgroundColor: status.badgeBg,
+                        textColor: status.badgeTextColor,
+                        isPulsing: status.urgency == TalkUrgency.live,
                       ),
                     ),
+                    const SizedBox(width: 4),
 
                     // Bookmark icon
                     IconButton(
@@ -189,34 +191,42 @@ class TalkCard extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     // Commute prompt button
-                    InkWell(
-                      onTap: () => WillIMakeItDialog.show(context, talk),
-                      borderRadius: BorderRadius.circular(8),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 2),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(
-                              Icons.directions_walk_rounded,
-                              size: 16,
-                              color: AppColors.primary,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              'Успею ли я дойти?',
-                              style: AppTypography.labelMedium.copyWith(
+                    Flexible(
+                      child: InkWell(
+                        onTap: () => WillIMakeItDialog.show(context, talk),
+                        borderRadius: BorderRadius.circular(8),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 2),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.directions_walk_rounded,
+                                size: 16,
                                 color: AppColors.primary,
-                                decoration: TextDecoration.underline,
                               ),
-                            ),
-                          ],
+                              const SizedBox(width: 4),
+                              Flexible(
+                                child: Text(
+                                  'Успею ли я дойти?',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: AppTypography.labelMedium.copyWith(
+                                    color: AppColors.primary,
+                                    decoration: TextDecoration.underline,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),
+                    const SizedBox(width: 8),
 
                     // Details indicator
                     Row(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
                           'Подробнее',

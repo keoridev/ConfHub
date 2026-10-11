@@ -7,6 +7,10 @@ class ApiConstants {
   /// For Android emulator, localhost is 10.0.2.2.
   /// For physical devices or desktop, localhost is 127.0.0.1.
   static String get baseUrl {
+    const definedUrl = String.fromEnvironment('API_URL');
+    if (definedUrl.isNotEmpty) {
+      return definedUrl;
+    }
     if (Platform.isAndroid) {
       return 'http://10.0.2.2:8080/api';
     }

@@ -82,24 +82,31 @@ class _SchedulePageState extends State<SchedulePage> {
               ),
             ),
             const SizedBox(width: 10),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'ConfHub',
-                  style: AppTypography.titleLarge.copyWith(
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: -0.5,
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'ConfHub',
+                    style: AppTypography.titleLarge.copyWith(
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -0.5,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                ),
-                Text(
-                  'Гид для посетителей',
-                  style: AppTypography.bodySmall.copyWith(
-                    fontSize: 11,
-                    color: AppColors.textMuted,
+                  Text(
+                    'Гид для посетителей',
+                    style: AppTypography.bodySmall.copyWith(
+                      fontSize: 11,
+                      color: AppColors.textMuted,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ],
         ),

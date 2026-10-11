@@ -116,10 +116,26 @@ class SectionFilterBar extends StatelessWidget {
           scrollDirection: Axis.horizontal,
           child: Row(
             children: [
-              _buildTimeFilterPill('Все доклады', ScheduleTimeFilter.all),
-              _buildTimeFilterPill('🔥 Сейчас и скоро', ScheduleTimeFilter.liveAndSoon),
-              _buildTimeFilterPill('🌅 Утро (до 13:00)', ScheduleTimeFilter.morning),
-              _buildTimeFilterPill('🌇 День (после 13:00)', ScheduleTimeFilter.afternoon),
+              _buildTimeFilterPill(
+                title: 'Все доклады',
+                filter: ScheduleTimeFilter.all,
+                icon: Icons.apps_rounded,
+              ),
+              _buildTimeFilterPill(
+                title: 'Сейчас и скоро',
+                filter: ScheduleTimeFilter.liveAndSoon,
+                icon: Icons.bolt_rounded,
+              ),
+              _buildTimeFilterPill(
+                title: 'Утро (до 13:00)',
+                filter: ScheduleTimeFilter.morning,
+                icon: Icons.wb_twilight_rounded,
+              ),
+              _buildTimeFilterPill(
+                title: 'День (после 13:00)',
+                filter: ScheduleTimeFilter.afternoon,
+                icon: Icons.wb_sunny_outlined,
+              ),
             ],
           ),
         ),
@@ -127,8 +143,13 @@ class SectionFilterBar extends StatelessWidget {
     );
   }
 
-  Widget _buildTimeFilterPill(String title, ScheduleTimeFilter filter) {
+  Widget _buildTimeFilterPill({
+    required String title,
+    required ScheduleTimeFilter filter,
+    IconData? icon,
+  }) {
     final isSelected = timeFilter == filter;
+    final color = isSelected ? AppColors.secondary : AppColors.textSecondary;
     return Padding(
       padding: const EdgeInsets.only(right: 6),
       child: InkWell(
@@ -144,13 +165,26 @@ class SectionFilterBar extends StatelessWidget {
               width: 0.9,
             ),
           ),
-          child: Text(
-            title,
-            style: AppTypography.labelSmall.copyWith(
-              color: isSelected ? AppColors.secondary : AppColors.textSecondary,
-              fontSize: 11,
-              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-            ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (icon != null) ...[
+                Icon(
+                  icon,
+                  size: 13,
+                  color: color,
+                ),
+                const SizedBox(width: 4),
+              ],
+              Text(
+                title,
+                style: AppTypography.labelSmall.copyWith(
+                  color: color,
+                  fontSize: 11,
+                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                ),
+              ),
+            ],
           ),
         ),
       ),

@@ -42,10 +42,11 @@ class TopicPreferenceSheet extends StatelessWidget {
 
           return SafeArea(
             top: false,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
                 // Drag handle
                 Center(
                   child: Container(
@@ -171,7 +172,8 @@ class TopicPreferenceSheet extends StatelessWidget {
                 ),
               ],
             ),
-          );
+          ),
+        );
         },
       ),
     );

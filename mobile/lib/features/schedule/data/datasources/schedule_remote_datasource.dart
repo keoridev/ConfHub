@@ -34,7 +34,7 @@ class ScheduleRemoteDataSourceImpl implements ScheduleRemoteDataSource {
       }
       throw const ServerException(message: 'Неверный формат ответа конференции');
     } catch (e) {
-      developer.log('⚠️ Backend offline or error, using demo conference data: $e');
+      developer.log('[ScheduleDS] Backend offline or error, using demo conference data: $e');
       return _getFallbackConference();
     }
   }
@@ -58,7 +58,7 @@ class ScheduleRemoteDataSourceImpl implements ScheduleRemoteDataSource {
       }
       return _getFallbackSections();
     } catch (e) {
-      developer.log('⚠️ Backend offline or error, using fallback sections: $e');
+      developer.log('[ScheduleDS] Backend offline or error, using fallback sections: $e');
       return _getFallbackSections();
     }
   }
@@ -82,7 +82,7 @@ class ScheduleRemoteDataSourceImpl implements ScheduleRemoteDataSource {
       }
       return _getFallbackRooms();
     } catch (e) {
-      developer.log('⚠️ Backend offline or error, using fallback rooms: $e');
+      developer.log('[ScheduleDS] Backend offline or error, using fallback rooms: $e');
       return _getFallbackRooms();
     }
   }
@@ -115,7 +115,7 @@ class ScheduleRemoteDataSourceImpl implements ScheduleRemoteDataSource {
       }
       return _filterFallbackTalks(sectionId: sectionId, query: query, tag: tag);
     } catch (e) {
-      developer.log('⚠️ Backend offline or error, using fallback talks: $e');
+      developer.log('[ScheduleDS] Backend offline or error, using fallback talks: $e');
       return _filterFallbackTalks(sectionId: sectionId, query: query, tag: tag);
     }
   }
