@@ -17,7 +17,6 @@ class ApiClient {
 
     this.token = localStorage.getItem('token');
 
-    // Интерсептор запросов
     this.instance.interceptors.request.use(
       (config) => {
         const token = this.token || localStorage.getItem('token');
@@ -29,7 +28,6 @@ class ApiClient {
       (error) => Promise.reject(error)
     );
 
-    // Интерсептор ответов
     this.instance.interceptors.response.use(
       (response) => response,
       (error) => {
@@ -64,7 +62,6 @@ class ApiClient {
     return this.token || localStorage.getItem('token');
   }
 
-  // HTTP методы
   get<T>(url: string, config?: AxiosRequestConfig) {
     return this.instance.get<T>(url, config);
   }
@@ -81,7 +78,6 @@ class ApiClient {
     return this.instance.delete<T>(url, config);
   }
 
-  // Для загрузки файлов
   upload<T>(url: string, file: File, onProgress?: (progress: number) => void) {
     const formData = new FormData();
     formData.append('file', file);

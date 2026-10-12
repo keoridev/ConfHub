@@ -2,7 +2,7 @@ import { Clock, MapPin } from "lucide-react";
 import { Card, Chip } from "@heroui/react";
 import { Link } from "react-router-dom";
 import { pathKeys } from "~shared/lib";
-import type { Section, Talk } from "~entities/talk/model/types"; // <-- ИМПОРТ ТИПОВ
+import type { Section, Talk } from "~entities/talk/model/types";
 import { fmtTime } from "~entities/talk";
 
 interface ScheduleCardProps {
@@ -20,7 +20,6 @@ export function ScheduleCard({
     return (
       <Link to={pathKeys.talk.build(String(talk.id))}>
         <div className="group flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6 p-5 bg-white rounded-xl border border-[#1a4d3e]/10 hover:border-[#d4a84b]/50 hover:shadow-md transition-all duration-300">
-          {/* Time Block */}
           <div className="flex-shrink-0 flex sm:flex-col items-center sm:items-start gap-2 sm:gap-1 min-w-[100px]">
             <div className="flex items-center gap-2 text-[#1a4d3e] font-bold text-base">
               <Clock className="size-4" />
@@ -33,7 +32,6 @@ export function ScheduleCard({
 
           <div className="w-full h-px bg-[#1a4d3e]/10 sm:hidden" />
 
-          {/* Content Block */}
           <div className="flex-1 min-w-0">
             <h3 className="text-lg font-bold text-[#1a4d3e] group-hover:text-[#1a4d3e]/80 transition-colors mb-2 line-clamp-2">
               {talk.title}
@@ -56,7 +54,6 @@ export function ScheduleCard({
             </div>
           </div>
 
-          {/* Tags Block */}
           {talk.tags.length > 0 && (
             <div className="flex-shrink-0 flex gap-2 flex-wrap sm:justify-end">
               {talk.tags.slice(0, 2).map((tag) => (
@@ -76,7 +73,6 @@ export function ScheduleCard({
     );
   }
 
-  // --- РЕЖИМ КАРТОЧЕК (Full) ---
   return (
     <Link to={pathKeys.talk.build(String(talk.id))}>
       <Card className="group relative border border-[#1a4d3e]/10 bg-white hover:border-[#d4a84b]/40 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 h-full flex flex-col">

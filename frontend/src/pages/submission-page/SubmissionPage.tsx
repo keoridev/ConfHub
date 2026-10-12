@@ -25,6 +25,10 @@ import {
   Wand2,
   Send,
   Presentation,
+  School,
+  Mail,
+  Users,
+  Tag,
 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -47,6 +51,17 @@ const submissionSchema = z.object({
     .min(5, "Минимум 5 символов")
     .max(200, "Максимум 200 символов"),
   sectionId: z.string().min(1, "Выберите секцию"),
+  university: z.string().optional().or(z.literal("")),
+  gradeOrGroup: z.string().optional().or(z.literal("")),
+  authorEmail: z
+    .string()
+    .optional()
+    .or(z.literal(""))
+    .refine((val) => !val || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val), {
+      message: "Некорректный адрес электронной почты",
+    }),
+  coAuthors: z.string().optional().or(z.literal("")),
+  keywords: z.string().optional().or(z.literal("")),
   supervisor: z.string().optional().or(z.literal("")),
   abstract: z
     .string()
@@ -59,17 +74,14 @@ type SubmissionFormValues = z.infer<typeof submissionSchema>;
 export function SubmissionPage() {
   const queryClient = useQueryClient();
 
-  // Auth state
   const { data: user } = useCurrentUserQuery();
   const loginMutation = useLoginMutation();
 
-  // Inline login state
   const [authLogin, setAuthLogin] = useState("student1");
   const [authPassword, setAuthPassword] = useState("student123");
   const [showAuthPassword, setShowAuthPassword] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
 
-  // Talk creation state
   const [createdTalkId, setCreatedTalkId] = useState<number | null>(null);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [file, setFile] = useState<File | null>(null);
@@ -92,14 +104,29 @@ export function SubmissionPage() {
   } = useForm<SubmissionFormValues>({
     resolver: zodResolver(submissionSchema),
     mode: "onChange",
+    defaultValues: {
+      university: "КазНУ им. аль-Фараби",
+      gradeOrGroup: user?.groupName || "",
+      authorEmail: "",
+      coAuthors: "",
+      keywords: "",
+      supervisor: "",
+      title: "",
+      sectionId: "",
+      abstract: "",
+    },
   });
 
   const sectionId = watch("sectionId");
   const titleValue = watch("title") || "";
+  const universityValue = watch("university") || "";
+  const gradeOrGroupValue = watch("gradeOrGroup") || "";
+  const authorEmailValue = watch("authorEmail") || "";
+  const coAuthorsValue = watch("coAuthors") || "";
+  const keywordsValue = watch("keywords") || "";
   const supervisorValue = watch("supervisor") || "";
   const abstractValue = watch("abstract") || "";
 
-  // Handle inline login
   const handleInlineLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setAuthError(null);
@@ -108,6 +135,9 @@ export function SubmissionPage() {
         login: authLogin,
         password: authPassword,
       });
+      if (data.user?.groupName) {
+        setValue("gradeOrGroup", data.user.groupName);
+      }
       toast.success(`Вы вошли как ${data.user.fullName || data.user.login}`);
     } catch (err: any) {
       const msg =
@@ -126,6 +156,9 @@ export function SubmissionPage() {
         login: quickLogin,
         password: quickPass,
       });
+      if (data.user?.groupName) {
+        setValue("gradeOrGroup", data.user.groupName);
+      }
       toast.success(`Вы вошли как ${data.user.fullName || data.user.login}`);
     } catch (err: any) {
       const msg =
@@ -135,15 +168,33 @@ export function SubmissionPage() {
     }
   };
 
-  // Submit talk
   const onCreateTalk = async (values: SubmissionFormValues) => {
     try {
+      const parsedCoAuthors = values.coAuthors
+        ? values.coAuthors
+            .split(/[,;\n]+/)
+            .map((s) => s.trim())
+            .filter(Boolean)
+        : [];
+
+      const parsedKeywords = values.keywords
+        ? values.keywords
+            .split(/[,;\n]+/)
+            .map((s) => s.trim())
+            .filter(Boolean)
+        : [];
+
       const data = await createTalk.mutateAsync({
         sectionId: Number(values.sectionId),
         title: values.title,
-        supervisor: values.supervisor || "",
+        university: values.university?.trim() || "",
+        gradeOrGroup: values.gradeOrGroup?.trim() || "",
+        authorEmail: values.authorEmail?.trim() || "",
+        coAuthors: parsedCoAuthors,
+        keywords: parsedKeywords,
+        supervisor: values.supervisor?.trim() || "",
         abstract: values.abstract,
-        tags: [],
+        tags: parsedKeywords,
       });
       setCreatedTalkId(data.id);
       setIsSubmitted(false);
@@ -155,7 +206,6 @@ export function SubmissionPage() {
     }
   };
 
-  // Upload Word/PDF/Presentation document
   const handleFileUpload = async () => {
     if (!file || !createdTalkId) return;
     try {
@@ -172,7 +222,6 @@ export function SubmissionPage() {
     }
   };
 
-  // Run AI review
   const handleValidate = async () => {
     if (!createdTalkId) return;
     try {
@@ -190,13 +239,11 @@ export function SubmissionPage() {
     }
   };
 
-  // Завершение подачи (с AI или без него)
   const handleFinishSubmission = () => {
     setIsSubmitted(true);
     toast.success("Заявка успешно передана в очередь жюри на рассмотрение!");
   };
 
-  // Сброс формы для новой подачи
   const handleResetForm = () => {
     setCreatedTalkId(null);
     setFile(null);
@@ -204,6 +251,11 @@ export function SubmissionPage() {
     reset({
       title: "",
       sectionId: "",
+      university: "КазНУ им. аль-Фараби",
+      gradeOrGroup: user?.groupName || "",
+      authorEmail: "",
+      coAuthors: "",
+      keywords: "",
       supervisor: "",
       abstract: "",
     });
@@ -213,27 +265,60 @@ export function SubmissionPage() {
   const currentSection = sections.find((s) => s.id === talk?.sectionId);
 
   return (
-    <div className="min-h-screen bg-[#f5f3ed] -mx-4 -my-6 md:-mx-8 md:-my-10 pb-16">
-      {/* Hero Header */}
-      <div className="bg-[#1a4d3e] text-white py-10 px-4 md:px-8 border-b border-[#1a4d3e]">
-        <div className="max-w-4xl mx-auto space-y-2">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold bg-[#f5f3ed]/15 text-[#f5f3ed] tracking-wider uppercase">
-            <Sparkles className="size-3.5 text-[#d4a84b]" />
-            Приём заявок 2026
-          </div>
-          <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight">
-            Подача заявки на доклад
-          </h1>
-          <p className="text-white/80 text-sm md:text-base max-w-2xl">
-            Заполните форму, прикрепите материалы работы в формате Word (DOCX) или PDF и получите предварительный отчёт AI перед рассмотрением жюри.
-          </p>
+    <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10 space-y-8">
+      <div className="space-y-3 pb-6 border-b border-[#1a4d3e]/10">
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-[#1a4d3e]/10 text-[#1a4d3e] uppercase tracking-wider">
+          <Sparkles className="size-3.5 text-[#d4a84b]" />
+          Conf-Hub 2026 • Приём заявок
         </div>
+        <h1 className="text-3xl sm:text-4xl font-extrabold text-[#1a4d3e] tracking-tight">
+          Подача заявки на доклад
+        </h1>
+        <p className="text-sm sm:text-base text-muted-foreground max-w-2xl leading-relaxed">
+          Заполните сведения о докладе, выберите секцию и прикрепите материалы (Word / PDF) для автоматического AI-анализа и рассмотрения жюри.
+        </p>
+
+        {user && (
+          <div className="flex items-center gap-3 pt-3 flex-wrap">
+            <div
+              className={`flex items-center gap-2 text-xs font-bold px-3 py-1.5 rounded-xl ${
+                !createdTalkId
+                  ? "bg-[#1a4d3e] text-white shadow-xs"
+                  : "bg-emerald-50 text-emerald-700 border border-emerald-200"
+              }`}
+            >
+              <span className="size-5 rounded-full bg-black/10 flex items-center justify-center text-[10px]">1</span>
+              <span>Тема и секция</span>
+            </div>
+            <div className="w-4 h-px bg-[#1a4d3e]/20" />
+            <div
+              className={`flex items-center gap-2 text-xs font-bold px-3 py-1.5 rounded-xl ${
+                createdTalkId && !isSubmitted
+                  ? "bg-[#1a4d3e] text-white shadow-xs"
+                  : isSubmitted
+                  ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                  : "bg-white text-muted-foreground border border-[#1a4d3e]/15"
+              }`}
+            >
+              <span className="size-5 rounded-full bg-black/10 flex items-center justify-center text-[10px]">2</span>
+              <span>Материалы & AI</span>
+            </div>
+            <div className="w-4 h-px bg-[#1a4d3e]/20" />
+            <div
+              className={`flex items-center gap-2 text-xs font-bold px-3 py-1.5 rounded-xl ${
+                isSubmitted
+                  ? "bg-[#1a4d3e] text-white shadow-xs"
+                  : "bg-white text-muted-foreground border border-[#1a4d3e]/15"
+              }`}
+            >
+              <span className="size-5 rounded-full bg-black/10 flex items-center justify-center text-[10px]">3</span>
+              <span>Готово</span>
+            </div>
+          </div>
+        )}
       </div>
 
-      <div className="max-w-4xl mx-auto px-4 md:px-6 py-8 space-y-8">
-        {/* =========================================================================
-            1. ЕСЛИ ПОЛЬЗОВАТЕЛЬ НЕ АВТОРИЗОВАН — СРАЗУ ПОКАЗЫВАЕМ ВХОД В СИСТЕМУ
-           ========================================================================= */}
+      <div className="space-y-8">
         {!user ? (
           <div className="max-w-xl mx-auto">
             <Card className="border border-[#1a4d3e]/20 bg-white p-7 sm:p-9 shadow-md shadow-[#1a4d3e]/5 rounded-3xl">
@@ -249,7 +334,6 @@ export function SubmissionPage() {
                 </p>
               </div>
 
-              {/* Быстрый вход для тестирования */}
               <div className="mb-6 p-4 rounded-2xl bg-[#f5f3ed] border border-[#1a4d3e]/15 space-y-2.5">
                 <p className="text-xs font-bold uppercase tracking-wider text-[#1a4d3e]/70">
                   Быстрый вход для проверки:
@@ -292,7 +376,6 @@ export function SubmissionPage() {
                 </div>
               )}
 
-              {/* Форма ручного входа */}
               <form onSubmit={handleInlineLogin} className="space-y-4">
                 <div>
                   <div className="flex items-center justify-between mb-1.5">
@@ -395,11 +478,7 @@ export function SubmissionPage() {
             </Card>
           </div>
         ) : !createdTalkId ? (
-          /* =========================================================================
-             2. ФОРМА ПОДАЧИ ЗАЯВКИ (АВТОРИЗОВАН: ДАННЫЕ ДОКЛАДЧИКА БЕРУТСЯ АВТОМАТИЧЕСКИ)
-             ========================================================================= */
           <div className="space-y-6">
-            {/* Карточка авторизованного докладчика */}
             <div className="bg-white rounded-2xl border border-[#1a4d3e]/20 p-5 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div className="flex items-center gap-3.5">
                 <div className="size-11 rounded-xl bg-[#1a4d3e] text-[#f5f3ed] flex items-center justify-center font-bold text-base shadow-xs">
@@ -427,7 +506,6 @@ export function SubmissionPage() {
 
             <Card className="border border-[#1a4d3e]/20 bg-white p-7 sm:p-9 rounded-3xl shadow-sm">
               <form onSubmit={handleSubmit(onCreateTalk)} className="space-y-7">
-                {/* 1. Поле темы доклада */}
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <label className="block text-sm font-bold text-[#1a4d3e]">
@@ -470,7 +548,6 @@ export function SubmissionPage() {
                     )}
                   </div>
 
-                  {/* Быстрые подсказки / примеры тем */}
                   <div className="flex items-center gap-2 mt-2 flex-wrap">
                     <span className="text-[11px] text-[#1a4d3e]/60">Быстрый пример:</span>
                     <button
@@ -506,7 +583,6 @@ export function SubmissionPage() {
                   )}
                 </div>
 
-                {/* 2. Интерактивный выбор секции (карточки в 1 клик) */}
                 <div>
                   <div className="flex items-center justify-between mb-2.5">
                     <label className="block text-sm font-bold text-[#1a4d3e]">
@@ -570,48 +646,251 @@ export function SubmissionPage() {
                   )}
                 </div>
 
-                {/* 3. Научный руководитель */}
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <label className="block text-sm font-bold text-[#1a4d3e]">
-                      Соавтор
-                    </label>
-                    {supervisorValue && (
-                      <button
-                        type="button"
-                        onClick={() => setValue("supervisor", "")}
-                        className="text-xs text-[#1a4d3e]/60 hover:text-danger font-medium transition-colors cursor-pointer"
-                      >
-                        Очистить
-                      </button>
-                    )}
+                <div className="pt-2 border-t border-[#1a4d3e]/10 space-y-5">
+                  <div className="flex items-center gap-2">
+                    <span className="w-1.5 h-4 rounded-full bg-[#d4a84b]" />
+                    <h3 className="text-sm font-bold uppercase tracking-wider text-[#1a4d3e]">
+                      Сведения об авторах и организации
+                    </h3>
                   </div>
-                  <div className="relative group">
-                    <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#1a4d3e]/40 group-focus-within:text-[#1a4d3e] transition-colors">
-                      <UserCheck className="size-4" />
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <label className="block text-xs font-bold uppercase tracking-wider text-[#1a4d3e]">
+                          Учебное заведение / Организация
+                        </label>
+                        {universityValue && (
+                          <button
+                            type="button"
+                            onClick={() => setValue("university", "")}
+                            className="text-[11px] text-[#1a4d3e]/50 hover:text-danger font-medium transition-colors cursor-pointer"
+                          >
+                            Очистить
+                          </button>
+                        )}
+                      </div>
+                      <div className="relative group">
+                        <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#1a4d3e]/40 group-focus-within:text-[#1a4d3e] transition-colors">
+                          <School className="size-4" />
+                        </div>
+                        <input
+                          {...register("university")}
+                          placeholder="Например: КазНУ им. аль-Фараби"
+                          className="w-full pl-10 pr-10 py-3 rounded-2xl bg-[#f5f3ed]/60 border-2 border-[#1a4d3e]/15 hover:border-[#1a4d3e]/30 text-sm text-[#1a4d3e] placeholder:text-[#1a4d3e]/40 focus:outline-none focus:border-[#1a4d3e] focus:ring-4 focus:ring-[#1a4d3e]/10 focus:bg-white transition-all font-medium"
+                        />
+                        {universityValue && (
+                          <button
+                            type="button"
+                            onClick={() => setValue("university", "")}
+                            className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-[#1a4d3e]/40 hover:text-[#1a4d3e] transition-colors cursor-pointer"
+                            title="Очистить"
+                          >
+                            <span className="size-4 rounded-full bg-[#1a4d3e]/10 flex items-center justify-center text-xs">×</span>
+                          </button>
+                        )}
+                      </div>
                     </div>
-                    <input
-                      {...register("supervisor")}
-                      placeholder="Например: проф. Касымов А.Т. или Иванов И.И."
-                      className="w-full pl-10 pr-10 py-3 rounded-2xl bg-[#f5f3ed]/60 border-2 border-[#1a4d3e]/15 hover:border-[#1a4d3e]/30 text-sm text-[#1a4d3e] placeholder:text-[#1a4d3e]/40 focus:outline-none focus:border-[#1a4d3e] focus:ring-4 focus:ring-[#1a4d3e]/10 focus:bg-white transition-all font-medium"
-                    />
-                    {supervisorValue && (
-                      <button
-                        type="button"
-                        onClick={() => setValue("supervisor", "")}
-                        className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-[#1a4d3e]/40 hover:text-[#1a4d3e] transition-colors cursor-pointer"
-                        title="Очистить"
-                      >
-                        <span className="size-4 rounded-full bg-[#1a4d3e]/10 flex items-center justify-center text-xs">×</span>
-                      </button>
-                    )}
+
+                    <div>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <label className="block text-xs font-bold uppercase tracking-wider text-[#1a4d3e]">
+                          Группа или курс
+                        </label>
+                        {gradeOrGroupValue && (
+                          <button
+                            type="button"
+                            onClick={() => setValue("gradeOrGroup", "")}
+                            className="text-[11px] text-[#1a4d3e]/50 hover:text-danger font-medium transition-colors cursor-pointer"
+                          >
+                            Очистить
+                          </button>
+                        )}
+                      </div>
+                      <div className="relative group">
+                        <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#1a4d3e]/40 group-focus-within:text-[#1a4d3e] transition-colors">
+                          <GraduationCap className="size-4" />
+                        </div>
+                        <input
+                          {...register("gradeOrGroup")}
+                          placeholder="Например: ИС-22-1 или 3 курс магистратуры"
+                          className="w-full pl-10 pr-10 py-3 rounded-2xl bg-[#f5f3ed]/60 border-2 border-[#1a4d3e]/15 hover:border-[#1a4d3e]/30 text-sm text-[#1a4d3e] placeholder:text-[#1a4d3e]/40 focus:outline-none focus:border-[#1a4d3e] focus:ring-4 focus:ring-[#1a4d3e]/10 focus:bg-white transition-all font-medium"
+                        />
+                        {gradeOrGroupValue && (
+                          <button
+                            type="button"
+                            onClick={() => setValue("gradeOrGroup", "")}
+                            className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-[#1a4d3e]/40 hover:text-[#1a4d3e] transition-colors cursor-pointer"
+                            title="Очистить"
+                          >
+                            <span className="size-4 rounded-full bg-[#1a4d3e]/10 flex items-center justify-center text-xs">×</span>
+                          </button>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                  <p className="text-[11px] text-muted-foreground mt-1.5">
-                    Укажите ФИО, учёную степень или должность руководителя (необязательно)
-                  </p>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <label className="block text-xs font-bold uppercase tracking-wider text-[#1a4d3e]">
+                          Почта авторов (Email для связи)
+                        </label>
+                        {authorEmailValue && (
+                          <button
+                            type="button"
+                            onClick={() => setValue("authorEmail", "", { shouldValidate: true })}
+                            className="text-[11px] text-[#1a4d3e]/50 hover:text-danger font-medium transition-colors cursor-pointer"
+                          >
+                            Очистить
+                          </button>
+                        )}
+                      </div>
+                      <div className="relative group">
+                        <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#1a4d3e]/40 group-focus-within:text-[#1a4d3e] transition-colors">
+                          <Mail className="size-4" />
+                        </div>
+                        <input
+                          type="email"
+                          {...register("authorEmail")}
+                          placeholder="Например: student@example.com"
+                          className="w-full pl-10 pr-10 py-3 rounded-2xl bg-[#f5f3ed]/60 border-2 border-[#1a4d3e]/15 hover:border-[#1a4d3e]/30 text-sm text-[#1a4d3e] placeholder:text-[#1a4d3e]/40 focus:outline-none focus:border-[#1a4d3e] focus:ring-4 focus:ring-[#1a4d3e]/10 focus:bg-white transition-all font-medium"
+                        />
+                        {authorEmailValue && (
+                          <button
+                            type="button"
+                            onClick={() => setValue("authorEmail", "", { shouldValidate: true })}
+                            className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-[#1a4d3e]/40 hover:text-[#1a4d3e] transition-colors cursor-pointer"
+                            title="Очистить"
+                          >
+                            <span className="size-4 rounded-full bg-[#1a4d3e]/10 flex items-center justify-center text-xs">×</span>
+                          </button>
+                        )}
+                      </div>
+                      {errors.authorEmail && (
+                        <p className="text-xs text-danger mt-1.5 font-medium">{errors.authorEmail.message}</p>
+                      )}
+                    </div>
+
+                    <div>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <label className="block text-xs font-bold uppercase tracking-wider text-[#1a4d3e]">
+                          Научный руководитель
+                        </label>
+                        {supervisorValue && (
+                          <button
+                            type="button"
+                            onClick={() => setValue("supervisor", "")}
+                            className="text-[11px] text-[#1a4d3e]/50 hover:text-danger font-medium transition-colors cursor-pointer"
+                          >
+                            Очистить
+                          </button>
+                        )}
+                      </div>
+                      <div className="relative group">
+                        <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#1a4d3e]/40 group-focus-within:text-[#1a4d3e] transition-colors">
+                          <UserCheck className="size-4" />
+                        </div>
+                        <input
+                          {...register("supervisor")}
+                          placeholder="Например: проф. Касымов А.Т."
+                          className="w-full pl-10 pr-10 py-3 rounded-2xl bg-[#f5f3ed]/60 border-2 border-[#1a4d3e]/15 hover:border-[#1a4d3e]/30 text-sm text-[#1a4d3e] placeholder:text-[#1a4d3e]/40 focus:outline-none focus:border-[#1a4d3e] focus:ring-4 focus:ring-[#1a4d3e]/10 focus:bg-white transition-all font-medium"
+                        />
+                        {supervisorValue && (
+                          <button
+                            type="button"
+                            onClick={() => setValue("supervisor", "")}
+                            className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-[#1a4d3e]/40 hover:text-[#1a4d3e] transition-colors cursor-pointer"
+                            title="Очистить"
+                          >
+                            <span className="size-4 rounded-full bg-[#1a4d3e]/10 flex items-center justify-center text-xs">×</span>
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <label className="block text-xs font-bold uppercase tracking-wider text-[#1a4d3e]">
+                        Соавторы (через запятую)
+                      </label>
+                      {coAuthorsValue && (
+                        <button
+                          type="button"
+                          onClick={() => setValue("coAuthors", "")}
+                          className="text-[11px] text-[#1a4d3e]/50 hover:text-danger font-medium transition-colors cursor-pointer"
+                        >
+                          Очистить
+                        </button>
+                      )}
+                    </div>
+                    <div className="relative group">
+                      <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#1a4d3e]/40 group-focus-within:text-[#1a4d3e] transition-colors">
+                        <Users className="size-4" />
+                      </div>
+                      <input
+                        {...register("coAuthors")}
+                        placeholder="Например: Смирнов А.П., Касымова Д.Е."
+                        className="w-full pl-10 pr-10 py-3 rounded-2xl bg-[#f5f3ed]/60 border-2 border-[#1a4d3e]/15 hover:border-[#1a4d3e]/30 text-sm text-[#1a4d3e] placeholder:text-[#1a4d3e]/40 focus:outline-none focus:border-[#1a4d3e] focus:ring-4 focus:ring-[#1a4d3e]/10 focus:bg-white transition-all font-medium"
+                      />
+                      {coAuthorsValue && (
+                        <button
+                          type="button"
+                          onClick={() => setValue("coAuthors", "")}
+                          className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-[#1a4d3e]/40 hover:text-[#1a4d3e] transition-colors cursor-pointer"
+                          title="Очистить"
+                        >
+                          <span className="size-4 rounded-full bg-[#1a4d3e]/10 flex items-center justify-center text-xs">×</span>
+                        </button>
+                      )}
+                    </div>
+                    <p className="text-[11px] text-muted-foreground mt-1">
+                      Если работа выполнена в соавторстве, перечислите других авторов через запятую.
+                    </p>
+                  </div>
+
+                  <div>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <label className="block text-xs font-bold uppercase tracking-wider text-[#1a4d3e]">
+                        Ключевые слова (через запятую)
+                      </label>
+                      {keywordsValue && (
+                        <button
+                          type="button"
+                          onClick={() => setValue("keywords", "")}
+                          className="text-[11px] text-[#1a4d3e]/50 hover:text-danger font-medium transition-colors cursor-pointer"
+                        >
+                          Очистить
+                        </button>
+                      )}
+                    </div>
+                    <div className="relative group">
+                      <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#1a4d3e]/40 group-focus-within:text-[#1a4d3e] transition-colors">
+                        <Tag className="size-4" />
+                      </div>
+                      <input
+                        {...register("keywords")}
+                        placeholder="Например: искусственный интеллект, машинное обучение, NLP, классификация"
+                        className="w-full pl-10 pr-10 py-3 rounded-2xl bg-[#f5f3ed]/60 border-2 border-[#1a4d3e]/15 hover:border-[#1a4d3e]/30 text-sm text-[#1a4d3e] placeholder:text-[#1a4d3e]/40 focus:outline-none focus:border-[#1a4d3e] focus:ring-4 focus:ring-[#1a4d3e]/10 focus:bg-white transition-all font-medium"
+                      />
+                      {keywordsValue && (
+                        <button
+                          type="button"
+                          onClick={() => setValue("keywords", "")}
+                          className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-[#1a4d3e]/40 hover:text-[#1a4d3e] transition-colors cursor-pointer"
+                          title="Очистить"
+                        >
+                          <span className="size-4 rounded-full bg-[#1a4d3e]/10 flex items-center justify-center text-xs">×</span>
+                        </button>
+                      )}
+                    </div>
+                    <p className="text-[11px] text-muted-foreground mt-1">
+                      Ключевые слова используются для каталогизации и AI-оценки релевантности секции.
+                    </p>
+                  </div>
                 </div>
 
-                {/* 4. Аннотация доклада */}
                 <div>
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-2">
                     <label className="block text-sm font-bold text-[#1a4d3e]">
@@ -653,7 +932,6 @@ export function SubmissionPage() {
                     />
                   </div>
 
-                  {/* Индикатор длины аннотации и шкала прогресса */}
                   <div className="mt-2 space-y-1.5">
                     <div className="flex items-center justify-between text-xs">
                       <span
@@ -679,7 +957,6 @@ export function SubmissionPage() {
                       </span>
                     </div>
 
-                    {/* Progress bar */}
                     <div className="w-full h-1.5 rounded-full bg-[#1a4d3e]/10 overflow-hidden">
                       <div
                         className={`h-full transition-all duration-300 rounded-full ${abstractValue.length >= 50 ? "bg-emerald-600" : "bg-amber-500"
@@ -698,7 +975,6 @@ export function SubmissionPage() {
                   )}
                 </div>
 
-                {/* Кнопка отправки формы заявки */}
                 <Button
                   type="submit"
                   className="w-full py-4 bg-[#1a4d3e] hover:bg-[#143d31] text-white font-bold rounded-2xl shadow-sm transition-all cursor-pointer text-base"
@@ -711,9 +987,6 @@ export function SubmissionPage() {
             </Card>
           </div>
         ) : isSubmitted ? (
-          /* =========================================================================
-             3. ШАГ 3: ФИНАЛЬНЫЙ ЭКРАН ПОДТВЕРЖДЕНИЯ (ЗАЯВКА ОТПРАВЛЕНА ЖЮРИ)
-             ========================================================================= */
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4">
             <Card className="border border-emerald-600/30 bg-white p-7 sm:p-9 rounded-3xl shadow-sm space-y-6">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-[#1a4d3e]/10">
@@ -738,7 +1011,6 @@ export function SubmissionPage() {
                 </Chip>
               </div>
 
-              {/* Детали заявки */}
               <div className="bg-[#f5f3ed]/70 rounded-2xl p-5 sm:p-6 border border-[#1a4d3e]/15 space-y-4">
                 <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-[#1a4d3e]/10">
                   <div className="flex items-center gap-2">
@@ -759,19 +1031,56 @@ export function SubmissionPage() {
                   <h3 className="text-lg font-bold text-[#1a4d3e] leading-snug">
                     {talk?.title}
                   </h3>
-                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 text-xs text-muted-foreground">
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 mt-2 text-xs text-muted-foreground">
                     <span className="font-semibold text-[#1a4d3e]">
                       Докладчик: {talk?.speakerName || user?.fullName} {talk?.gradeOrGroup ? `(${talk.gradeOrGroup})` : ""}
                     </span>
+                    {talk?.university && (
+                      <span className="flex items-center gap-1">
+                        <School className="size-3.5 text-muted-foreground" />
+                        {talk.university}
+                      </span>
+                    )}
+                    {talk?.authorEmail && (
+                      <span className="flex items-center gap-1">
+                        <Mail className="size-3.5 text-muted-foreground" />
+                        {talk.authorEmail}
+                      </span>
+                    )}
                     {talk?.supervisor && (
                       <span>
                         Руководитель: <strong className="text-[#1a4d3e]">{talk.supervisor}</strong>
                       </span>
                     )}
                   </div>
+
+                  {talk?.coAuthors && talk.coAuthors.length > 0 && (
+                    <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
+                      <span className="font-semibold text-[#1a4d3e] flex items-center gap-1">
+                        <Users className="size-3.5 text-muted-foreground" />
+                        Соавторы:
+                      </span>
+                      <span>{talk.coAuthors.join(", ")}</span>
+                    </div>
+                  )}
+
+                  {talk?.keywords && talk.keywords.length > 0 && (
+                    <div className="flex flex-wrap items-center gap-1.5 mt-2.5">
+                      <span className="text-[11px] font-semibold text-[#1a4d3e]/70 flex items-center gap-1 mr-1">
+                        <Tag className="size-3" /> Ключевые слова:
+                      </span>
+                      {talk.keywords.map((kw, i) => (
+                        <span
+                          key={i}
+                          className="text-[11px] font-medium px-2 py-0.5 rounded-md bg-[#1a4d3e]/5 text-[#1a4d3e] border border-[#1a4d3e]/10"
+                        >
+                          {kw}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
-                {/* Материалы и статус AI */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
                   <div className="bg-white rounded-xl p-3.5 border border-[#1a4d3e]/10 space-y-1">
                     <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
@@ -807,7 +1116,6 @@ export function SubmissionPage() {
                 </div>
               </div>
 
-              {/* Если был AI-анализ, покажем блок результатов для справки */}
               {aiResult && (
                 <div className="rounded-2xl border border-emerald-200 bg-emerald-50/40 p-5 space-y-3">
                   <div className="flex items-center justify-between text-xs font-bold text-[#1a4d3e]">
@@ -832,7 +1140,6 @@ export function SubmissionPage() {
                 </div>
               )}
 
-              {/* Навигационные кнопки */}
               <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-[#1a4d3e]/10">
                 <Button
                   className="w-full sm:w-auto px-6 py-3 bg-[#1a4d3e] hover:bg-[#143d31] text-white font-bold rounded-xl cursor-pointer"
@@ -862,9 +1169,6 @@ export function SubmissionPage() {
             </Card>
           </div>
         ) : (
-          /* =========================================================================
-             3. ШАГ 2: МАТЕРИАЛЫ ДОКЛАДА (ПРЕЗЕНТАЦИЯ / СТАТЬЯ) И AI-ПРОВЕРКА (НЕОБЯЗАТЕЛЬНО)
-             ========================================================================= */
           <div className="space-y-6">
             <Card className="border border-[#1a4d3e]/20 bg-white p-7 sm:p-9 rounded-3xl shadow-sm space-y-6">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 border-b border-[#1a4d3e]/10">
@@ -886,7 +1190,56 @@ export function SubmissionPage() {
                 </Chip>
               </div>
 
-              {/* Блок 1: Загрузка файла (презентация / статья / тезисы) */}
+              {talk && (
+                <div className="bg-[#f5f3ed]/60 rounded-2xl p-4 sm:p-5 border border-[#1a4d3e]/15 space-y-2">
+                  <div className="flex items-center justify-between text-xs text-muted-foreground pb-2 border-b border-[#1a4d3e]/10">
+                    <span className="font-bold text-[#1a4d3e] text-sm">
+                      {talk.title}
+                    </span>
+                    <span className="font-mono text-xs">#{talk.id}</span>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                    <span className="font-semibold text-[#1a4d3e]">
+                      {talk.speakerName || user?.fullName}
+                      {talk.gradeOrGroup ? ` • ${talk.gradeOrGroup}` : ""}
+                    </span>
+                    {talk.university && (
+                      <span className="flex items-center gap-1">
+                        <School className="size-3.5 text-muted-foreground" />
+                        {talk.university}
+                      </span>
+                    )}
+                    {talk.authorEmail && (
+                      <span className="flex items-center gap-1">
+                        <Mail className="size-3.5 text-muted-foreground" />
+                        {talk.authorEmail}
+                      </span>
+                    )}
+                    {talk.supervisor && (
+                      <span>
+                        Руководитель: <strong className="text-[#1a4d3e]">{talk.supervisor}</strong>
+                      </span>
+                    )}
+                  </div>
+                  {talk.coAuthors && talk.coAuthors.length > 0 && (
+                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground pt-1">
+                      <Users className="size-3.5 text-muted-foreground shrink-0" />
+                      <span>Соавторы: <strong className="text-[#1a4d3e]">{talk.coAuthors.join(", ")}</strong></span>
+                    </div>
+                  )}
+                  {talk.keywords && talk.keywords.length > 0 && (
+                    <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                      <Tag className="size-3 text-muted-foreground" />
+                      {talk.keywords.map((kw, i) => (
+                        <span key={i} className="text-[10px] font-medium px-2 py-0.5 rounded bg-white text-[#1a4d3e] border border-[#1a4d3e]/10">
+                          {kw}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <label className="text-sm font-bold text-[#1a4d3e] flex items-center gap-2">
@@ -1018,7 +1371,6 @@ export function SubmissionPage() {
                 )}
               </div>
 
-              {/* Блок 2: Экспресс-анализ Gemini AI (НЕОБЯЗАТЕЛЬНО) */}
               <div className="rounded-2xl border border-[#d4a84b]/40 bg-[#d4a84b]/5 p-5 sm:p-6 space-y-4">
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-center gap-2.5">
@@ -1039,7 +1391,6 @@ export function SubmissionPage() {
                   </span>
                 </div>
 
-                {/* Если уже есть результат AI */}
                 {aiResult && (
                   <div className="space-y-4 animate-in fade-in pt-2">
                     <div className="grid md:grid-cols-2 gap-3">
@@ -1091,7 +1442,6 @@ export function SubmissionPage() {
                   </div>
                 )}
 
-                {/* Кнопки действий: AI или прямая отправка */}
                 <div className="flex flex-col sm:flex-row gap-3 pt-2">
                   <Button
                     className="flex-1 py-3.5 bg-white hover:bg-white/80 text-[#1a4d3e] border border-[#d4a84b] font-bold rounded-xl shadow-2xs"
@@ -1113,7 +1463,6 @@ export function SubmissionPage() {
                 </div>
               </div>
 
-              {/* Пропустить прикрепление файла, если файла нет */}
               {!talk?.document && !file && (
                 <div className="text-center pt-1">
                   <button

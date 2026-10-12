@@ -1,17 +1,13 @@
 import type { AIValidationResult, Conference, Section, Talk } from "~entities/talk/model/types";
 import { mockTalks, mockSections, initialAIResults } from "./mockData";
 
-// Локальное состояние мока (для имитации изменений на сервере)
 let talks: Talk[] = [...mockTalks];
 const aiResults = new Map(initialAIResults);
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-// === Conference ===
 export async function getConference(id: number | string): Promise<Conference | undefined> {
   await delay(100);
-  // Возвращаем моковые данные конференции. 
-  // В реальном приложении здесь был бы запрос к API по id.
   return {
     id: Number(id),
     title: "Международная научно-практическая конференция 2026",
@@ -21,16 +17,14 @@ export async function getConference(id: number | string): Promise<Conference | u
   };
 }
 
-// === Sections ===
 export async function listSections(): Promise<Section[]> {
   await delay(100);
   return mockSections;
 }
 
-// === Talks ===
 export async function listTalks(): Promise<Talk[]> {
   await delay(250);
-  return [...talks]; // Возвращаем копию, чтобы предотвратить случайные мутации извне
+  return [...talks];
 }
 
 export async function getTalk(id: number): Promise<Talk | undefined> {

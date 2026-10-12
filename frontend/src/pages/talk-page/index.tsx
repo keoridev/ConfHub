@@ -21,7 +21,6 @@ export function TalkPage() {
 
   return (
     <div className="py-8 max-w-3xl mx-auto flex flex-col gap-6 px-4">
-      {/* Кнопка назад */}
       <Link
         to={pathKeys.conference.build("demo")}
         className="text-sm text-default-500 flex items-center gap-1.5 w-fit hover:text-foreground transition-colors group"
@@ -30,11 +29,8 @@ export function TalkPage() {
         К программе
       </Link>
 
-      {/* Основная карточка */}
       <Card className="border border-default-200 bg-background/80 backdrop-blur-sm shadow-lg shadow-primary/5 transition-all duration-300 hover:shadow-xl hover:shadow-primary/10">
-        {/* Шапка карточки */}
         <Card.Header className="flex flex-col gap-4 px-6 pt-6 pb-2">
-          {/* Чипсы с мета-информацией */}
           <div className="flex gap-2 flex-wrap">
             <Chip
               size="sm"
@@ -67,7 +63,6 @@ export function TalkPage() {
             )}
           </div>
 
-          {/* Заголовок и спикер */}
           <div className="space-y-2">
             <h1 className="text-2xl sm:text-3xl font-bold leading-tight text-foreground">
               {talk.title}
@@ -79,14 +74,11 @@ export function TalkPage() {
           </div>
         </Card.Header>
 
-        {/* Основной контент */}
         <Card.Content className="px-6 pb-6 flex flex-col gap-6">
-          {/* Аннотация */}
           <div className="prose prose-sm max-w-none text-default-700 leading-relaxed bg-default-50/50 p-4 rounded-lg border border-default-100">
             <p className="m-0">{talk.abstract}</p>
           </div>
 
-          {/* Теги */}
           <div className="flex gap-2 flex-wrap pt-2">
             {talk.tags.map((tag) => (
               <Chip

@@ -37,7 +37,6 @@ export function LoginPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage(null);
-
     try {
       const data = await loginMutation.mutateAsync({ login, password });
       toast.success(`Добро пожаловать, ${data.user.fullName || data.user.login}!`);
@@ -64,29 +63,25 @@ export function LoginPage() {
 
   return (
     <div className="min-h-screen bg-[#f5f3ed] text-[#1a4d3e] flex flex-col justify-between selection:bg-[#d4a84b]/30">
-      {/* Header bar with Back link */}
-      <header className="w-full max-w-6xl mx-auto px-4 py-6 flex items-center justify-between">
+      <header className="w-full max-w-6xl mx-auto px-4 py-4 sm:py-6 flex items-center justify-between gap-3">
         <Link
           to={pathKeys.conference.build("demo")}
-          className="inline-flex items-center gap-2 text-sm font-semibold text-[#1a4d3e]/80 hover:text-[#1a4d3e] transition-colors"
+          className="inline-flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm font-semibold text-[#1a4d3e]/80 hover:text-[#1a4d3e] transition-colors shrink-0"
         >
           <ArrowLeft className="size-4" />
-          <span>К расписанию конференции</span>
+          <span className="hidden sm:inline">К расписанию конференции</span>
+          <span className="sm:hidden">Назад</span>
         </Link>
 
-        <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-[#1a4d3e] flex items-center justify-center">
-            <Sparkles className="size-3.5 text-[#d4a84b]" />
-          </div>
-          <span className="font-bold text-sm tracking-tight text-[#1a4d3e]">СИГНАЛ 2026</span>
+        <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
+          <img src="/logo.jpg" alt="Logo" className="size-6 sm:size-7 rounded-lg object-cover border border-[#1a4d3e]/15" />
+          <span className="font-bold text-xs sm:text-sm tracking-tight text-[#1a4d3e]">Conf-Hub 2026</span>
         </div>
       </header>
 
-      {/* Main card container */}
       <main className="flex-1 flex items-center justify-center px-4 py-8">
         <div className="w-full max-w-4xl grid md:grid-cols-12 gap-8 items-center">
           
-          {/* Left Column: Conference context & quick credentials */}
           <div className="md:col-span-5 space-y-6">
             <div>
               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold tracking-wide uppercase bg-[#1a4d3e]/10 text-[#1a4d3e] border border-[#1a4d3e]/15 mb-4">
@@ -101,7 +96,6 @@ export function LoginPage() {
               </p>
             </div>
 
-            {/* Quick test accounts */}
             <div className="bg-white/80 rounded-2xl p-5 border border-[#1a4d3e]/15 shadow-xs space-y-3">
               <p className="text-xs font-bold uppercase tracking-wider text-[#1a4d3e]/70">
                 Тестовые аккаунты для проверки:
@@ -155,7 +149,6 @@ export function LoginPage() {
             </div>
           </div>
 
-          {/* Right Column: Clean, modern form card */}
           <div className="md:col-span-7">
             <div className="bg-white rounded-3xl border border-[#1a4d3e]/15 shadow-lg shadow-[#1a4d3e]/5 p-7 sm:p-10">
               <div className="mb-6">
@@ -175,7 +168,6 @@ export function LoginPage() {
               )}
 
               <form onSubmit={handleSubmit} className="space-y-5">
-                {/* Login field */}
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <label
@@ -221,7 +213,6 @@ export function LoginPage() {
                   </div>
                 </div>
 
-                {/* Password field */}
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <label
@@ -267,7 +258,6 @@ export function LoginPage() {
                   </div>
                 </div>
 
-                {/* Submit button */}
                 <button
                   type="submit"
                   disabled={loginMutation.isPending}
@@ -298,9 +288,8 @@ export function LoginPage() {
         </div>
       </main>
 
-      {/* Footer */}
       <footer className="w-full max-w-6xl mx-auto px-4 py-6 text-center text-xs text-[#1a4d3e]/50">
-        © 2026 СИГНАЛ / COMTEHNO — Научно-практическая конференция
+        © 2026 Conf-Hub / COMTEHNO — Научно-практическая конференция
       </footer>
     </div>
   );

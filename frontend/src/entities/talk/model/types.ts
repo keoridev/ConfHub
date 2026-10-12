@@ -60,14 +60,18 @@ export interface Talk {
   authorId: number;
   title: string;
   speakerName: string;
-  gradeOrGroup: string;
-  supervisor: string;
+  gradeOrGroup?: string;
+  supervisor?: string;
   abstract: string;
   tags: string[];
+  coAuthors?: string[];
+  keywords?: string[];
+  authorEmail?: string;
+  university?: string;
   status: 'pending_review' | 'approved' | 'rejected' | 'needs_revision';
   juryComment?: string;
   section: Section;
-  room?: Room; // Вместо hallNumber
+  room?: Room;
   startTime?: string;
   endTime?: string;
   createdAt: string;

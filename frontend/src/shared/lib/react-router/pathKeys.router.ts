@@ -3,9 +3,9 @@ export const pathKeys = {
   login: "/login",
   submission: "/submission",
   jury: "/jury",
-  dashboard: "/dashboard",         // <-- Добавлено
-  admin: "/admin",                 // <-- Добавлено
-  changePassword: "/change-password", // <-- Добавлено
+  dashboard: "/dashboard",
+  admin: "/admin",
+  changePassword: "/change-password",
   
   conference: {
     route: "/conference/:conferenceId",

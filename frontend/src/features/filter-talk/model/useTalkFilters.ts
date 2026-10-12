@@ -31,10 +31,9 @@ export function useTalkFilters(talks: Talk[]) {
           (t.tags || []).some((tag) => tag.toLowerCase().includes(q))
       )
       .sort((a, b) => {
-        // КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: обработка пустых строк дат
         if (!a.startTime && !b.startTime) return 0;
-        if (!a.startTime) return 1; // a без даты уходит вниз
-        if (!b.startTime) return -1; // b без даты уходит вниз
+        if (!a.startTime) return 1;
+        if (!b.startTime) return -1;
 
         return Date.parse(a.startTime) - Date.parse(b.startTime);
       });

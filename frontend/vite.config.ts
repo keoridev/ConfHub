@@ -4,7 +4,6 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 
-// Получаем абсолютный путь к директории текущего файла (vite.config.ts)
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({

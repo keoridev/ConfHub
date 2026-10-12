@@ -6,7 +6,6 @@ export const mockSections: Section[] = [
   { id: 3, title: "Экология", color: "#0D9488", conferenceId: 1, sortOrder: 3 },
 ];
 
-// Объединяем все тестовые доклады в один массив
 export const mockTalks = [
   {
     id: 101,

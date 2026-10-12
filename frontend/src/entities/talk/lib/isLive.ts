@@ -19,7 +19,6 @@ export const isLiveNow = (talk: Pick<Talk, "startTime" | "endTime">): boolean =>
   const start = Date.parse(talk.startTime);
   const end = Date.parse(talk.endTime);
   
-  // Дополнительная защита от невалидных дат в моках
   if (Number.isNaN(start) || Number.isNaN(end)) return false;
   
   return now >= start && now <= end;

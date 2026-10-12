@@ -14,8 +14,6 @@ export const queryKeys = {
   auth: { user: ["auth", "user"] as const },
 };
 
-// === MUTATIONS ===
-
 export function useLoginMutation() {
   const qc = useQueryClient();
   return useMutation({
@@ -24,9 +22,7 @@ export function useLoginMutation() {
         .post<{ user: User; token?: string }>("/auth/login", data)
         .then((res) => res.data),
     onSuccess: (data) => {
-      // Сохраняем данные пользователя в кэш
       qc.setQueryData(queryKeys.auth.user, data.user);
-      // Сохраняем токен в клиенте и хранилище
       if (data.token) {
         apiClient.setToken(data.token);
       }
@@ -95,11 +91,19 @@ export function useCreateTalkMutation() {
     mutationFn: (data: {
       sectionId: number;
       title: string;
-      supervisor: string;
       abstract: string;
-      tags: string[];
+      supervisor?: string;
+      tags?: string[];
+      coAuthors?: string[];
+      keywords?: string[];
+      authorEmail?: string;
+      university?: string;
+      gradeOrGroup?: string;
     }) => apiClient.post<Talk>("/talks", data).then((res) => res.data),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["talks", "my"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["talks", "my"] });
+      qc.invalidateQueries({ queryKey: queryKeys.talks.all });
+    },
   });
 }
 
@@ -137,25 +141,21 @@ export function useReviewTalkMutation() {
       apiClient.patch(`/jury/talks/${id}/review`, data).then((res) => res.data),
     onSuccess: (_, { id }) => {
       qc.invalidateQueries({ queryKey: queryKeys.talks.detail(id) });
-      // Инвалидируем очередь жюри и публичные списки
       qc.invalidateQueries({ queryKey: ["talks", "jury-queue"] });
       qc.invalidateQueries({ queryKey: queryKeys.talks.all });
     },
   });
 }
 
-// === QUERIES ===
-
 export function useTalkQuery(id: number) {
   return useQuery({
     queryKey: queryKeys.talks.detail(id),
     queryFn: () =>
       apiClient.get<Talk>(`/my/talks/${id}`).then((res) => res.data),
-    enabled: !!id, // Критично: не делать запрос, если id еще нет
+    enabled: !!id,
   });
 }
 
-// НОВЫЙ: Получение списка докладов конференции (используется в ConferencePage)
 export function useTalksQuery(conferenceId: number = 1, status?: string) {
   return useQuery({
     queryKey: queryKeys.talks.byConference(conferenceId, status),
@@ -168,7 +168,6 @@ export function useTalksQuery(conferenceId: number = 1, status?: string) {
   });
 }
 
-// Жюри получает список через общий эндпоинт конференций с фильтром статуса
 export function useJuryQueueQuery(conferenceId: number = 1, status: string = "pending_review") {
   return useQuery({
     queryKey: ["talks", "jury-queue", conferenceId, status],
@@ -199,7 +198,6 @@ export function useRoomsQuery(conferenceId: number = 1) {
   });
 }
 
-// Получение AI-результата для конкретного доклада (используется в JuryPage)
 export function useAIResultQuery(talkId: number) {
   return useQuery({
     queryKey: ["talks", "ai-result", talkId] as const,
@@ -212,7 +210,6 @@ export function useAIResultQuery(talkId: number) {
   });
 }
 
-// Получение полной информации о докладе для жюри
 export function useJuryTalkQuery(talkId: number) {
   return useQuery({
     queryKey: ["talks", "jury-detail", talkId] as const,

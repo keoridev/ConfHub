@@ -27,6 +27,10 @@ import {
   EyeOff,
   MessageSquare,
   Building2,
+  School,
+  Mail,
+  Users,
+  Tag,
 } from "lucide-react";
 
 import {
@@ -58,9 +62,6 @@ interface AIResultResponse {
   model: string;
 }
 
-// =========================================================================
-// КАРТОЧКА ДОКЛАДА В ОЧЕРЕДИ ЖЮРИ
-// =========================================================================
 function JuryCard({
   talk,
   onApproveClick,
@@ -85,12 +86,10 @@ function JuryCard({
   const sectionFitScore = aiResult?.sectionFit?.score;
   const annotationMatchScore = aiResult?.annotationMatch?.score;
 
-  // Иконка секции
   const isIT = talk.sectionId === 1 || sectionTitle.toLowerCase().includes("it");
   const isEng = talk.sectionId === 2 || sectionTitle.toLowerCase().includes("инжен");
   const SectionIcon = isIT ? Laptop : isEng ? Cpu : Leaf;
 
-  // Скачивание файла с Bearer-токеном
   const handleDownloadDocument = async () => {
     if (!talk.document) return;
     setIsDownloading(true);
@@ -115,7 +114,6 @@ function JuryCard({
     }
   };
 
-  // Статус бейдж
   const renderStatusBadge = () => {
     switch (talk.status) {
       case "approved":
@@ -152,7 +150,6 @@ function JuryCard({
   return (
     <Card className="border border-[#1a4d3e]/15 bg-white shadow-sm hover:shadow-md transition-all duration-200 rounded-2xl overflow-hidden">
       <div className="p-6 space-y-5">
-        {/* Верхняя строка: Секция, ID и статус */}
         <div className="flex flex-wrap items-center justify-between gap-2.5 pb-3 border-b border-[#1a4d3e]/10">
           <div className="flex items-center gap-2">
             <span
@@ -169,16 +166,27 @@ function JuryCard({
           {renderStatusBadge()}
         </div>
 
-        {/* Название доклада */}
         <div>
           <h3 className="text-xl font-extrabold text-[#1a4d3e] leading-snug tracking-tight">
             {talk.title}
           </h3>
-          <div className="flex flex-wrap items-center gap-y-1 gap-x-4 mt-2 text-xs text-muted-foreground">
+          <div className="flex flex-wrap items-center gap-y-1.5 gap-x-4 mt-2 text-xs text-muted-foreground">
             <span className="flex items-center gap-1 text-[#1a4d3e] font-semibold">
               <GraduationCap className="size-3.5 text-[#d4a84b]" />
               {talk.speakerName} {talk.gradeOrGroup ? `(${talk.gradeOrGroup})` : ""}
             </span>
+            {talk.university && (
+              <span className="flex items-center gap-1">
+                <School className="size-3.5 text-muted-foreground" />
+                {talk.university}
+              </span>
+            )}
+            {talk.authorEmail && (
+              <span className="flex items-center gap-1">
+                <Mail className="size-3.5 text-muted-foreground" />
+                {talk.authorEmail}
+              </span>
+            )}
             {talk.supervisor && (
               <span className="flex items-center gap-1">
                 <UserCheck className="size-3.5 text-muted-foreground" />
@@ -186,9 +194,29 @@ function JuryCard({
               </span>
             )}
           </div>
+
+          {talk.coAuthors && talk.coAuthors.length > 0 && (
+            <div className="flex items-center gap-1.5 mt-2 text-xs text-muted-foreground">
+              <Users className="size-3.5 text-muted-foreground shrink-0" />
+              <span>Соавторы: <strong className="text-[#1a4d3e] font-semibold">{talk.coAuthors.join(", ")}</strong></span>
+            </div>
+          )}
+
+          {talk.keywords && talk.keywords.length > 0 && (
+            <div className="flex flex-wrap items-center gap-1.5 mt-2.5">
+              <Tag className="size-3 text-muted-foreground" />
+              {talk.keywords.map((kw, i) => (
+                <span
+                  key={i}
+                  className="text-[10px] font-medium px-2 py-0.5 rounded-md bg-[#1a4d3e]/5 text-[#1a4d3e] border border-[#1a4d3e]/10"
+                >
+                  {kw}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
 
-        {/* Текст аннотации */}
         <div className="bg-[#f5f3ed]/60 rounded-xl p-4 border border-[#1a4d3e]/10 space-y-1.5">
           <div className="flex items-center justify-between text-xs font-bold text-[#1a4d3e]">
             <span>Аннотация доклада:</span>
@@ -217,7 +245,6 @@ function JuryCard({
           </p>
         </div>
 
-        {/* Прикреплённый документ */}
         {talk.document ? (
           <div className="flex items-center justify-between bg-white rounded-xl p-3 border border-[#1a4d3e]/20 shadow-2xs">
             <div className="flex items-center gap-3 truncate">
@@ -253,7 +280,6 @@ function JuryCard({
           </div>
         )}
 
-        {/* Блок результатов AI-анализа */}
         {aiLoading && (
           <div className="p-4 rounded-xl border border-[#1a4d3e]/10 bg-[#f5f3ed]/40 animate-pulse space-y-2">
             <div className="h-3 w-1/3 bg-[#1a4d3e]/10 rounded" />
@@ -301,7 +327,6 @@ function JuryCard({
               )}
             </div>
 
-            {/* Метрики AI */}
             <div className="grid grid-cols-2 gap-2.5">
               <div
                 className={`p-2.5 rounded-xl border ${
@@ -340,7 +365,6 @@ function JuryCard({
               </div>
             </div>
 
-            {/* Предложения по улучшению */}
             {aiResult.suggestions && aiResult.suggestions.length > 0 && (
               <div className="text-[11px] text-[#1a4d3e]/80 bg-[#f5f3ed]/60 p-2.5 rounded-xl">
                 <span className="font-bold block mb-1">Рекомендации AI:</span>
@@ -354,7 +378,6 @@ function JuryCard({
           </div>
         )}
 
-        {/* Если доклад уже одобрен — выводим детали расписания */}
         {talk.status === "approved" && (
           <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 flex flex-wrap items-center justify-between gap-2 text-xs">
             <div className="flex items-center gap-2 text-emerald-900 font-semibold">
@@ -380,7 +403,6 @@ function JuryCard({
           </div>
         )}
 
-        {/* Комментарий жюри при наличии */}
         {talk.juryComment && (
           <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-900 space-y-1">
             <span className="font-bold flex items-center gap-1.5">
@@ -391,7 +413,6 @@ function JuryCard({
           </div>
         )}
 
-        {/* Кнопки принятия решений жюри */}
         <div className="flex flex-wrap gap-2 pt-1">
           <Button
             size="sm"
@@ -425,48 +446,38 @@ function JuryCard({
   );
 }
 
-// =========================================================================
-// ОСНОВНАЯ СТРАНИЦА ЖЮРИ
-// =========================================================================
 export function JuryPage() {
   const { data: user } = useCurrentUserQuery();
   const loginMutation = useLoginMutation();
 
-  // Состояние входа для неавторизованных
   const [authLogin, setAuthLogin] = useState("jury1");
   const [authPassword, setAuthPassword] = useState("jury123");
   const [showAuthPassword, setShowAuthPassword] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
 
-  // Табы фильтрации очереди: pending_review, approved, needs_revision, rejected
   const [activeTab, setActiveTab] = useState<"pending_review" | "approved" | "needs_revision" | "rejected">("pending_review");
   const [selectedSectionId, setSelectedSectionId] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Запросы данных
   const { data: talks = [], isLoading } = useJuryQueueQuery(1, activeTab);
   const { data: rooms = [] } = useRoomsQuery();
   const { data: sections = [] } = useSectionsQuery();
 
   const reviewMutation = useReviewTalkMutation();
 
-  // Состояние модалок
   const [targetTalk, setTargetTalk] = useState<Talk | null>(null);
   const [isApproveModalOpen, setIsApproveModalOpen] = useState(false);
   const [isFeedbackModalOpen, setIsFeedbackModalOpen] = useState(false);
   const [feedbackType, setFeedbackType] = useState<"needs_revision" | "rejected">("needs_revision");
 
-  // Поля модалки одобрения
   const [approveRoomId, setApproveRoomId] = useState("");
   const [selectedDate, setSelectedDate] = useState("2026-10-05");
   const [selectedSlot, setSelectedSlot] = useState("10:00 - 10:30");
   const [customStartTime, setCustomStartTime] = useState("");
   const [customEndTime, setCustomEndTime] = useState("");
 
-  // Поля модалки доработки / отклонения
   const [feedbackComment, setFeedbackComment] = useState("");
 
-  // Вход эксперта жюри
   const handleJuryLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setAuthError(null);
@@ -500,7 +511,6 @@ export function JuryPage() {
     }
   };
 
-  // Открытие модалки одобрения
   const handleOpenApprove = (talk: Talk) => {
     setTargetTalk(talk);
     setApproveRoomId(talk.room?.id ? String(talk.room.id) : rooms[0]?.id ? String(rooms[0].id) : "1");
@@ -509,7 +519,6 @@ export function JuryPage() {
     setIsApproveModalOpen(true);
   };
 
-  // Подтверждение одобрения
   const handleConfirmApprove = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!targetTalk) return;
@@ -519,7 +528,6 @@ export function JuryPage() {
       return;
     }
 
-    // Собираем ISO время из выбранного дня и слота
     let startIso = "";
     let endIso = "";
 
@@ -550,7 +558,6 @@ export function JuryPage() {
     }
   };
 
-  // Открытие модалки доработки / отклонения
   const handleOpenFeedback = (talk: Talk, type: "needs_revision" | "rejected") => {
     setTargetTalk(talk);
     setFeedbackType(type);
@@ -558,7 +565,6 @@ export function JuryPage() {
     setIsFeedbackModalOpen(true);
   };
 
-  // Подтверждение доработки / отклонения
   const handleConfirmFeedback = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!targetTalk) return;
@@ -588,7 +594,6 @@ export function JuryPage() {
     }
   };
 
-  // Быстрые шаблоны замечаний
   const commentPresets = [
     "Дополнить аннотацию описанием методов исследования и конкретными результатами.",
     "Уточнить соответствие темы профилю и задачам выбранной секции.",
@@ -596,7 +601,6 @@ export function JuryPage() {
     "Тема доклада не соответствует научным направлениям данной конференции.",
   ];
 
-  // Временные слоты
   const timeSlots = [
     "10:00 - 10:30",
     "10:30 - 11:00",
@@ -608,15 +612,12 @@ export function JuryPage() {
     "15:30 - 16:00",
   ];
 
-  // Фильтрация докладов
   const filteredTalks = useMemo(() => {
     return talks.filter((t) => {
-      // Секция
       const secId = t.sectionId ?? t.section?.id;
       if (selectedSectionId !== "all" && String(secId) !== selectedSectionId) {
         return false;
       }
-      // Поиск
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
         const matchTitle = t.title.toLowerCase().includes(q);
@@ -632,43 +633,57 @@ export function JuryPage() {
   }, [talks, selectedSectionId, searchQuery]);
 
   return (
-    <div className="min-h-screen bg-[#f5f3ed] -mx-4 -my-6 md:-mx-8 md:-my-10 pb-20">
-      {/* Шапка кабинета жюри */}
-      <div className="bg-[#1a4d3e] text-white py-10 px-4 md:px-8 border-b border-[#1a4d3e]">
-        <div className="max-w-6xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="space-y-2">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold bg-[#f5f3ed]/15 text-[#f5f3ed] tracking-wider uppercase">
-              <Sparkles className="size-3.5 text-[#d4a84b]" />
-              Экспертный комитет 2026
+    <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-8 pb-20">
+      <div className="bg-gradient-to-br from-[#1a4335] via-[#215241] to-[#163a2e] text-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8 lg:p-9 border border-[#1a4d3e]/20 shadow-lg shadow-[#1a4d3e]/10 relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-80 h-80 bg-[#d4a84b]/10 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20" />
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-5 sm:gap-6">
+          <div className="space-y-2.5 sm:space-y-3">
+            <div className="inline-flex flex-wrap items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/15 text-[11px] sm:text-xs font-semibold tracking-wide uppercase max-w-full">
+              <img src="/logo.jpg" alt="Logo" className="size-3.5 sm:size-4 rounded object-cover" />
+              <span className="text-[#e6c16c]">Conf-Hub 2026</span>
+              <span className="text-white/40 hidden xs:inline">•</span>
+              <span className="text-white/90">Экспертный комитет</span>
             </div>
-            <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight">
+            <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-extrabold tracking-tight break-words leading-tight">
               Кабинет экспертного жюри
             </h1>
-            <p className="text-white/80 text-sm md:text-base max-w-2xl">
+            <p className="text-white/80 text-xs sm:text-sm md:text-base max-w-2xl leading-relaxed">
               Рецензирование заявок, проверка рекомендаций Gemini AI и назначение докладов в расписание аудиторий.
             </p>
           </div>
 
-          {user && (user.role === "jury" || user.role === "admin") && (
-            <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/15 shrink-0 flex items-center gap-3.5">
-              <div className="size-11 rounded-xl bg-[#d4a84b] text-[#1a4d3e] flex items-center justify-center font-black text-base shadow-xs">
+          {user && (user.role === "jury" || user.role === "admin") ? (
+            <div className="bg-white/10 backdrop-blur-md rounded-xl sm:rounded-2xl p-3 sm:p-4 border border-white/15 shrink-0 flex items-center gap-3 sm:gap-3.5 self-start md:self-auto max-w-full">
+              <div className="size-10 sm:size-12 rounded-xl bg-[#d4a84b] text-[#1a4d3e] flex items-center justify-center font-black text-base sm:text-lg shadow-xs shrink-0">
                 {user.fullName ? user.fullName[0].toUpperCase() : "Ж"}
               </div>
-              <div>
-                <p className="text-sm font-bold text-white">{user.fullName || user.login}</p>
-                <p className="text-xs text-white/70">
+              <div className="min-w-0">
+                <p className="text-xs sm:text-sm font-bold text-white truncate max-w-[170px] sm:max-w-[220px]">
+                  {user.fullName || user.login}
+                </p>
+                <p className="text-[11px] sm:text-xs text-[#e6c16c] font-medium truncate">
                   {user.role === "admin" ? "Оргкомитет (Администратор)" : "Эксперт комиссии жюри"}
                 </p>
+                <p className="text-[10px] text-white/60">
+                  Активная сессия
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="bg-white/10 backdrop-blur-md rounded-xl sm:rounded-2xl p-3 sm:p-4 border border-white/15 shrink-0 flex items-center gap-3 self-start md:self-auto max-w-full">
+              <div className="size-9 sm:size-10 rounded-xl bg-[#d4a84b]/20 border border-[#d4a84b]/30 text-[#e6c16c] flex items-center justify-center shrink-0">
+                <Sparkles className="size-4 sm:size-5" />
+              </div>
+              <div>
+                <p className="text-xs sm:text-sm font-bold text-white">Режим проверки</p>
+                <p className="text-[11px] sm:text-xs text-[#e6c16c] font-medium">Gemini 2.5 Flash активен</p>
               </div>
             </div>
           )}
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto px-4 md:px-8 py-8 space-y-8">
-        {/* =========================================================================
-            1. ЕСЛИ НЕ АВТОРИЗОВАН КАК ЖЮРИ — БЛОК БЫСТРОГО ВХОДА
-           ========================================================================= */}
+      <div className="space-y-8">
         {(!user || (user.role !== "jury" && user.role !== "admin")) && (
           <div className="max-w-xl mx-auto">
             <Card className="border border-[#1a4d3e]/20 bg-white p-7 sm:p-9 shadow-md rounded-3xl space-y-6">
@@ -682,7 +697,6 @@ export function JuryPage() {
                 </p>
               </div>
 
-              {/* Быстрые аккаунты для тестирования */}
               <div className="p-4 rounded-2xl bg-[#f5f3ed] border border-[#1a4d3e]/15 space-y-2.5">
                 <p className="text-xs font-bold uppercase tracking-wider text-[#1a4d3e]/70">
                   Быстрый вход для проверки:
@@ -725,7 +739,6 @@ export function JuryPage() {
                 </div>
               )}
 
-              {/* Форма ручного входа */}
               <form onSubmit={handleJuryLogin} className="space-y-4">
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-wider text-[#1a4d3e] mb-1.5">
@@ -785,23 +798,19 @@ export function JuryPage() {
           </div>
         )}
 
-        {/* =========================================================================
-            2. РАБОЧАЯ ОБЛАСТЬ ЖЮРИ (ДЛЯ АВТОРИЗОВАННЫХ ЭКСПЕРТОВ)
-           ========================================================================= */}
         {user && (user.role === "jury" || user.role === "admin") && (
           <div className="space-y-6">
-            {/* Панель табов статуса */}
-            <div className="flex flex-wrap items-center gap-2 border-b border-[#1a4d3e]/15 pb-4">
+            <div className="flex items-center gap-2 border-b border-[#1a4d3e]/15 pb-4 overflow-x-auto no-scrollbar scroll-smooth">
               <button
                 type="button"
                 onClick={() => setActiveTab("pending_review")}
-                className={`px-4 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center gap-2 cursor-pointer ${
+                className={`px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center gap-2 cursor-pointer shrink-0 whitespace-nowrap ${
                   activeTab === "pending_review"
                     ? "bg-[#1a4d3e] text-white shadow-sm"
                     : "bg-white text-[#1a4d3e] hover:bg-[#1a4d3e]/10 border border-[#1a4d3e]/15"
                 }`}
               >
-                <Clock className="size-4 text-[#d4a84b]" />
+                <Clock className="size-3.5 sm:size-4 text-[#d4a84b]" />
                 <span>На рассмотрении</span>
                 <span className={`px-2 py-0.5 rounded-full text-xs ${activeTab === "pending_review" ? "bg-white/20 text-white" : "bg-[#1a4d3e]/10 text-[#1a4d3e]"}`}>
                   {activeTab === "pending_review" ? talks.length : "•"}
@@ -811,13 +820,13 @@ export function JuryPage() {
               <button
                 type="button"
                 onClick={() => setActiveTab("approved")}
-                className={`px-4 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center gap-2 cursor-pointer ${
+                className={`px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center gap-2 cursor-pointer shrink-0 whitespace-nowrap ${
                   activeTab === "approved"
                     ? "bg-[#1a4d3e] text-white shadow-sm"
                     : "bg-white text-[#1a4d3e] hover:bg-[#1a4d3e]/10 border border-[#1a4d3e]/15"
                 }`}
               >
-                <CheckCircle2 className="size-4 text-emerald-400" />
+                <CheckCircle2 className="size-3.5 sm:size-4 text-emerald-400" />
                 <span>Одобренные</span>
                 <span className={`px-2 py-0.5 rounded-full text-xs ${activeTab === "approved" ? "bg-white/20 text-white" : "bg-[#1a4d3e]/10 text-[#1a4d3e]"}`}>
                   {activeTab === "approved" ? talks.length : "•"}
@@ -827,13 +836,13 @@ export function JuryPage() {
               <button
                 type="button"
                 onClick={() => setActiveTab("needs_revision")}
-                className={`px-4 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center gap-2 cursor-pointer ${
+                className={`px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center gap-2 cursor-pointer shrink-0 whitespace-nowrap ${
                   activeTab === "needs_revision"
                     ? "bg-[#1a4d3e] text-white shadow-sm"
                     : "bg-white text-[#1a4d3e] hover:bg-[#1a4d3e]/10 border border-[#1a4d3e]/15"
                 }`}
               >
-                <AlertCircle className="size-4 text-amber-400" />
+                <AlertCircle className="size-3.5 sm:size-4 text-amber-400" />
                 <span>На доработке</span>
                 <span className={`px-2 py-0.5 rounded-full text-xs ${activeTab === "needs_revision" ? "bg-white/20 text-white" : "bg-[#1a4d3e]/10 text-[#1a4d3e]"}`}>
                   {activeTab === "needs_revision" ? talks.length : "•"}
@@ -843,13 +852,13 @@ export function JuryPage() {
               <button
                 type="button"
                 onClick={() => setActiveTab("rejected")}
-                className={`px-4 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center gap-2 cursor-pointer ${
+                className={`px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center gap-2 cursor-pointer shrink-0 whitespace-nowrap ${
                   activeTab === "rejected"
                     ? "bg-[#1a4d3e] text-white shadow-sm"
                     : "bg-white text-[#1a4d3e] hover:bg-[#1a4d3e]/10 border border-[#1a4d3e]/15"
                 }`}
               >
-                <X className="size-4 text-rose-400" />
+                <X className="size-3.5 sm:size-4 text-rose-400" />
                 <span>Отклонённые</span>
                 <span className={`px-2 py-0.5 rounded-full text-xs ${activeTab === "rejected" ? "bg-white/20 text-white" : "bg-[#1a4d3e]/10 text-[#1a4d3e]"}`}>
                   {activeTab === "rejected" ? talks.length : "•"}
@@ -857,9 +866,7 @@ export function JuryPage() {
               </button>
             </div>
 
-            {/* Фильтры и поиск */}
             <div className="bg-white rounded-2xl p-4 border border-[#1a4d3e]/15 shadow-xs flex flex-col md:flex-row gap-4 items-stretch md:items-center justify-between">
-              {/* Поле поиска */}
               <div className="relative flex-1">
                 <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#1a4d3e]/40">
                   <Search className="size-4" />
@@ -882,12 +889,11 @@ export function JuryPage() {
                 )}
               </div>
 
-              {/* Фильтр по секциям */}
-              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0">
+              <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar scroll-smooth pb-1 md:pb-0">
                 <button
                   type="button"
                   onClick={() => setSelectedSectionId("all")}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 ${
                     selectedSectionId === "all"
                       ? "bg-[#1a4d3e] text-white"
                       : "bg-[#f5f3ed] text-[#1a4d3e] hover:bg-[#1a4d3e]/10"
@@ -900,20 +906,19 @@ export function JuryPage() {
                     key={s.id}
                     type="button"
                     onClick={() => setSelectedSectionId(String(s.id))}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 flex items-center gap-1.5 ${
                       selectedSectionId === String(s.id)
                         ? "bg-[#1a4d3e] text-white"
                         : "bg-[#f5f3ed] text-[#1a4d3e] hover:bg-[#1a4d3e]/10"
                     }`}
                   >
-                    <span className="size-2 rounded-full" style={{ backgroundColor: s.color || "#1a4d3e" }} />
+                    <span className="size-2 rounded-full shrink-0" style={{ backgroundColor: s.color || "#1a4d3e" }} />
                     {s.title}
                   </button>
                 ))}
               </div>
             </div>
 
-            {/* Состояние загрузки */}
             {isLoading && (
               <div className="grid md:grid-cols-2 gap-6">
                 {[1, 2, 3, 4].map((i) => (
@@ -926,7 +931,6 @@ export function JuryPage() {
               </div>
             )}
 
-            {/* Пустой список */}
             {!isLoading && filteredTalks.length === 0 && (
               <div className="bg-white rounded-3xl border border-dashed border-[#1a4d3e]/20 p-12 text-center space-y-3">
                 <div className="size-12 rounded-2xl bg-[#1a4d3e]/10 text-[#1a4d3e] flex items-center justify-center mx-auto">
@@ -952,7 +956,6 @@ export function JuryPage() {
               </div>
             )}
 
-            {/* Сетка карточек докладов */}
             <div className="grid md:grid-cols-2 gap-6">
               {filteredTalks.map((talk) => (
                 <JuryCard
@@ -968,9 +971,6 @@ export function JuryPage() {
         )}
       </div>
 
-      {/* =========================================================================
-          МОДАЛКА 1: НАЗНАЧЕНИЕ АУДИТОРИИ И ВРЕМЕНИ (ОДОБРЕНИЕ)
-         ========================================================================= */}
       {isApproveModalOpen && targetTalk && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#1a4d3e]/40 backdrop-blur-xs p-4">
           <div className="bg-white rounded-3xl border border-[#1a4d3e]/20 shadow-2xl max-w-lg w-full p-6 sm:p-8 space-y-6 max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95">
@@ -996,7 +996,6 @@ export function JuryPage() {
             </div>
 
             <form onSubmit={handleConfirmApprove} className="space-y-6">
-              {/* 1. Выбор аудитории */}
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-[#1a4d3e] mb-2.5">
                   Аудитория доклада <span className="text-danger">*</span>
@@ -1026,7 +1025,6 @@ export function JuryPage() {
                 </div>
               </div>
 
-              {/* 2. День конференции */}
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-[#1a4d3e] mb-2">
                   День выступления
@@ -1053,7 +1051,6 @@ export function JuryPage() {
                 </div>
               </div>
 
-              {/* 3. Быстрые временные слоты */}
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-[#1a4d3e] mb-2">
                   Временной слот (30 минут)
@@ -1105,9 +1102,6 @@ export function JuryPage() {
         </div>
       )}
 
-      {/* =========================================================================
-          МОДАЛКА 2: ОТПРАВКА НА ДОРАБОТКУ / ОТКЛОНЕНИЕ
-         ========================================================================= */}
       {isFeedbackModalOpen && targetTalk && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#1a4d3e]/40 backdrop-blur-xs p-4">
           <div className="bg-white rounded-3xl border border-[#1a4d3e]/20 shadow-2xl max-w-lg w-full p-6 sm:p-8 space-y-6 animate-in fade-in zoom-in-95">
@@ -1136,7 +1130,6 @@ export function JuryPage() {
             </div>
 
             <form onSubmit={handleConfirmFeedback} className="space-y-5">
-              {/* Переключатель типа решения */}
               <div className="grid grid-cols-2 gap-2 p-1 bg-[#f5f3ed] rounded-xl border border-[#1a4d3e]/10">
                 <button
                   type="button"
@@ -1162,7 +1155,6 @@ export function JuryPage() {
                 </button>
               </div>
 
-              {/* Поле комментария */}
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-[#1a4d3e] mb-2">
                   Замечания экспертного жюри <span className="text-danger">*</span>
@@ -1177,7 +1169,6 @@ export function JuryPage() {
                 />
               </div>
 
-              {/* Быстрые шаблоны замечаний */}
               <div className="space-y-1.5">
                 <span className="text-[11px] font-bold text-[#1a4d3e]/70 uppercase tracking-wider block">
                   Быстрые шаблоны замечаний:

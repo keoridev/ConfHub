@@ -4,15 +4,11 @@ import { AppNavigation } from "~widgets/demo-nav/ui/DemoNav";
 
 export const AppLayout = () => {
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      {/* Глобальная навигация (Сайдбар на десктопе, Bottom Bar на мобильном) */}
+    <div className="min-h-screen bg-[#f5f3ed] text-foreground flex flex-col w-full max-w-full overflow-x-hidden">
       <AppNavigation />
 
-      {/* Основной контент */}
-      <main className="flex-grow w-full">
-        <div className="max-w-6xl mx-auto px-4 py-6 md:px-8 md:py-10">
-          <Outlet />
-        </div>
+      <main className="flex-grow w-full max-w-full overflow-x-hidden pb-20 md:pb-8">
+        <Outlet />
       </main>
     </div>
   );

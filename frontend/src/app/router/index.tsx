@@ -5,7 +5,7 @@ import {
 } from "react-router-dom";
 
 import { AppLayout } from "~app/layout";
-import { loginPageRoute } from "~pages/login-page"; // <-- Добавлен импорт
+import { loginPageRoute } from "~pages/login-page";
 import { conferencePageRoute } from "~pages/conference-page";
 import { submissionPageRoute } from "~pages/submission-page";
 import { talkPageRoute } from "~pages/talk-page";
@@ -14,13 +14,10 @@ import { adminPageRoute } from "~pages/admin-page";
 import { pathKeys } from "~shared/lib";
 
 const router = createBrowserRouter([
-  // 1. Публичные маршруты (без AppLayout)
   {
     path: pathKeys.login,
     ...loginPageRoute,
   },
-  
-  // 2. Защищенные/Основные маршруты (внутри AppLayout)
   {
     path: pathKeys.root,
     element: <AppLayout />,
@@ -32,7 +29,6 @@ const router = createBrowserRouter([
     children: [
       {
         index: true,
-        // Если пользователь не авторизован, здесь в будущем стоит сделать редирект на pathKeys.login
         element: <Navigate to={pathKeys.conference.build("demo")} replace />,
       },
       {

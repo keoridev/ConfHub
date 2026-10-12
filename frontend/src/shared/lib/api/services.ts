@@ -10,7 +10,6 @@ import type {
   User,
 } from '~entities/talk/model/types';
 
-// === AUTH ===
 export const authService = {
   login: (login: string, password: string) =>
     apiClient.post<AuthResponse>('/auth/login', { login, password }),
@@ -25,14 +24,12 @@ export const authService = {
   getMe: () => apiClient.get<User>('/auth/me'),
 };
 
-// === CONFERENCES ===
 export const conferenceService = {
   list: () => apiClient.get<Conference[]>('/conferences'),
   getCurrent: () => apiClient.get<Conference>('/conferences/current'),
   getById: (id: number) => apiClient.get<Conference>(`/conferences/${id}`),
 };
 
-// === SECTIONS ===
 export const sectionService = {
   list: (conferenceId?: number) =>
     apiClient.get<Section[]>('/sections', {
@@ -40,7 +37,6 @@ export const sectionService = {
     }),
 };
 
-// === ROOMS ===
 export const roomService = {
   list: (conferenceId?: number) =>
     apiClient.get<Room[]>('/rooms', {
@@ -48,9 +44,7 @@ export const roomService = {
     }),
 };
 
-// === TALKS ===
 export const talkService = {
-  // Публичные
   listByConference: (
     conferenceId: number,
     filters?: { status?: string; sectionId?: number; q?: string; tag?: string }
@@ -61,7 +55,6 @@ export const talkService = {
 
   getById: (id: number) => apiClient.get<Talk>(`/talks/${id}`),
 
-  // Студент
   getMyTalks: () => apiClient.get<Talk[]>('/my/talks'),
   getMyTalk: (id: number) => apiClient.get<Talk>(`/my/talks/${id}`),
   
@@ -93,7 +86,6 @@ export const talkService = {
   getAIResult: (talkId: number) =>
     apiClient.get<AIValidationResult>(`/talks/${talkId}/ai-result`),
 
-  // Жюри
   getJuryTalk: (id: number) => apiClient.get<Talk>(`/jury/talks/${id}`),
   downloadDocument: (id: number) =>
     apiClient.get(`/jury/talks/${id}/document`, { responseType: 'blob' }),
