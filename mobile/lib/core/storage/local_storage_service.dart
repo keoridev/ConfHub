@@ -10,6 +10,8 @@ abstract class LocalStorageService {
   List<int> get bookmarkedTalkIds;
   Future<void> toggleBookmark(int talkId);
   bool isBookmarked(int talkId);
+  String? get customApiUrl;
+  Future<void> setCustomApiUrl(String? url);
 }
 
 class LocalStorageServiceImpl implements LocalStorageService {
@@ -68,5 +70,20 @@ class LocalStorageServiceImpl implements LocalStorageService {
   @override
   bool isBookmarked(int talkId) {
     return bookmarkedTalkIds.contains(talkId);
+  }
+
+  @override
+  String? get customApiUrl {
+    final val = _box.get(StorageConstants.customApiUrlKey);
+    return val is String && val.trim().isNotEmpty ? val.trim() : null;
+  }
+
+  @override
+  Future<void> setCustomApiUrl(String? url) async {
+    if (url == null || url.trim().isEmpty) {
+      await _box.delete(StorageConstants.customApiUrlKey);
+    } else {
+      await _box.put(StorageConstants.customApiUrlKey, url.trim());
+    }
   }
 }

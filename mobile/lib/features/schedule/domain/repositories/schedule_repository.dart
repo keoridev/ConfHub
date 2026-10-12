@@ -16,4 +16,5 @@ abstract class ScheduleRepository {
     String? tag,
   });
   Future<Either<Failure, Talk>> getTalkDetail(int talkId);
+  bool get isBackendConnected;
 }

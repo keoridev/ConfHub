@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -11,6 +12,7 @@ import '../cubit/schedule_state.dart';
 import '../widgets/schedule_search_bar.dart';
 import '../widgets/schedule_shimmer.dart';
 import '../widgets/section_filter_bar.dart';
+import '../widgets/server_connection_dialog.dart';
 import '../widgets/talk_card.dart';
 import '../widgets/time_banner.dart';
 import 'talk_detail_page.dart';
@@ -25,6 +27,7 @@ class SchedulePage extends StatefulWidget {
 class _SchedulePageState extends State<SchedulePage> {
   int _selectedNavTab = 0; // 0: Schedule, 1: Bookmarks, 2: Info/Rooms
   bool _hasCheckedOnboarding = false;
+  Timer? _liveClockTimer;
 
   @override
   void initState() {
@@ -33,6 +36,19 @@ class _SchedulePageState extends State<SchedulePage> {
       context.read<ScheduleCubit>().loadSchedule();
       _checkOnboardingPrompt();
     });
+
+    // Real-time clock tick every 5 seconds to update countdowns and statuses
+    _liveClockTimer = Timer.periodic(const Duration(seconds: 5), (_) {
+      if (mounted) {
+        context.read<ScheduleCubit>().updateCurrentTime();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _liveClockTimer?.cancel();
+    super.dispose();
   }
 
   void _checkOnboardingPrompt() {
@@ -111,6 +127,32 @@ class _SchedulePageState extends State<SchedulePage> {
           ],
         ),
         actions: [
+          BlocBuilder<ScheduleCubit, ScheduleState>(
+            builder: (context, state) {
+              final isOnline = state is ScheduleLoaded ? state.isBackendOnline : false;
+              return IconButton(
+                tooltip: isOnline ? 'Backend Online (Реальные данные)' : 'Офлайн (Демо)',
+                icon: Stack(
+                  children: [
+                    const Icon(Icons.cloud_outlined, color: AppColors.primary),
+                    Positioned(
+                      right: 0,
+                      bottom: 0,
+                      child: Container(
+                        width: 8,
+                        height: 8,
+                        decoration: BoxDecoration(
+                          color: isOnline ? AppColors.statusCanMakeIt : AppColors.statusHurry,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                onPressed: () => ServerConnectionDialog.show(context),
+              );
+            },
+          ),
           IconButton(
             tooltip: 'Мои темы',
             icon: const Icon(Icons.tune_rounded, color: AppColors.primary),
@@ -238,6 +280,9 @@ class _SchedulePageState extends State<SchedulePage> {
                     conference: state.conference,
                     activeTalk: state.currentOrNextTalk,
                     preferredTopicsCount: state.preferredTopics.length,
+                    isBackendOnline: state.isBackendOnline,
+                    serverUrl: state.serverUrl,
+                    currentTime: state.currentTime,
                     onOpenTopicPreferences: () {
                       TopicPreferenceSheet.show(
                         context,
@@ -323,6 +368,7 @@ class _SchedulePageState extends State<SchedulePage> {
                     return TalkCard(
                       talk: talk,
                       isBookmarked: isBookmarked,
+                      currentTime: state.currentTime,
                       onTap: () => _openTalkDetails(talk),
                       onBookmarkToggle: () => context.read<ScheduleCubit>().toggleBookmark(talk.id),
                     );
@@ -379,6 +425,7 @@ class _SchedulePageState extends State<SchedulePage> {
                   return TalkCard(
                     talk: talk,
                     isBookmarked: true,
+                    currentTime: state.currentTime,
                     onTap: () => _openTalkDetails(talk),
                     onBookmarkToggle: () => context.read<ScheduleCubit>().toggleBookmark(talk.id),
                   );

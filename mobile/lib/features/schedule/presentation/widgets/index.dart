@@ -4,3 +4,4 @@ export 'section_filter_bar.dart';
 export 'schedule_search_bar.dart';
 export 'schedule_shimmer.dart';
 export 'will_i_make_it_dialog.dart';
+export 'server_connection_dialog.dart';

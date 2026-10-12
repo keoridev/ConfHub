@@ -12,6 +12,7 @@ import '../../domain/entities/talk.dart';
 import '../cubit/schedule_cubit.dart';
 import '../cubit/talk_detail_cubit.dart';
 import '../cubit/talk_detail_state.dart';
+import '../widgets/will_i_make_it_dialog.dart';
 
 class TalkDetailPage extends StatelessWidget {
   final Talk talk;
@@ -402,6 +403,28 @@ class _TalkDetailView extends StatelessWidget {
                   ),
                 );
               }).toList(),
+            ),
+          ),
+          const SizedBox(height: 12),
+          InkWell(
+            onTap: () => WillIMakeItDialog.show(context, state.talk),
+            borderRadius: BorderRadius.circular(8),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  Text(
+                    'Подробный расчет и сценарии',
+                    style: AppTypography.labelMedium.copyWith(
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  const Icon(Icons.arrow_forward_rounded, size: 14, color: AppColors.primary),
+                ],
+              ),
             ),
           ),
         ],

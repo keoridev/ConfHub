@@ -1,8 +1,10 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../core/network/dio_client.dart';
 import '../../../../core/storage/local_storage_service.dart';
 import '../../domain/entities/section.dart';
 import '../../domain/entities/room.dart';
 import '../../domain/entities/talk.dart';
+import '../../domain/repositories/schedule_repository.dart';
 import '../../domain/usecases/get_current_conference.dart';
 import '../../domain/usecases/get_sections.dart';
 import '../../domain/usecases/get_rooms.dart';
@@ -15,6 +17,8 @@ class ScheduleCubit extends Cubit<ScheduleState> {
   final GetRooms getRooms;
   final GetTalks getTalks;
   final LocalStorageService localStorageService;
+  final DioClient dioClient;
+  final ScheduleRepository scheduleRepository;
 
   ScheduleCubit({
     required this.getCurrentConference,
@@ -22,6 +26,8 @@ class ScheduleCubit extends Cubit<ScheduleState> {
     required this.getRooms,
     required this.getTalks,
     required this.localStorageService,
+    required this.dioClient,
+    required this.scheduleRepository,
   }) : super(ScheduleInitial());
 
   Future<void> loadSchedule() async {
@@ -55,6 +61,9 @@ class ScheduleCubit extends Cubit<ScheduleState> {
           preferredTopics: savedTopics,
           bookmarkedTalkIds: bookmarkedIds,
           filterByPreferencesOnly: false,
+          isBackendOnline: scheduleRepository.isBackendConnected,
+          serverUrl: dioClient.currentBaseUrl,
+          currentTime: DateTime.now(),
         ));
       },
     );
@@ -77,12 +86,32 @@ class ScheduleCubit extends Cubit<ScheduleState> {
             talks: newTalks,
             preferredTopics: savedTopics,
             bookmarkedTalkIds: bookmarkedIds,
+            isBackendOnline: scheduleRepository.isBackendConnected,
+            serverUrl: dioClient.currentBaseUrl,
+            currentTime: DateTime.now(),
           ));
         },
       );
     } else {
       await loadSchedule();
     }
+  }
+
+  /// Called periodically by timer to update real-time clocks and countdowns
+  void updateCurrentTime() {
+    if (state is! ScheduleLoaded) return;
+    final currentState = state as ScheduleLoaded;
+    emit(currentState.copyWith(currentTime: DateTime.now()));
+  }
+
+  /// Change server URL and immediately test / reconnect
+  Future<void> changeServerUrl(String newBaseUrl) async {
+    dioClient.setBaseUrl(newBaseUrl);
+    await loadSchedule();
+  }
+
+  Future<bool> checkServerHealth([String? testUrl]) async {
+    return dioClient.checkHealth(testUrl);
   }
 
   void selectSection(int? sectionId) {

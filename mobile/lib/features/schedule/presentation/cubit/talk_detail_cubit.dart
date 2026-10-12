@@ -21,6 +21,7 @@ class TalkDetailCubit extends Cubit<TalkDetailState> {
     final estimate = TimeStatusHelper.estimateCommute(
       walkingMinutes: defaultWalkTime,
       startTime: talk.startTime,
+      endTime: talk.endTime,
     );
 
     emit(TalkDetailLoaded(
@@ -48,6 +49,7 @@ class TalkDetailCubit extends Cubit<TalkDetailState> {
     final estimate = TimeStatusHelper.estimateCommute(
       walkingMinutes: walkingMinutes,
       startTime: current.talk.startTime,
+      endTime: current.talk.endTime,
     );
 
     emit(current.copyWith(

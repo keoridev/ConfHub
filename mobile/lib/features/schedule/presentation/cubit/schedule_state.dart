@@ -33,8 +33,11 @@ class ScheduleLoaded extends ScheduleState {
   final List<String> preferredTopics;
   final ScheduleTimeFilter timeFilter;
   final Set<int> bookmarkedTalkIds;
+  final bool isBackendOnline;
+  final String serverUrl;
+  final DateTime currentTime;
 
-  const ScheduleLoaded({
+  ScheduleLoaded({
     required this.conference,
     required this.talks,
     required this.sections,
@@ -45,10 +48,14 @@ class ScheduleLoaded extends ScheduleState {
     this.preferredTopics = const [],
     this.timeFilter = ScheduleTimeFilter.all,
     this.bookmarkedTalkIds = const {},
-  });
+    this.isBackendOnline = true,
+    this.serverUrl = '',
+    DateTime? currentTime,
+  }) : currentTime = currentTime ?? DateTime.now();
 
   /// Filtered list based on section, query, time filter, and preferences
   List<Talk> get visibleTalks {
+    final now = currentTime;
     return talks.where((talk) {
       // 1. Section filter
       if (selectedSectionId != null && talk.section?.id != selectedSectionId) {
@@ -77,12 +84,11 @@ class ScheduleLoaded extends ScheduleState {
       }
 
       // 4. Time filter
-      final now = DateTime.now();
       if (timeFilter == ScheduleTimeFilter.liveAndSoon && talk.startTime != null) {
         final start = talk.startTime!.toLocal();
         final end = talk.endTime?.toLocal() ?? start.add(const Duration(minutes: 45));
-        final isLive = now.isAfter(start) && now.isBefore(end);
-        final isSoon = start.isAfter(now) && start.difference(now).inMinutes <= 30;
+        final isLive = (now.isAfter(start) || now.isAtSameMomentAs(start)) && now.isBefore(end);
+        final isSoon = start.isAfter(now) && start.difference(now).inMinutes <= 45;
         if (!isLive && !isSoon) return false;
       } else if (timeFilter == ScheduleTimeFilter.morning && talk.startTime != null) {
         if (talk.startTime!.toLocal().hour >= 13) return false;
@@ -96,18 +102,48 @@ class ScheduleLoaded extends ScheduleState {
 
   /// Talk happening right now or next upcoming
   Talk? get currentOrNextTalk {
-    final now = DateTime.now();
+    final now = currentTime;
+
+    // 1. Check if any talk is live right now
     for (final talk in talks) {
       if (talk.startTime == null) continue;
       final start = talk.startTime!.toLocal();
       final end = talk.endTime?.toLocal() ?? start.add(const Duration(minutes: 45));
-      if (now.isAfter(start) && now.isBefore(end)) return talk;
+      if ((now.isAfter(start) || now.isAtSameMomentAs(start)) && now.isBefore(end)) {
+        return talk;
+      }
     }
+
+    // 2. Nearest upcoming talk in the future
+    Talk? nearestUpcoming;
+    Duration? minUpcomingDiff;
     for (final talk in talks) {
       if (talk.startTime == null) continue;
-      if (talk.startTime!.toLocal().isAfter(now)) return talk;
+      final start = talk.startTime!.toLocal();
+      if (start.isAfter(now)) {
+        final diff = start.difference(now);
+        if (minUpcomingDiff == null || diff < minUpcomingDiff) {
+          minUpcomingDiff = diff;
+          nearestUpcoming = talk;
+        }
+      }
     }
-    return talks.isNotEmpty ? talks.first : null;
+    if (nearestUpcoming != null) return nearestUpcoming;
+
+    // 3. If all talks are in the past, return closest talk chronologically
+    Talk? closest;
+    Duration? minDiff;
+    for (final talk in talks) {
+      if (talk.startTime == null) continue;
+      final start = talk.startTime!.toLocal();
+      final diff = now.difference(start).abs();
+      if (minDiff == null || diff < minDiff) {
+        minDiff = diff;
+        closest = talk;
+      }
+    }
+
+    return closest ?? (talks.isNotEmpty ? talks.first : null);
   }
 
   ScheduleLoaded copyWith({
@@ -122,6 +158,9 @@ class ScheduleLoaded extends ScheduleState {
     List<String>? preferredTopics,
     ScheduleTimeFilter? timeFilter,
     Set<int>? bookmarkedTalkIds,
+    bool? isBackendOnline,
+    String? serverUrl,
+    DateTime? currentTime,
   }) {
     return ScheduleLoaded(
       conference: conference ?? this.conference,
@@ -134,6 +173,9 @@ class ScheduleLoaded extends ScheduleState {
       preferredTopics: preferredTopics ?? this.preferredTopics,
       timeFilter: timeFilter ?? this.timeFilter,
       bookmarkedTalkIds: bookmarkedTalkIds ?? this.bookmarkedTalkIds,
+      isBackendOnline: isBackendOnline ?? this.isBackendOnline,
+      serverUrl: serverUrl ?? this.serverUrl,
+      currentTime: currentTime ?? this.currentTime,
     );
   }
 
@@ -149,6 +191,9 @@ class ScheduleLoaded extends ScheduleState {
         preferredTopics,
         timeFilter,
         bookmarkedTalkIds,
+        isBackendOnline,
+        serverUrl,
+        currentTime,
       ];
 }
 

@@ -14,6 +14,9 @@ class ScheduleRepositoryImpl implements ScheduleRepository {
   ScheduleRepositoryImpl({required this.remoteDataSource});
 
   @override
+  bool get isBackendConnected => remoteDataSource.isBackendConnected;
+
+  @override
   Future<Either<Failure, Conference>> getCurrentConference() async {
     try {
       final model = await remoteDataSource.getCurrentConference();

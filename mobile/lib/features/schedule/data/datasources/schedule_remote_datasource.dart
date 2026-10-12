@@ -18,22 +18,29 @@ abstract class ScheduleRemoteDataSource {
     String? tag,
   });
   Future<TalkModel> getTalkDetail(int talkId);
+  bool get isBackendConnected;
 }
 
 class ScheduleRemoteDataSourceImpl implements ScheduleRemoteDataSource {
   final DioClient dioClient;
+  bool _isBackendConnected = false;
 
   ScheduleRemoteDataSourceImpl({required this.dioClient});
+
+  @override
+  bool get isBackendConnected => _isBackendConnected;
 
   @override
   Future<ConferenceModel> getCurrentConference() async {
     try {
       final response = await dioClient.get(ApiConstants.currentConference);
       if (response.data is Map<String, dynamic>) {
+        _isBackendConnected = true;
         return ConferenceModel.fromJson(response.data as Map<String, dynamic>);
       }
       throw const ServerException(message: 'Неверный формат ответа конференции');
     } catch (e) {
+      _isBackendConnected = false;
       developer.log('[ScheduleDS] Backend offline or error, using demo conference data: $e');
       return _getFallbackConference();
     }
@@ -108,6 +115,7 @@ class ScheduleRemoteDataSourceImpl implements ScheduleRemoteDataSource {
       );
 
       if (response.data is List) {
+        _isBackendConnected = true;
         final talks = (response.data as List)
             .map((item) => TalkModel.fromJson(item as Map<String, dynamic>))
             .toList();
@@ -115,6 +123,7 @@ class ScheduleRemoteDataSourceImpl implements ScheduleRemoteDataSource {
       }
       return _filterFallbackTalks(sectionId: sectionId, query: query, tag: tag);
     } catch (e) {
+      _isBackendConnected = false;
       developer.log('[ScheduleDS] Backend offline or error, using fallback talks: $e');
       return _filterFallbackTalks(sectionId: sectionId, query: query, tag: tag);
     }

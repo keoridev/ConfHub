@@ -26,7 +26,7 @@ class WillIMakeItDialog extends StatefulWidget {
 }
 
 class _WillIMakeItDialogState extends State<WillIMakeItDialog> {
-  // Locations with estimated walking minutes to this talk's room
+  // Campus starting locations with walking minutes to the talk's room
   final List<Map<String, dynamic>> _locations = [
     {
       'name': '1-й этаж (Главный вход / Гардероб)',
@@ -56,11 +56,33 @@ class _WillIMakeItDialogState extends State<WillIMakeItDialog> {
   ];
 
   late int _selectedLocationIndex;
+  // Simulation mode: 0 = Real time, 1 = 15m before start, 2 = 3m before start, 3 = 5m after start
+  int _simulationMode = 0;
 
   @override
   void initState() {
     super.initState();
     _selectedLocationIndex = 0;
+  }
+
+  DateTime? _getEffectiveCurrentTime(DateTime? start) {
+    if (_simulationMode == 0 || start == null) {
+      return DateTime.now();
+    }
+    final localStart = start.toLocal();
+    switch (_simulationMode) {
+      case 1:
+        // 15 minutes before start
+        return localStart.subtract(const Duration(minutes: 15));
+      case 2:
+        // 3 minutes before start (in nick of time / hurry)
+        return localStart.subtract(const Duration(minutes: 3));
+      case 3:
+        // 5 minutes after start (in progress / late)
+        return localStart.add(const Duration(minutes: 5));
+      default:
+        return DateTime.now();
+    }
   }
 
   @override
@@ -69,14 +91,23 @@ class _WillIMakeItDialogState extends State<WillIMakeItDialog> {
     final selected = _locations[_selectedLocationIndex];
     final walkMinutes = selected['walkTime'] as int;
 
+    final evalTime = _getEffectiveCurrentTime(talk.startTime);
+
     final estimate = TimeStatusHelper.estimateCommute(
       walkingMinutes: walkMinutes,
       startTime: talk.startTime,
+      endTime: talk.endTime,
+      currentTime: evalTime,
     );
 
-    final now = DateTime.now();
-    final minutesToStart = talk.startTime != null
-        ? talk.startTime!.toLocal().difference(now).inMinutes
+    final isSameDay = talk.startTime != null &&
+        evalTime != null &&
+        talk.startTime!.toLocal().year == evalTime.year &&
+        talk.startTime!.toLocal().month == evalTime.month &&
+        talk.startTime!.toLocal().day == evalTime.day;
+
+    final minutesToStart = talk.startTime != null && evalTime != null
+        ? talk.startTime!.toLocal().difference(evalTime).inMinutes
         : 0;
 
     return Container(
@@ -129,7 +160,7 @@ class _WillIMakeItDialogState extends State<WillIMakeItDialog> {
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          'Расчет времени до ${talk.room?.name ?? "аудитории"}',
+                          'Навигация до ${talk.room?.name ?? "аудитории"}',
                           style: AppTypography.bodySmall,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -178,11 +209,11 @@ class _WillIMakeItDialogState extends State<WillIMakeItDialog> {
                   ],
                 ),
               ),
-              const SizedBox(height: 18),
+              const SizedBox(height: 16),
 
               // Location Selector
               Text('Где вы сейчас находитесь?', style: AppTypography.titleSmall),
-              const SizedBox(height: 10),
+              const SizedBox(height: 8),
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 child: Row(
@@ -213,7 +244,51 @@ class _WillIMakeItDialogState extends State<WillIMakeItDialog> {
                   }),
                 ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 16),
+
+              // Test Scenario Simulator Bar
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: AppColors.muted.withAlpha(50),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppColors.borderSubtle),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.tune_rounded, size: 14, color: AppColors.primary),
+                        const SizedBox(width: 6),
+                        Text(
+                          'Сценарий проверки времени:',
+                          style: AppTypography.labelSmall.copyWith(
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: [
+                          _buildSimChip('Реальное время', 0),
+                          const SizedBox(width: 6),
+                          _buildSimChip('За 15 мин (запас)', 1),
+                          const SizedBox(width: 6),
+                          _buildSimChip('За 3 мин (впритык)', 2),
+                          const SizedBox(width: 6),
+                          _buildSimChip('Во время доклада', 3),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
 
               // Verdict banner
               Container(
@@ -237,7 +312,13 @@ class _WillIMakeItDialogState extends State<WillIMakeItDialog> {
                         const SizedBox(width: 10),
                         Expanded(
                           child: Text(
-                            estimate.canMakeIt ? 'ВЫ УСПЕВАЕТЕ!' : 'ВНИМАНИЕ!',
+                            estimate.isFinished
+                                ? 'ДОКЛАД ЗАВЕРШЁН'
+                                : estimate.isLive
+                                    ? 'ДОКЛАД ИДЁТ СЕЙЧАС'
+                                    : estimate.canMakeIt
+                                        ? 'ВЫ УСПЕВАЕТЕ!'
+                                        : 'ВНИМАНИЕ!',
                             style: AppTypography.titleMedium.copyWith(
                               color: estimate.color,
                               fontWeight: FontWeight.w800,
@@ -252,26 +333,39 @@ class _WillIMakeItDialogState extends State<WillIMakeItDialog> {
                       style: AppTypography.bodyMedium.copyWith(
                         color: AppColors.textPrimary,
                         fontWeight: FontWeight.w600,
+                        height: 1.35,
                       ),
                     ),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 12),
                     Row(
                       children: [
                         _buildCommuteMetric(
-                          'В пути',
+                          'В пути пешком',
                           '$walkMinutes мин',
                           Icons.directions_walk_rounded,
                         ),
                         const SizedBox(width: 8),
                         _buildCommuteMetric(
                           'До начала',
-                          minutesToStart > 0 ? '$minutesToStart мин' : 'Идёт',
+                          estimate.isLive
+                              ? 'Идёт сейчас'
+                              : estimate.isFinished
+                                  ? 'Завершён'
+                                  : isSameDay
+                                      ? (minutesToStart > 0 ? '$minutesToStart мин' : 'Сейчас')
+                                      : DateFormatter.formatDate(talk.startTime),
                           Icons.timer_outlined,
                         ),
                         const SizedBox(width: 8),
                         _buildCommuteMetric(
-                          'Запас',
-                          estimate.marginMinutes >= 0 ? '+${estimate.marginMinutes} мин' : '${estimate.marginMinutes} мин',
+                          'Запас по времени',
+                          estimate.isLive || estimate.isFinished
+                              ? '--'
+                              : isSameDay
+                                  ? (estimate.marginMinutes >= 0
+                                      ? '+${estimate.marginMinutes} мин'
+                                      : '${estimate.marginMinutes} мин')
+                                  : DateFormatter.formatTime(talk.startTime),
                           Icons.hourglass_bottom_rounded,
                         ),
                       ],
@@ -291,6 +385,26 @@ class _WillIMakeItDialogState extends State<WillIMakeItDialog> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildSimChip(String label, int mode) {
+    final isSelected = _simulationMode == mode;
+    return ChoiceChip(
+      selected: isSelected,
+      label: Text(label),
+      visualDensity: VisualDensity.compact,
+      labelStyle: AppTypography.labelSmall.copyWith(
+        fontSize: 11,
+        color: isSelected ? Colors.white : AppColors.textPrimary,
+        fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+      ),
+      selectedColor: AppColors.primary,
+      backgroundColor: AppColors.surface,
+      side: BorderSide(
+        color: isSelected ? AppColors.primary : AppColors.border,
+      ),
+      onSelected: (_) => setState(() => _simulationMode = mode),
     );
   }
 
@@ -323,7 +437,7 @@ class _WillIMakeItDialogState extends State<WillIMakeItDialog> {
             const SizedBox(height: 4),
             Text(
               value,
-              style: AppTypography.titleSmall.copyWith(fontSize: 12),
+              style: AppTypography.titleSmall.copyWith(fontSize: 12, fontWeight: FontWeight.w700),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),

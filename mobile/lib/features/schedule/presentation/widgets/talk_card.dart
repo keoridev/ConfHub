@@ -12,6 +12,7 @@ class TalkCard extends StatelessWidget {
   final bool isBookmarked;
   final VoidCallback? onTap;
   final VoidCallback? onBookmarkToggle;
+  final DateTime? currentTime;
 
   const TalkCard({
     super.key,
@@ -19,6 +20,7 @@ class TalkCard extends StatelessWidget {
     this.isBookmarked = false,
     this.onTap,
     this.onBookmarkToggle,
+    this.currentTime,
   });
 
   @override
@@ -26,6 +28,7 @@ class TalkCard extends StatelessWidget {
     final status = TimeStatusHelper.calculateStatus(
       startTime: talk.startTime,
       endTime: talk.endTime,
+      currentTime: currentTime,
     );
 
     return Container(

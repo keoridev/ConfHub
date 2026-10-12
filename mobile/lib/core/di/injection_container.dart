@@ -26,7 +26,7 @@ Future<void> initDependencies() async {
   await localStorageService.init();
   sl.registerSingleton<LocalStorageService>(localStorageService);
 
-  sl.registerLazySingleton<DioClient>(() => DioClient());
+  sl.registerLazySingleton<DioClient>(() => DioClient(localStorageService: sl()));
 
   // 2. Onboarding Feature
   sl.registerLazySingleton<OnboardingLocalDataSource>(
@@ -77,6 +77,8 @@ Future<void> initDependencies() async {
       getRooms: sl(),
       getTalks: sl(),
       localStorageService: sl(),
+      dioClient: sl(),
+      scheduleRepository: sl(),
     ),
   );
   sl.registerFactory<TalkDetailCubit>(
