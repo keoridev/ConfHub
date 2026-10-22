@@ -2,7 +2,9 @@ export interface User {
   id: number;
   login: string;
   fullName: string;
-  groupName: string;
+  groupName?: string;
+  university?: string;
+  email?: string;
   role: 'student' | 'jury' | 'admin';
   mustChangePassword: boolean;
 }

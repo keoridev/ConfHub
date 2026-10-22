@@ -1,10 +1,15 @@
 import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { ChevronRight } from "lucide-react";
-import { useCurrentUserQuery, useLogout, useTalksQuery } from "~entities/talk/api/queries";
-import { useSectionsQuery } from "~entities/section";
-import { useRoomsQuery } from "~entities/room";
+import {
+  useCurrentUserQuery,
+  useLogout,
+  useTalksQuery,
+  useSectionsQuery,
+  useRoomsQuery,
+} from "~entities/talk/api/queries";
 import { pathKeys } from "~shared/lib";
+import { ConfirmLogoutModal } from "~shared/ui";
 
 import type { Tab, AdminStats } from "../model/types";
 import { useAdminSections } from "../model/useAdminSections";
@@ -24,6 +29,7 @@ export function AdminPage() {
   const logout = useLogout();
 
   const [activeTab, setActiveTab] = useState<Tab>("overview");
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
 
   useEffect(() => {
     if (!isUserLoading && (!user || user.role !== "admin")) {
@@ -61,7 +67,8 @@ export function AdminPage() {
     return { total, approved, rejected, pending, needsRevision, rate };
   }, [allTalks]);
 
-  const handleLogout = () => {
+  const handleLogoutConfirm = () => {
+    setIsLogoutModalOpen(false);
     logout();
     navigate(pathKeys.login, { replace: true });
   };
@@ -83,7 +90,7 @@ export function AdminPage() {
 
   return (
     <div className="admin-root">
-      <AdminHeader user={user} onLogout={handleLogout} />
+      <AdminHeader user={user} onLogout={() => setIsLogoutModalOpen(true)} />
 
       <AdminTabsNav
         activeTab={activeTab}
@@ -151,6 +158,13 @@ export function AdminPage() {
       <footer className="admin-footer">
         © 2026 Conf-Hub / COMTEHNO — Панель администратора
       </footer>
+
+      <ConfirmLogoutModal
+        isOpen={isLogoutModalOpen}
+        onClose={() => setIsLogoutModalOpen(false)}
+        onConfirm={handleLogoutConfirm}
+        user={user}
+      />
     </div>
   );
 }

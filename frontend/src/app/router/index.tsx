@@ -1,17 +1,18 @@
 import {
   createBrowserRouter,
-  Navigate,
   RouterProvider,
 } from "react-router-dom";
 
 import { AppLayout } from "~app/layout";
 import { loginPageRoute } from "~pages/login-page";
-import { conferencePageRoute } from "~pages/conference-page";
-import { submissionPageRoute } from "~pages/submission-page";
-import { talkPageRoute } from "~pages/talk-page";
-import { juryPageRoute } from "~pages/jury-page";
-import { adminPageRoute } from "~pages/admin-page";
+import { ConferencePage } from "~pages/conference-page";
+import { ProgramPage } from "~pages/program-page";
+import { SubmissionPage } from "~pages/submission-page";
+import { TalkPage } from "~pages/talk-page";
+import { JuryPage } from "~pages/jury-page";
+import { AdminPage } from "~pages/admin-page";
 import { pathKeys } from "~shared/lib";
+import { RoleGuard } from "./RoleGuard";
 
 const router = createBrowserRouter([
   {
@@ -29,27 +30,59 @@ const router = createBrowserRouter([
     children: [
       {
         index: true,
-        element: <Navigate to={pathKeys.conference.build("demo")} replace />,
+        element: (
+          <RoleGuard allowedRoles={["student", "guest"]}>
+            <ConferencePage />
+          </RoleGuard>
+        ),
+      },
+      {
+        path: pathKeys.program,
+        element: (
+          <RoleGuard allowedRoles={["student", "guest"]}>
+            <ProgramPage />
+          </RoleGuard>
+        ),
       },
       {
         path: pathKeys.conference.route,
-        ...conferencePageRoute,
+        element: (
+          <RoleGuard allowedRoles={["student", "guest"]}>
+            <ProgramPage />
+          </RoleGuard>
+        ),
       },
       {
         path: pathKeys.submission,
-        ...submissionPageRoute,
+        element: (
+          <RoleGuard allowedRoles={["student", "guest"]}>
+            <SubmissionPage />
+          </RoleGuard>
+        ),
       },
       {
         path: pathKeys.talk.route,
-        ...talkPageRoute,
+        element: (
+          <RoleGuard allowedRoles={["student", "guest", "jury", "admin"]}>
+            <TalkPage />
+          </RoleGuard>
+        ),
       },
       {
         path: pathKeys.jury,
-        ...juryPageRoute,
+        element: (
+          <RoleGuard allowedRoles={["jury", "guest"]}>
+            <JuryPage />
+          </RoleGuard>
+        ),
       },
       {
         path: pathKeys.admin,
-        ...adminPageRoute,
+        element: (
+          <RoleGuard allowedRoles={["admin"]}>
+            <AdminPage />
+          </RoleGuard>
+        ),
       },
     ],
   },

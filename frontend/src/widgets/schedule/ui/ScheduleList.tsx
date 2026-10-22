@@ -1,4 +1,5 @@
 import { Card, Skeleton } from "@heroui/react";
+import { Search } from "lucide-react";
 import { ScheduleCard } from "./ScheduleCard";
 import type { Section, Talk } from "~entities/talk/model/types";
 
@@ -33,7 +34,7 @@ export function ScheduleList({
     return (
       <Card className="p-12 text-center bg-white border-[#1a4d3e]/20">
         <div className="size-16 mx-auto mb-4 rounded-full bg-[#1a4d3e]/10 flex items-center justify-center">
-          <span className="text-3xl">🔍</span>
+          <Search className="size-7 text-[#1a4d3e]" />
         </div>
         <h3 className="text-lg font-semibold mb-2 text-[#1a4d3e]">
           Ничего не найдено

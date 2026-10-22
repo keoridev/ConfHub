@@ -14,6 +14,14 @@ export const authService = {
   login: (login: string, password: string) =>
     apiClient.post<AuthResponse>('/auth/login', { login, password }),
 
+  register: (data: {
+    fullName: string;
+    login: string;
+    password: string;
+    groupName?: string;
+    email?: string;
+  }) => apiClient.post<AuthResponse>('/auth/register', data),
+
   changePassword: (oldPassword: string, newPassword: string, consent: boolean) =>
     apiClient.post<AuthResponse>('/auth/change-password', {
       oldPassword,

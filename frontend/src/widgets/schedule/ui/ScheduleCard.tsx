@@ -108,10 +108,12 @@ export function ScheduleCard({
             <h3 className="text-xl font-bold text-[#1a4d3e] group-hover:text-[#1a4d3e]/80 transition-colors line-clamp-3">
               {talk.title}
             </h3>
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <span className="font-semibold text-[#1a4d3e]/70">
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
+              <span className="font-semibold text-[#1a4d3e]/80">
                 {talk.speakerName}
               </span>
+              {talk.gradeOrGroup && <span>• {talk.gradeOrGroup}</span>}
+              {talk.university && <span className="truncate max-w-[200px]">• {talk.university}</span>}
             </div>
           </div>
 

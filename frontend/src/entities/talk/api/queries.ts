@@ -33,6 +33,32 @@ export function useLoginMutation() {
   });
 }
 
+export function useRegisterMutation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: {
+      fullName: string;
+      login: string;
+      password: string;
+      groupName?: string;
+      university?: string;
+      email?: string;
+    }) =>
+      apiClient
+        .post<{ user: User; token?: string }>("/auth/register", data)
+        .then((res) => res.data),
+    onSuccess: (data) => {
+      qc.setQueryData(queryKeys.auth.user, data.user);
+      if (data.token) {
+        apiClient.setToken(data.token);
+      }
+      if (data.user) {
+        localStorage.setItem("user", JSON.stringify(data.user));
+      }
+    },
+  });
+}
+
 export function useCurrentUserQuery() {
   return useQuery({
     queryKey: queryKeys.auth.user,
@@ -92,6 +118,7 @@ export function useCreateTalkMutation() {
       sectionId: number;
       title: string;
       abstract: string;
+      speakerName?: string;
       supervisor?: string;
       tags?: string[];
       coAuthors?: string[];
@@ -101,6 +128,39 @@ export function useCreateTalkMutation() {
       gradeOrGroup?: string;
     }) => apiClient.post<Talk>("/talks", data).then((res) => res.data),
     onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["talks", "my"] });
+      qc.invalidateQueries({ queryKey: queryKeys.talks.all });
+    },
+  });
+}
+
+export function useUpdateTalkMutation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      id,
+      data,
+    }: {
+      id: number;
+      data: {
+        sectionId?: number;
+        title?: string;
+        speakerName?: string;
+        gradeOrGroup?: string;
+        university?: string;
+        authorEmail?: string;
+        supervisor?: string;
+        abstract?: string;
+        tags?: string[];
+        keywords?: string[];
+        coAuthors?: string[];
+      };
+    }) =>
+      apiClient
+        .patch<Talk>(`/my/talks/${id}`, data)
+        .then((res) => res.data),
+    onSuccess: (_, { id }) => {
+      qc.invalidateQueries({ queryKey: queryKeys.talks.detail(id) });
       qc.invalidateQueries({ queryKey: ["talks", "my"] });
       qc.invalidateQueries({ queryKey: queryKeys.talks.all });
     },
@@ -150,8 +210,15 @@ export function useReviewTalkMutation() {
 export function useTalkQuery(id: number) {
   return useQuery({
     queryKey: queryKeys.talks.detail(id),
-    queryFn: () =>
-      apiClient.get<Talk>(`/my/talks/${id}`).then((res) => res.data),
+    queryFn: async () => {
+      try {
+        const res = await apiClient.get<Talk>(`/talks/${id}`);
+        return res.data;
+      } catch {
+        const res = await apiClient.get<Talk>(`/my/talks/${id}`);
+        return res.data;
+      }
+    },
     enabled: !!id,
   });
 }

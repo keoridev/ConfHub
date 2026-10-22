@@ -11,17 +11,15 @@ import {
   X,
   Shield,
   ChevronRight,
+  Building2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "~app/lib/utils";
 import { pathKeys } from "~shared/lib";
 import { useCurrentUserQuery, useLogout } from "~entities/talk/api/queries";
+import { ConfirmLogoutModal } from "~shared/ui";
 
-const baseLinks = [
-  { to: pathKeys.conference.build("demo"), label: "Программа", description: "Расписание и доклады", icon: CalendarDays },
-  { to: pathKeys.submission, label: "Подать заявку", description: "Регистрация выступления", icon: FilePenLine },
-  { to: pathKeys.jury, label: "Жюри", description: "Экспертный кабинет", icon: Users },
-];
+
 
 export function AppNavigation() {
   const { data: user } = useCurrentUserQuery();
@@ -29,6 +27,7 @@ export function AppNavigation() {
   const navigate = useNavigate();
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
 
   useEffect(() => {
     setIsMobileMenuOpen(false);
@@ -38,7 +37,7 @@ export function AppNavigation() {
     logout();
     setIsMobileMenuOpen(false);
     toast.info("Вы вышли из системы");
-    navigate(pathKeys.conference.build("demo"));
+    navigate(pathKeys.root);
   };
 
   const getRoleLabel = (role?: string) => {
@@ -47,19 +46,42 @@ export function AppNavigation() {
     return "Студент";
   };
 
-  const links = [
-    ...baseLinks,
-    ...(user?.role === "admin"
-      ? [{ to: pathKeys.admin, label: "Админ-панель", description: "Управление конференцией", icon: Shield }]
-      : []),
-  ];
+  // Separation of roles:
+  // - Admin can do absolutely everything (all links).
+  // - Jury sees ONLY jury page ("Кабинет жюри").
+  // - Student sees Main, Program & Submission (NO jury, NO admin).
+  // - Guest sees Main, Program & Submission.
+  const links = (() => {
+    if (user?.role === "admin") {
+      return [
+        { to: pathKeys.root, label: "Главная", description: "О мероприятии", icon: Building2 },
+        { to: pathKeys.program, label: "Программа", description: "Расписание и доклады", icon: CalendarDays },
+        { to: pathKeys.submission, label: "Подать заявку", description: "Регистрация выступления", icon: FilePenLine },
+        { to: pathKeys.jury, label: "Жюри", description: "Экспертный кабинет", icon: Users },
+        { to: pathKeys.admin, label: "Админ-панель", description: "Управление конференцией", icon: Shield },
+      ];
+    }
+    if (user?.role === "jury") {
+      return [
+        { to: pathKeys.jury, label: "Кабинет жюри", description: "Экспертная оценка докладов", icon: Users },
+      ];
+    }
+    // Student or Guest
+    return [
+      { to: pathKeys.root, label: "Главная", description: "О мероприятии", icon: Building2 },
+      { to: pathKeys.program, label: "Программа", description: "Расписание и доклады", icon: CalendarDays },
+      { to: pathKeys.submission, label: "Подать заявку", description: "Регистрация выступления", icon: FilePenLine },
+    ];
+  })();
+
+  const logoTarget = user?.role === "jury" ? pathKeys.jury : pathKeys.root;
 
   return (
     <>
       <header className="sticky top-0 z-40 w-full bg-[#f5f3ed]/95 backdrop-blur-md border-b border-[#1a4d3e]/10 transition-all">
         <div className="max-w-7xl mx-auto px-3 sm:px-6 h-14 sm:h-16 flex items-center justify-between w-full gap-2 sm:gap-4">
           <NavLink
-            to={pathKeys.conference.build("demo")}
+            to={logoTarget}
             className="flex items-center gap-2 sm:gap-2.5 group shrink-0 select-none"
             onClick={() => setIsMobileMenuOpen(false)}
           >
@@ -74,11 +96,11 @@ export function AppNavigation() {
                   Conf-Hub
                 </span>
                 <span className="text-[9px] sm:text-[10px] font-bold text-[#d4a84b] bg-[#d4a84b]/15 px-1 py-0.2 rounded leading-tight">
-                  2026
+                  МУИТ • 2026
                 </span>
               </div>
               <p className="text-[9px] text-muted-foreground font-semibold tracking-wider hidden xs:block sm:block">
-                Конференция
+                XVIII Международная конференция
               </p>
             </div>
           </NavLink>
@@ -131,7 +153,7 @@ export function AppNavigation() {
                 </div>
                 <button
                   type="button"
-                  onClick={handleLogout}
+                  onClick={() => setIsLogoutModalOpen(true)}
                   className="p-1 sm:p-1.5 rounded-lg text-muted-foreground hover:text-danger hover:bg-danger/10 transition-colors cursor-pointer"
                   title="Выйти из аккаунта"
                 >
@@ -191,7 +213,10 @@ export function AppNavigation() {
 
                   <button
                     type="button"
-                    onClick={handleLogout}
+                    onClick={() => {
+                      setIsMobileMenuOpen(false);
+                      setIsLogoutModalOpen(true);
+                    }}
                     className="p-2 rounded-xl text-muted-foreground hover:text-danger hover:bg-danger/10 transition-colors shrink-0 cursor-pointer"
                     title="Выйти"
                   >
@@ -265,7 +290,7 @@ export function AppNavigation() {
                    pb-[env(safe-area-inset-bottom)] shadow-[0_-4px_20px_rgba(0,0,0,0.05)]"
       >
         <div className="flex items-center justify-around h-16 px-2">
-          {links.slice(0, 3).map((l) => (
+          {links.map((l) => (
             <NavLink
               key={l.to}
               to={l.to}
@@ -293,7 +318,7 @@ export function AppNavigation() {
           {user ? (
             <button
               type="button"
-              onClick={handleLogout}
+              onClick={() => setIsLogoutModalOpen(true)}
               className="flex flex-col items-center justify-center w-full h-full gap-1.5 rounded-xl transition-all duration-300 outline-none active:scale-95 text-muted-foreground hover:text-danger cursor-pointer"
               title="Выйти"
             >
@@ -316,6 +341,14 @@ export function AppNavigation() {
           )}
         </div>
       </nav>
+
+      <ConfirmLogoutModal
+        isOpen={isLogoutModalOpen}
+        onClose={() => setIsLogoutModalOpen(false)}
+        onConfirm={handleLogout}
+        userName={user?.fullName || (user?.login ? `@${user.login}` : undefined)}
+        userRole={getRoleLabel(user?.role)}
+      />
     </>
   );
 }

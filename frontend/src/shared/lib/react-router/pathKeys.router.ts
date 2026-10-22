@@ -1,5 +1,6 @@
 export const pathKeys = {
   root: "/",
+  program: "/program",
   login: "/login",
   submission: "/submission",
   jury: "/jury",
