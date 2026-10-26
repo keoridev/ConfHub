@@ -207,6 +207,20 @@ export function useReviewTalkMutation() {
   });
 }
 
+export function useSetKeynoteMutation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ talkId, isKeynote }: { talkId: number; isKeynote: boolean }) =>
+      apiClient.patch<Talk>(`/admin/talks/${talkId}/keynote`, { isKeynote }).then((res) => res.data),
+    onSuccess: (_, { talkId }) => {
+      qc.invalidateQueries({ queryKey: queryKeys.talks.detail(talkId) });
+      qc.invalidateQueries({ queryKey: queryKeys.talks.all });
+      qc.invalidateQueries({ queryKey: queryKeys.sections.all });
+      qc.invalidateQueries({ queryKey: ["talks", "jury-queue"] });
+    },
+  });
+}
+
 export function useTalkQuery(id: number) {
   return useQuery({
     queryKey: queryKeys.talks.detail(id),

@@ -9,12 +9,22 @@ export interface User {
   mustChangePassword: boolean;
 }
 
+export interface SectionRoomInfo {
+  id: number;
+  name: string;
+  talksCount: number;
+}
+
 export interface Section {
   id: number;
   conferenceId: number;
   title: string;
   sortOrder: number;
   color?: string;
+  talksCount?: number;
+  roomsCount?: number;
+  rooms?: SectionRoomInfo[];
+  hasKeynote?: boolean;
 }
 
 export interface Conference {
@@ -76,6 +86,7 @@ export interface Talk {
   room?: Room;
   startTime?: string;
   endTime?: string;
+  isKeynote?: boolean;
   createdAt: string;
   updatedAt: string;
   aiAttempts: number;

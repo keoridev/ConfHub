@@ -17,6 +17,9 @@ import {
   Mail,
   UserCheck,
   FileCheck,
+  FileText,
+  Building,
+  Clock,
 } from "lucide-react";
 import { Card, Button } from "@heroui/react";
 import type { Section } from "~entities/talk/model/types";
@@ -128,7 +131,7 @@ export function SubmissionForm({
               <span className="text-danger font-bold">*</span>
             </label>
             <span className="text-xs text-muted-foreground">
-              Нажмите на секцию для выбора
+              Регламент: 10 мин (15 мин для ключевых) · ключевые в 1-ю очередь
             </span>
           </div>
 
@@ -138,6 +141,7 @@ export function SubmissionForm({
               const isIT = s.id === 1 || s.title.toLowerCase().includes("it");
               const isEng = s.id === 2 || s.title.toLowerCase().includes("инжен");
               const Icon = isIT ? Laptop : isEng ? Cpu : Leaf;
+              const talksCount = s.talksCount ?? 0;
 
               return (
                 <button
@@ -168,7 +172,14 @@ export function SubmissionForm({
                     )}
                   </div>
                   <div>
-                    <p className="text-sm font-bold text-[#1a4d3e]">{s.title}</p>
+                    <div className="flex items-center justify-between gap-1">
+                      <p className="text-sm font-bold text-[#1a4d3e]">{s.title}</p>
+                      {s.hasKeynote && (
+                        <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-amber-100 text-amber-800 font-bold border border-amber-300 shrink-0" title="В секции есть ключевая лекция">
+                          ⭐ Ключевой
+                        </span>
+                      )}
+                    </div>
                     <p className="text-[11px] text-muted-foreground mt-0.5">
                       {isIT
                         ? "ИИ, разработка, алгоритмы"
@@ -176,11 +187,73 @@ export function SubmissionForm({
                         ? "Робототехника, приборы"
                         : "Экология и мониторинг"}
                     </p>
+
+                    {/* Section articles count and room distribution */}
+                    <div className="mt-2.5 pt-2 border-t border-[#1a4d3e]/10 space-y-1">
+                      <div className="flex items-center justify-between text-[11px]">
+                        <span className="text-muted-foreground flex items-center gap-1">
+                          <FileText className="size-3 text-[#1a4d3e]/70" />
+                          <span>Статей в секции:</span>
+                        </span>
+                        <span className="font-bold text-[#1a4d3e] bg-white px-1.5 py-0.5 rounded-md border border-[#1a4d3e]/15">
+                          {talksCount > 0 ? `${talksCount} ст.` : "0 (станьте первым!)"}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center justify-between text-[11px]">
+                        <span className="text-muted-foreground flex items-center gap-1">
+                          <Building className="size-3 text-[#1a4d3e]/70" />
+                          <span>В аудиториях:</span>
+                        </span>
+                        <span className="font-semibold text-[#1a4d3e] truncate max-w-[120px]" title={s.rooms && s.rooms.length > 0 ? s.rooms.map((r) => `${r.name}: ${r.talksCount} ст.`).join(", ") : "Формируются"}>
+                          {s.rooms && s.rooms.length > 0
+                            ? s.rooms.map((r) => `${r.name} (${r.talksCount})`).join(", ")
+                            : "Формируются"}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center justify-between text-[10px] text-muted-foreground pt-0.5">
+                        <span className="flex items-center gap-1 text-[#1a4d3e]/70 font-medium">
+                          <Clock className="size-2.5 text-[#d4a84b]" />
+                          <span>10 мин / доклад</span>
+                        </span>
+                        <span className="text-[10px] text-emerald-700 font-semibold">
+                          Идёт приём
+                        </span>
+                      </div>
+                    </div>
                   </div>
                 </button>
               );
             })}
           </div>
+
+          {/* Selected Section Summary Banner */}
+          {sectionId && (() => {
+            const currentSection = sections.find((s) => String(s.id) === sectionId);
+            if (!currentSection) return null;
+            return (
+              <div className="mt-3 p-3 rounded-2xl bg-[#1a4d3e]/5 border border-[#1a4d3e]/15 flex flex-wrap items-center justify-between gap-2 text-xs animate-in fade-in">
+                <div className="flex items-center gap-2">
+                  <span className="size-2 rounded-full bg-emerald-500 animate-pulse" />
+                  <span className="font-bold text-[#1a4d3e]">
+                    Выбрана секция: «{currentSection.title}»
+                  </span>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="px-2 py-0.5 rounded-md bg-white border border-[#1a4d3e]/15 font-semibold text-[#1a4d3e]">
+                    Подано статей: <strong>{currentSection.talksCount ?? 0}</strong>
+                  </span>
+                  <span className="px-2 py-0.5 rounded-md bg-white border border-[#1a4d3e]/15 font-semibold text-[#1a4d3e]">
+                    Аудитории: <strong>{currentSection.rooms && currentSection.rooms.length > 0 ? currentSection.rooms.map(r => `${r.name} (${r.talksCount} ст.)`).join(', ') : 'Назначаются жюри'}</strong>
+                  </span>
+                  <span className="px-2 py-0.5 rounded-md bg-[#d4a84b]/20 text-[#1a4d3e] font-bold">
+                    ⏱️ 10 мин на статью
+                  </span>
+                </div>
+              </div>
+            );
+          })()}
 
           {errors.sectionId && (
             <p className="text-xs text-danger mt-1.5 font-medium">

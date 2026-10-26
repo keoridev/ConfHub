@@ -16,6 +16,7 @@ class Talk extends Equatable {
   final String status;
   final DateTime? startTime;
   final DateTime? endTime;
+  final bool isKeynote;
   final DateTime? createdAt;
 
   const Talk({
@@ -32,6 +33,7 @@ class Talk extends Equatable {
     this.status = 'approved',
     this.startTime,
     this.endTime,
+    this.isKeynote = false,
     this.createdAt,
   });
 
@@ -39,7 +41,7 @@ class Talk extends Equatable {
     if (startTime != null && endTime != null) {
       return endTime!.difference(startTime!).inMinutes;
     }
-    return 30; // default estimated duration
+    return isKeynote ? 20 : 10; // default estimated duration: 10 min for regular talks, 20 min for keynote
   }
 
   @override

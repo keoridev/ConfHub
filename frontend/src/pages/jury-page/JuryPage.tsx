@@ -66,7 +66,7 @@ export function JuryPage() {
         : "1"
     );
     setSelectedDate("2026-10-05");
-    setSelectedSlot("10:00 - 10:30");
+    setSelectedSlot(talk.isKeynote ? "10:00 - 10:15" : "10:00 - 10:10");
     setIsApproveModalOpen(true);
   };
 

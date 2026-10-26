@@ -17,6 +17,7 @@ import {
   School,
   Mail,
   Users,
+  Star,
 } from "lucide-react";
 import { Card, Skeleton } from "@heroui/react";
 import { toast } from "sonner";
@@ -132,6 +133,13 @@ export function TalkPage() {
             </span>
           )}
 
+          {talk.isKeynote && (
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-100 text-amber-900 text-xs font-extrabold border border-amber-300 shadow-2xs">
+              <Star className="size-3.5 fill-amber-500 text-amber-500" />
+              <span>Ключевой доклад · 1-я очередь</span>
+            </span>
+          )}
+
           {talk.startTime && talk.endTime ? (
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#1a4d3e]/10 text-[#1a4d3e] text-xs font-bold border border-[#1a4d3e]/15">
               <Clock className="size-3.5 text-[#d4a84b]" />
@@ -141,8 +149,8 @@ export function TalkPage() {
             </span>
           ) : (
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#f5f3ed] text-muted-foreground text-xs font-medium">
-              <Clock className="size-3.5" />
-              <span>Время доклада уточняется</span>
+              <Clock className="size-3.5 text-[#d4a84b]" />
+              <span>{talk.isKeynote ? "15 мин / ключевой доклад (время уточняется)" : "10 мин / доклад (время уточняется)"}</span>
             </span>
           )}
 

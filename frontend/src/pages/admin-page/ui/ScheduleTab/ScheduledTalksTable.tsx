@@ -11,9 +11,11 @@ interface ScheduledTalksTableProps {
 }
 
 export function ScheduledTalksTable({ talks, rooms }: ScheduledTalksTableProps) {
-  const sortedTalks = [...talks].sort(
-    (a, b) => new Date(a.startTime!).getTime() - new Date(b.startTime!).getTime()
-  );
+  const sortedTalks = [...talks].sort((a, b) => {
+    if (a.isKeynote && !b.isKeynote) return -1;
+    if (!a.isKeynote && b.isKeynote) return 1;
+    return new Date(a.startTime!).getTime() - new Date(b.startTime!).getTime();
+  });
 
   return (
     <>
@@ -37,9 +39,15 @@ export function ScheduledTalksTable({ talks, rooms }: ScheduledTalksTableProps) 
               {sortedTalks.map((talk) => {
                 const roomIndex = rooms.findIndex((r) => r.id === talk.room?.id);
                 const color = ROOM_COLORS[(roomIndex >= 0 ? roomIndex : 0) % ROOM_COLORS.length];
+                const durationMinutes =
+                  talk.startTime && talk.endTime
+                    ? Math.round((new Date(talk.endTime).getTime() - new Date(talk.startTime).getTime()) / 60000)
+                    : talk.isKeynote
+                    ? 15
+                    : 10;
 
                 return (
-                  <tr key={talk.id} className="admin-table-row">
+                  <tr key={talk.id} className={`admin-table-row ${talk.isKeynote ? "bg-amber-50/40" : ""}`}>
                     <td>
                       <span
                         className="admin-room-pill"
@@ -52,11 +60,26 @@ export function ScheduledTalksTable({ talks, rooms }: ScheduledTalksTableProps) 
                       </span>
                     </td>
                     <td className="admin-td-date">
-                      {fmt(talk.startTime!)} – {fmt(talk.endTime!)}
+                      <div>
+                        <span className="font-bold text-[#1a4d3e] block">
+                          {fmt(talk.startTime!)} – {fmt(talk.endTime!)}
+                        </span>
+                        <span className="text-[10px] text-muted-foreground font-mono">
+                          {durationMinutes} мин
+                        </span>
+                      </div>
                     </td>
                     <td className="admin-td-date">{fmtDate(talk.startTime!)}</td>
                     <td className="admin-td-title" style={{ maxWidth: "20rem" }}>
-                      <span>{talk.title}</span>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="font-bold text-[#1a4d3e]">{talk.title}</span>
+                        {talk.isKeynote && (
+                          <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded-md text-[10px] font-extrabold bg-amber-100 text-amber-900 border border-amber-300">
+                            ⭐ Главный
+                          </span>
+                        )}
+                      </div>
+                      <span className="text-xs text-muted-foreground block mt-0.5">{talk.speakerName}</span>
                     </td>
                     <td className="admin-td-section">{talk.section?.title ?? "—"}</td>
                     <td>

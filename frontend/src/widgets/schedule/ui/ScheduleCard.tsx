@@ -1,4 +1,4 @@
-import { Clock, MapPin } from "lucide-react";
+import { Clock, MapPin, Star } from "lucide-react";
 import { Card, Chip } from "@heroui/react";
 import { Link } from "react-router-dom";
 import { pathKeys } from "~shared/lib";
@@ -16,23 +16,46 @@ export function ScheduleCard({
   section,
   isCompact = false,
 }: ScheduleCardProps) {
+  const durationMinutes =
+    talk.startTime && talk.endTime
+      ? Math.round(
+          (new Date(talk.endTime).getTime() - new Date(talk.startTime).getTime()) /
+            60000
+        )
+      : talk.isKeynote
+      ? 15
+      : 10;
+
   if (isCompact) {
     return (
       <Link to={pathKeys.talk.build(String(talk.id))}>
-        <div className="group flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6 p-5 bg-white rounded-xl border border-[#1a4d3e]/10 hover:border-[#d4a84b]/50 hover:shadow-md transition-all duration-300">
+        <div className={`group flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-6 p-4 sm:p-5 rounded-2xl border transition-all duration-300 ${
+          talk.isKeynote
+            ? "bg-amber-50/40 border-amber-300 hover:border-amber-400 hover:shadow-md"
+            : "bg-white border-[#1a4d3e]/10 hover:border-[#d4a84b]/50 hover:shadow-md"
+        }`}>
           <div className="flex-shrink-0 flex sm:flex-col items-center sm:items-start gap-2 sm:gap-1 min-w-[100px]">
             <div className="flex items-center gap-2 text-[#1a4d3e] font-bold text-base">
               <Clock className="size-4" />
               <span>{fmtTime(talk.startTime)}</span>
             </div>
-            <div className="text-sm text-muted-foreground font-medium">
-              до {fmtTime(talk.endTime)}
+            <div className="text-xs text-muted-foreground font-medium flex items-center gap-1">
+              <span>до {fmtTime(talk.endTime)}</span>
+              <span className="font-mono">({durationMinutes} мин)</span>
             </div>
           </div>
 
           <div className="w-full h-px bg-[#1a4d3e]/10 sm:hidden" />
 
           <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap mb-1">
+              {talk.isKeynote && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-100 text-amber-900 border border-amber-300 shadow-2xs">
+                  <Star className="size-2.5 fill-amber-500 text-amber-500" />
+                  <span>КЛЮЧЕВОЙ ДОКЛАД</span>
+                </span>
+              )}
+            </div>
             <h3 className="text-lg font-bold text-[#1a4d3e] group-hover:text-[#1a4d3e]/80 transition-colors mb-2 line-clamp-2">
               {talk.title}
             </h3>
@@ -83,14 +106,24 @@ export function ScheduleCard({
           />
         )}
 
-        <div className="p-6 pl-8 flex flex-col flex-1">
-          <div className="flex items-center gap-3 mb-4 flex-wrap">
+        <div className="p-4 sm:p-6 pl-5 sm:pl-8 flex flex-col flex-1">
+          <div className="flex items-center gap-1.5 sm:gap-2 mb-3 sm:mb-4 flex-wrap">
+            {talk.isKeynote && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-extrabold bg-amber-100 text-amber-900 border border-amber-300 shadow-2xs">
+                <Star className="size-3 fill-amber-500 text-amber-500" />
+                <span>Ключевой доклад</span>
+              </span>
+            )}
+
             <Chip
               size="sm"
               variant="soft"
               className="bg-[#1a4d3e] text-white font-semibold flex items-center gap-1"
             >
-              <div className="flex items-center gap-1"><Clock className="size-3.5" /> {fmtTime(talk.startTime)} – {fmtTime(talk.endTime)}</div>
+              <div className="flex items-center gap-1">
+                <Clock className="size-3.5" /> {fmtTime(talk.startTime)} – {fmtTime(talk.endTime)}
+                <span className="opacity-75 font-normal ml-0.5 font-mono">({durationMinutes} мин)</span>
+              </div>
             </Chip>
 
             {talk.room?.name && (

@@ -18,6 +18,7 @@ class TalkModel extends Talk {
     super.status,
     super.startTime,
     super.endTime,
+    super.isKeynote,
     super.createdAt,
   });
 
@@ -53,6 +54,7 @@ class TalkModel extends Talk {
       status: json['status'] as String? ?? 'approved',
       startTime: DateFormatter.parseIso(json['startTime'] as String?),
       endTime: DateFormatter.parseIso(json['endTime'] as String?),
+      isKeynote: json['isKeynote'] == true,
       createdAt: DateFormatter.parseIso(json['createdAt'] as String?),
     );
   }

@@ -122,7 +122,7 @@ export function JuryCard({
 
   return (
     <Card className="border border-[#1a4d3e]/15 bg-white shadow-sm hover:shadow-md transition-all duration-200 rounded-2xl overflow-hidden flex flex-col justify-between">
-      <div className="p-6 space-y-4">
+      <div className="p-4 sm:p-6 space-y-3 sm:space-y-4">
         {/* Header: Section + ID + Status */}
         <div className="flex flex-wrap items-center justify-between gap-2.5 pb-3 border-b border-[#1a4d3e]/10">
           <div className="flex items-center gap-2">
@@ -288,38 +288,38 @@ export function JuryCard({
       </div>
 
       {/* Card Actions Footer */}
-      <div className="p-6 pt-0 space-y-2">
+      <div className="p-4 sm:p-6 pt-0 space-y-2">
         <Button
           size="sm"
-          className="w-full py-2.5 bg-[#1a4d3e]/10 hover:bg-[#1a4d3e]/20 text-[#1a4d3e] font-bold rounded-xl flex items-center justify-center gap-2 cursor-pointer transition-all border border-[#1a4d3e]/20"
+          className="w-full py-2 sm:py-2.5 bg-[#1a4d3e]/10 hover:bg-[#1a4d3e]/20 text-[#1a4d3e] font-bold rounded-xl flex items-center justify-center gap-1.5 sm:gap-2 cursor-pointer transition-all border border-[#1a4d3e]/20 text-xs sm:text-sm"
           onClick={() => onInspectClick(talk)}
         >
-          <Eye className="size-4 text-[#d4a84b]" />
+          <Eye className="size-3.5 sm:size-4 text-[#d4a84b]" />
           <span>Детальный просмотр и экспертиза</span>
         </Button>
 
-        <div className="flex gap-2">
+        <div className="flex gap-1.5 sm:gap-2">
           <Button
             size="sm"
-            className="flex-1 py-2 bg-[#1a4d3e] hover:bg-[#143d31] text-white font-bold rounded-xl shadow-xs transition-all cursor-pointer"
+            className="flex-1 py-2 px-2 bg-[#1a4d3e] hover:bg-[#143d31] text-white font-bold rounded-xl shadow-xs transition-all cursor-pointer text-xs sm:text-sm"
             onClick={() => onApproveClick(talk)}
           >
-            <Check className="size-4 text-[#d4a84b] mr-1" />
+            <Check className="size-3.5 sm:size-4 text-[#d4a84b] mr-1" />
             Одобрить
           </Button>
 
           <Button
             size="sm"
-            className="flex-1 py-2 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 font-bold rounded-xl transition-all cursor-pointer"
+            className="flex-1 py-2 px-2 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 font-bold rounded-xl transition-all cursor-pointer text-xs sm:text-sm"
             onClick={() => onRevisionClick(talk)}
           >
-            <AlertCircle className="size-4 text-amber-600 mr-1" />
+            <AlertCircle className="size-3.5 sm:size-4 text-amber-600 mr-1" />
             На доработку
           </Button>
 
           <Button
             size="sm"
-            className="py-2 px-3 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-bold rounded-xl transition-all cursor-pointer"
+            className="py-2 px-2.5 sm:px-3 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-bold rounded-xl transition-all cursor-pointer text-xs"
             onClick={() => onRejectClick(talk)}
             aria-label="Отклонить заявку"
           >
