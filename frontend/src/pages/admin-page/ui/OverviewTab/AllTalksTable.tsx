@@ -9,9 +9,15 @@ import {
   ExternalLink,
   Eye,
   X,
+<<<<<<< HEAD
   Trash2,
+=======
+  Star,
+>>>>>>> 38985a4ec470f6b0620df1907d7c0e07f93286ea
 } from "lucide-react";
+import { toast } from "sonner";
 import { pathKeys } from "~shared/lib";
+import { useSetKeynoteMutation } from "~entities/talk/api/queries";
 import type { Talk } from "~entities/talk/model/types";
 import { useAdminDeleteTalkMutation } from "~entities/talk/api/queries";
 import { statusLabel, statusClass } from "../../model/constants";
@@ -50,10 +56,53 @@ export function AllTalksTable({ talks, loading }: AllTalksTableProps) {
     }
   };
 
+  const setKeynoteMutation = useSetKeynoteMutation();
+
+  const handleToggleKeynote = async (talk: Talk) => {
+    const nextState = !talk.isKeynote;
+    try {
+      await setKeynoteMutation.mutateAsync({
+        talkId: talk.id,
+        isKeynote: nextState,
+      });
+      if (nextState) {
+        toast.success(`Доклад «${talk.title}» назначен ключевым и пойдёт в 1-ю очередь!`);
+      } else {
+        toast.info(`С доклада «${talk.title}» снят статус ключевого.`);
+      }
+      if (previewTalk?.id === talk.id) {
+        setPreviewTalk({ ...previewTalk, isKeynote: nextState });
+      }
+    } catch (err: any) {
+      toast.error(err.response?.data?.error?.message || "Ошибка смены статуса доклада");
+    }
+  };
+
+  const sortedTalks = useMemo(() => {
+    return [...talks].sort((a, b) => {
+      // 1. Keynote talks always first
+      if (a.isKeynote && !b.isKeynote) return -1;
+      if (!a.isKeynote && b.isKeynote) return 1;
+
+      // 2. If scheduled start time exists, sort by time
+      if (a.startTime && b.startTime) {
+        return new Date(a.startTime).getTime() - new Date(b.startTime).getTime();
+      }
+      if (a.startTime) return -1;
+      if (b.startTime) return 1;
+
+      // 3. Otherwise order of registration (created_at ASC)
+      return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+    });
+  }, [talks]);
+
   const filteredTalks = useMemo(() => {
-    return talks.filter((t) => {
+    return sortedTalks.filter((t) => {
+      // Keynote filter
+      if (statusFilter === "keynote" && !t.isKeynote) return false;
+
       // Status filter
-      if (statusFilter !== "all" && t.status !== statusFilter) return false;
+      if (statusFilter !== "all" && statusFilter !== "keynote" && t.status !== statusFilter) return false;
 
       // Has document filter
       if (hasDocFilter === "with_doc" && !t.document) return false;
@@ -86,11 +135,12 @@ export function AllTalksTable({ talks, loading }: AllTalksTableProps) {
 
       return true;
     });
-  }, [talks, statusFilter, hasDocFilter, search]);
+  }, [sortedTalks, statusFilter, hasDocFilter, search]);
 
   const counts = useMemo(() => {
     return {
       all: talks.length,
+      keynotes: talks.filter((t) => !!t.isKeynote).length,
       approved: talks.filter((t) => t.status === "approved").length,
       pending: talks.filter((t) => t.status === "pending_review").length,
       revision: talks.filter((t) => t.status === "needs_revision").length,
@@ -135,6 +185,18 @@ export function AllTalksTable({ talks, loading }: AllTalksTableProps) {
           }`}
         >
           Все ({counts.all})
+        </button>
+        <button
+          type="button"
+          onClick={() => setStatusFilter(statusFilter === "keynote" ? "all" : "keynote")}
+          className={`px-3 py-1 rounded-lg font-semibold transition-colors cursor-pointer flex items-center gap-1 ${
+            statusFilter === "keynote"
+              ? "bg-amber-500 text-white shadow-2xs font-bold"
+              : "bg-amber-50 border border-amber-300 text-amber-900 hover:bg-amber-100"
+          }`}
+        >
+          <Star className={`size-3 ${statusFilter === "keynote" ? "fill-white text-white" : "fill-amber-500 text-amber-500"}`} />
+          <span>Ключевые ({counts.keynotes})</span>
         </button>
         <button
           type="button"
@@ -230,10 +292,24 @@ export function AllTalksTable({ talks, loading }: AllTalksTableProps) {
                   const hasDoc = !!talk.document;
 
                   return (
-                    <tr key={talk.id} className="admin-table-row">
-                      <td className="admin-td-num">{idx + 1}</td>
+                    <tr key={talk.id} className={`admin-table-row ${talk.isKeynote ? "bg-amber-50/40" : ""}`}>
+                      <td className="admin-td-num">
+                        {talk.isKeynote ? (
+                          <span title="Ключевой доклад (1-я очередь)">⭐</span>
+                        ) : (
+                          idx + 1
+                        )}
+                      </td>
                       <td className="admin-td-title">
-                        <span className="font-bold text-[#1a4d3e] block">{talk.title}</span>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="font-bold text-[#1a4d3e]">{talk.title}</span>
+                          {talk.isKeynote && (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-extrabold bg-amber-100 text-amber-900 border border-amber-300 shadow-2xs">
+                              <Star className="size-2.5 fill-amber-500 text-amber-500" />
+                              <span>ГЛАВНЫЙ ДОКЛАД · 1-Я ОЧЕРЕДЬ</span>
+                            </span>
+                          )}
+                        </div>
                         <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-muted-foreground mt-0.5">
                           <span className="font-semibold text-[#1a4d3e]">
                             {talk.speakerName || "Докладчик"}
@@ -317,7 +393,27 @@ export function AllTalksTable({ talks, loading }: AllTalksTableProps) {
                         )}
                       </td>
                       <td>
+<<<<<<< HEAD
                         <div className="flex items-center gap-1.5">
+=======
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          {/* Keynote Toggle Button */}
+                          <button
+                            type="button"
+                            onClick={() => handleToggleKeynote(talk)}
+                            disabled={setKeynoteMutation.isPending}
+                            className={`px-2.5 py-1 rounded-lg border text-xs font-semibold transition-all cursor-pointer flex items-center gap-1 ${
+                              talk.isKeynote
+                                ? "bg-amber-100 hover:bg-amber-200 border-amber-300 text-amber-900 shadow-2xs font-bold"
+                                : "border-[#1a4d3e]/20 text-[#1a4d3e]/70 hover:text-[#1a4d3e] hover:bg-[#1a4d3e]/10"
+                            }`}
+                            title={talk.isKeynote ? "Снять статус главного доклада" : "Поставить доклад главным (пойдёт в первую очередь)"}
+                          >
+                            <Star className={`size-3 ${talk.isKeynote ? "fill-amber-500 text-amber-500" : ""}`} />
+                            <span>{talk.isKeynote ? "Главный" : "Сделать главным"}</span>
+                          </button>
+
+>>>>>>> 38985a4ec470f6b0620df1907d7c0e07f93286ea
                           <button
                             type="button"
                             onClick={() => setPreviewTalk(talk)}
@@ -363,15 +459,21 @@ export function AllTalksTable({ talks, loading }: AllTalksTableProps) {
           onClick={() => setPreviewTalk(null)}
         >
           <div
-            className="w-full max-w-2xl bg-white rounded-3xl shadow-2xl border border-[#1a4d3e]/20 p-6 sm:p-7 space-y-5 max-h-[90vh] overflow-y-auto animate-in zoom-in-95 duration-200"
+            className="w-full max-w-2xl bg-white rounded-3xl shadow-2xl border border-[#1a4d3e]/20 p-4 sm:p-7 space-y-4 sm:space-y-5 max-h-[90vh] overflow-y-auto animate-in zoom-in-95 duration-200"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-start justify-between gap-3 pb-3 border-b border-[#1a4d3e]/10">
               <div className="space-y-1">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <span className={`admin-badge ${statusClass[previewTalk.status] ?? ""}`}>
                     {statusLabel[previewTalk.status] ?? previewTalk.status}
                   </span>
+                  {previewTalk.isKeynote && (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-900 border border-amber-300 shadow-2xs">
+                      <Star className="size-3 fill-amber-500 text-amber-500" />
+                      <span>Главный доклад · 1-я очередь</span>
+                    </span>
+                  )}
                   <span className="text-xs font-mono text-muted-foreground">#{previewTalk.id}</span>
                 </div>
                 <h3 className="text-xl font-extrabold text-[#1a4d3e] leading-snug">
@@ -471,6 +573,7 @@ export function AllTalksTable({ talks, loading }: AllTalksTableProps) {
               </div>
             )}
 
+<<<<<<< HEAD
             <div className="pt-2 flex flex-wrap items-center justify-between gap-3 border-t border-[#1a4d3e]/10">
               <button
                 type="button"
@@ -489,6 +592,30 @@ export function AllTalksTable({ talks, loading }: AllTalksTableProps) {
                 >
                   <ExternalLink className="size-3.5 text-[#d4a84b]" />
                   <span>Открыть полную страницу доклада</span>
+=======
+            <div className="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 sm:gap-3 border-t border-[#1a4d3e]/10">
+              <button
+                type="button"
+                onClick={() => handleToggleKeynote(previewTalk)}
+                disabled={setKeynoteMutation.isPending}
+                className={`py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer border ${
+                  previewTalk.isKeynote
+                    ? "bg-amber-100 border-amber-300 text-amber-900 hover:bg-amber-200 shadow-2xs"
+                    : "border-[#1a4d3e]/20 text-[#1a4d3e] hover:bg-[#1a4d3e]/10"
+                }`}
+              >
+                <Star className={`size-3.5 ${previewTalk.isKeynote ? "fill-amber-500 text-amber-500" : ""}`} />
+                <span>{previewTalk.isKeynote ? "Снять статус главного" : "Сделать главным докладом"}</span>
+              </button>
+
+              <div className="flex items-center gap-2">
+                <Link
+                  to={pathKeys.talk.build(String(previewTalk.id))}
+                  className="flex-1 sm:flex-initial py-2.5 px-3 sm:px-4 rounded-xl bg-[#1a4d3e] hover:bg-[#143d31] text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-colors text-center"
+                >
+                  <ExternalLink className="size-3.5 text-[#d4a84b] shrink-0" />
+                  <span>Открыть страницу</span>
+>>>>>>> 38985a4ec470f6b0620df1907d7c0e07f93286ea
                 </Link>
                 <button
                   type="button"

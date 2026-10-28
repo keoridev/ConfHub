@@ -181,22 +181,22 @@ export function LoginPage() {
       <main className="flex-1 flex items-center justify-center px-4 py-8">
         <div className="w-full max-w-5xl space-y-6 sm:space-y-8">
           {/* Auth Mode Tabs Switcher */}
-          <div className="flex justify-center">
-            <div className="inline-flex p-1.5 rounded-2xl bg-white border border-[#1a4d3e]/15 shadow-xs gap-1">
+          <div className="flex justify-center w-full px-2">
+            <div className="grid grid-cols-2 w-full max-w-md p-1 sm:p-1.5 rounded-2xl bg-white border border-[#1a4d3e]/15 shadow-xs gap-1">
               <button
                 type="button"
                 onClick={() => {
                   setAuthTab("login");
                   setErrorMessage(null);
                 }}
-                className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
+                className={`flex items-center justify-center gap-1.5 sm:gap-2 px-2.5 sm:px-5 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer text-center ${
                   authTab === "login"
                     ? "bg-[#1a4d3e] text-white shadow-xs"
                     : "text-[#1a4d3e]/70 hover:text-[#1a4d3e] hover:bg-[#1a4d3e]/5"
                 }`}
               >
-                <LogIn className="size-4" />
-                <span>Авторизация / Вход</span>
+                <LogIn className="size-3.5 sm:size-4 shrink-0" />
+                <span className="truncate">Вход в систему</span>
               </button>
 
               <button
@@ -205,25 +205,25 @@ export function LoginPage() {
                   setAuthTab("register");
                   setErrorMessage(null);
                 }}
-                className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
+                className={`flex items-center justify-center gap-1.5 sm:gap-2 px-2.5 sm:px-5 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer text-center ${
                   authTab === "register"
                     ? "bg-[#1a4d3e] text-white shadow-xs"
                     : "text-[#1a4d3e]/70 hover:text-[#1a4d3e] hover:bg-[#1a4d3e]/5"
                 }`}
               >
-                <UserPlus className="size-4" />
-                <span>Регистрация докладчика</span>
+                <UserPlus className="size-3.5 sm:size-4 shrink-0" />
+                <span className="truncate">Регистрация</span>
               </button>
             </div>
           </div>
 
           {/* Header Title */}
-          <div className="text-center max-w-2xl mx-auto space-y-3">
+          <div className="text-center max-w-2xl mx-auto space-y-2.5 sm:space-y-3 px-2">
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold tracking-wide uppercase bg-[#1a4d3e]/10 text-[#1a4d3e] border border-[#1a4d3e]/15">
               <Sparkles className="size-3 text-[#d4a84b]" />
               {authTab === "login" ? "Авторизация в системе" : "Новый участник конференции"}
             </span>
-            <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-[#1a4d3e] leading-tight">
+            <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight text-[#1a4d3e] leading-tight">
               {authTab === "login" ? "Вход в личный кабинет" : "Регистрация докладчика"}
             </h1>
             <p className="text-sm sm:text-base text-[#1a4d3e]/80 leading-relaxed">

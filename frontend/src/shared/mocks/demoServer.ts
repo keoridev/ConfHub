@@ -56,6 +56,15 @@ export async function reviewTalk(
   talks = talks.map((t) => (t.id === id ? { ...t, status, ...updates } : t));
 }
 
+export async function setTalkKeynote(
+  id: number,
+  isKeynote: boolean
+): Promise<Talk | undefined> {
+  await delay(200);
+  talks = talks.map((t) => (t.id === id ? { ...t, isKeynote } : t));
+  return talks.find((t) => t.id === id);
+}
+
 export async function getAIResult(talkId: number): Promise<AIValidationResult | undefined> {
   await delay(100);
   return aiResults.get(talkId);

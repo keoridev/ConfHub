@@ -31,11 +31,19 @@ export function useTalkFilters(talks: Talk[]) {
           (t.tags || []).some((tag) => tag.toLowerCase().includes(q))
       )
       .sort((a, b) => {
-        if (!a.startTime && !b.startTime) return 0;
-        if (!a.startTime) return 1;
-        if (!b.startTime) return -1;
+        // 1. Keynote talks always first
+        if (a.isKeynote && !b.isKeynote) return -1;
+        if (!a.isKeynote && b.isKeynote) return 1;
 
-        return Date.parse(a.startTime) - Date.parse(b.startTime);
+        // 2. Start time order if available
+        if (a.startTime && b.startTime) {
+          return Date.parse(a.startTime) - Date.parse(b.startTime);
+        }
+        if (a.startTime) return -1;
+        if (b.startTime) return 1;
+
+        // 3. Otherwise order of registration (created_at ASC)
+        return (a.createdAt ? Date.parse(a.createdAt) : 0) - (b.createdAt ? Date.parse(b.createdAt) : 0);
       });
   }, [talks, search, sectionId, hall]);
 

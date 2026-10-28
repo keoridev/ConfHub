@@ -1,6 +1,7 @@
 import type { Section, Talk } from "~entities/talk/model/types";
 
 export const mockSections: Section[] = [
+<<<<<<< HEAD
   { id: 1, title: "Искусственный интеллект и машинное обучение в устойчивом развитии", color: "#0589c7", conferenceId: 1, sortOrder: 1 },
   { id: 2, title: "Традиции и инновации в архитектурном и дизайнерском решениях", color: "#8B5CF6", conferenceId: 1, sortOrder: 2 },
   { id: 3, title: "Динамика и исследование сейсмостойкости сооружений", color: "#E11D48", conferenceId: 1, sortOrder: 3 },
@@ -13,6 +14,44 @@ export const mockSections: Section[] = [
   { id: 10, title: "Современные стратегии маркетинговых исследований и электронной коммерции", color: "#EC4899", conferenceId: 1, sortOrder: 10 },
   { id: 11, title: "Вызовы и возможности для специалистов будущего: инновации, практики и перспективы", color: "#84CC16", conferenceId: 1, sortOrder: 11 },
   { id: 12, title: "Язык и мышление: психологические и лингвистические аспекты", color: "#9333EA", conferenceId: 1, sortOrder: 12 },
+=======
+  {
+    id: 1,
+    title: "IT и ИИ",
+    color: "#0589c7",
+    conferenceId: 1,
+    sortOrder: 1,
+    talksCount: 4,
+    roomsCount: 2,
+    hasKeynote: true,
+    rooms: [
+      { id: 1, name: "302", talksCount: 3 },
+      { id: 2, name: "101", talksCount: 1 },
+    ],
+  },
+  {
+    id: 2,
+    title: "Инженерия",
+    color: "#72c200",
+    conferenceId: 1,
+    sortOrder: 2,
+    talksCount: 2,
+    roomsCount: 1,
+    hasKeynote: false,
+    rooms: [{ id: 3, name: "204", talksCount: 2 }],
+  },
+  {
+    id: 3,
+    title: "Экология",
+    color: "#0D9488",
+    conferenceId: 1,
+    sortOrder: 3,
+    talksCount: 1,
+    roomsCount: 1,
+    hasKeynote: false,
+    rooms: [{ id: 1, name: "302", talksCount: 1 }],
+  },
+>>>>>>> 38985a4ec470f6b0620df1907d7c0e07f93286ea
 ];
 
 export const mockTalks = [
@@ -21,9 +60,10 @@ export const mockTalks = [
     title: "Применение LLM для анализа научных текстов",
     speakerName: "Атаё А.С.",
     sectionId: 1,
+    isKeynote: true,
     room: { id: 1, conferenceId: 1, name: "302" },
     startTime: "2026-10-05T10:00:00+06:00",
-    endTime: "2026-10-05T10:30:00+06:00",
+    endTime: "2026-10-05T10:15:00+06:00",
     abstract:
       "Обзор подходов к автоматической классификации и рецензированию статей с помощью больших языковых моделей.",
     tags: ["AI", "NLP", "LLM"],

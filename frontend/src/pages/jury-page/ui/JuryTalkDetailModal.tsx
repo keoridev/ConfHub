@@ -416,50 +416,50 @@ export function JuryTalkDetailModal({
         </div>
 
         {/* Modal Action Footer */}
-        <div className="p-4 sm:p-5 border-t border-[#1a4d3e]/10 bg-white flex flex-wrap items-center justify-between gap-3 shrink-0">
+        <div className="p-3.5 sm:p-5 border-t border-[#1a4d3e]/10 bg-white flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 sm:gap-3 shrink-0">
           <Button
             variant="tertiary"
             onClick={onClose}
-            className="rounded-xl font-bold text-xs cursor-pointer"
+            className="rounded-xl font-bold text-xs cursor-pointer order-last sm:order-first py-2 sm:py-2.5"
           >
             Закрыть досье
           </Button>
 
-          <div className="flex flex-wrap items-center gap-2 ml-auto">
+          <div className="grid grid-cols-3 sm:flex items-center gap-1.5 sm:gap-2">
             <Button
               size="sm"
-              className="py-2.5 px-4 bg-[#1a4d3e] hover:bg-[#143d31] text-white font-bold rounded-xl shadow-xs transition-all cursor-pointer"
+              className="py-2 sm:py-2.5 px-2 sm:px-4 bg-[#1a4d3e] hover:bg-[#143d31] text-white font-bold rounded-xl shadow-xs transition-all cursor-pointer text-xs"
               onClick={() => {
                 onClose();
                 onApproveClick(talk);
               }}
             >
-              <Check className="size-4 text-[#d4a84b] mr-1" />
-              Одобрить доклад
+              <Check className="size-3.5 sm:size-4 text-[#d4a84b] mr-1 shrink-0" />
+              <span className="truncate">Одобрить</span>
             </Button>
 
             <Button
               size="sm"
-              className="py-2.5 px-4 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 font-bold rounded-xl transition-all cursor-pointer"
+              className="py-2 sm:py-2.5 px-2 sm:px-4 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 font-bold rounded-xl transition-all cursor-pointer text-xs"
               onClick={() => {
                 onClose();
                 onRevisionClick(talk);
               }}
             >
-              <AlertCircle className="size-4 text-amber-600 mr-1" />
-              На доработку
+              <AlertCircle className="size-3.5 sm:size-4 text-amber-600 mr-1 shrink-0" />
+              <span className="truncate">Доработка</span>
             </Button>
 
             <Button
               size="sm"
-              className="py-2.5 px-3 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-bold rounded-xl transition-all cursor-pointer"
+              className="py-2 sm:py-2.5 px-2 sm:px-3 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-bold rounded-xl transition-all cursor-pointer text-xs"
               onClick={() => {
                 onClose();
                 onRejectClick(talk);
               }}
             >
-              <X className="size-4 mr-1" />
-              Отклонить
+              <X className="size-3.5 sm:size-4 mr-1 shrink-0" />
+              <span className="truncate">Отклонить</span>
             </Button>
           </div>
         </div>

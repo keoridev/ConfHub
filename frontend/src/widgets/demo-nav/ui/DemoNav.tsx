@@ -54,23 +54,23 @@ export function AppNavigation() {
   const links = (() => {
     if (user?.role === "admin") {
       return [
-        { to: pathKeys.root, label: "Главная", description: "О мероприятии", icon: Building2 },
-        { to: pathKeys.program, label: "Программа", description: "Расписание и доклады", icon: CalendarDays },
-        { to: pathKeys.submission, label: "Подать заявку", description: "Регистрация выступления", icon: FilePenLine },
-        { to: pathKeys.jury, label: "Жюри", description: "Экспертный кабинет", icon: Users },
-        { to: pathKeys.admin, label: "Админ-панель", description: "Управление конференцией", icon: Shield },
+        { to: pathKeys.root, label: "Главная", shortLabel: "Главная", description: "О мероприятии", icon: Building2 },
+        { to: pathKeys.program, label: "Программа", shortLabel: "Программа", description: "Расписание и доклады", icon: CalendarDays },
+        { to: pathKeys.submission, label: "Подать заявку", shortLabel: "Заявка", description: "Регистрация выступления", icon: FilePenLine },
+        { to: pathKeys.jury, label: "Жюри", shortLabel: "Жюри", description: "Экспертный кабинет", icon: Users },
+        { to: pathKeys.admin, label: "Админ-панель", shortLabel: "Админ", description: "Управление конференцией", icon: Shield },
       ];
     }
     if (user?.role === "jury") {
       return [
-        { to: pathKeys.jury, label: "Кабинет жюри", description: "Экспертная оценка докладов", icon: Users },
+        { to: pathKeys.jury, label: "Кабинет жюри", shortLabel: "Кабинет жюри", description: "Экспертная оценка докладов", icon: Users },
       ];
     }
     // Student or Guest
     return [
-      { to: pathKeys.root, label: "Главная", description: "О мероприятии", icon: Building2 },
-      { to: pathKeys.program, label: "Программа", description: "Расписание и доклады", icon: CalendarDays },
-      { to: pathKeys.submission, label: "Подать заявку", description: "Регистрация выступления", icon: FilePenLine },
+      { to: pathKeys.root, label: "Главная", shortLabel: "Главная", description: "О мероприятии", icon: Building2 },
+      { to: pathKeys.program, label: "Программа", shortLabel: "Программа", description: "Расписание и доклады", icon: CalendarDays },
+      { to: pathKeys.submission, label: "Подать заявку", shortLabel: "Заявка", description: "Регистрация выступления", icon: FilePenLine },
     ];
   })();
 
@@ -309,7 +309,7 @@ export function AppNavigation() {
                       <span className="absolute -top-1 left-1/2 -translate-x-1/2 w-4 h-1 bg-[#d4a84b] rounded-full" />
                     )}
                   </div>
-                  <span className="text-[10px] font-bold tracking-wide">{l.label}</span>
+                  <span className="text-[10px] font-bold tracking-tight truncate max-w-full px-0.5 text-center leading-tight">{(l as any).shortLabel || l.label}</span>
                 </>
               )}
             </NavLink>
@@ -323,7 +323,7 @@ export function AppNavigation() {
               title="Выйти"
             >
               <LogOut className="size-5" />
-              <span className="text-[10px] font-bold tracking-wide">Выйти</span>
+              <span className="text-[10px] font-bold tracking-tight truncate max-w-full px-0.5 text-center leading-tight">Выход</span>
             </button>
           ) : (
             <NavLink
@@ -336,7 +336,7 @@ export function AppNavigation() {
               }
             >
               <LogIn className="size-5" />
-              <span className="text-[10px] font-bold tracking-wide">Войти</span>
+              <span className="text-[10px] font-bold tracking-tight truncate max-w-full px-0.5 text-center leading-tight">Войти</span>
             </NavLink>
           )}
         </div>
