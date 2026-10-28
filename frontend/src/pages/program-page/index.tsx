@@ -1,5 +1,12 @@
 import { useState, useEffect, useMemo } from "react";
-import { Search, Sparkles, AlertTriangle, CalendarDays, BookOpen, Clock } from "lucide-react";
+import {
+  Search,
+  Sparkles,
+  AlertTriangle,
+  CalendarDays,
+  BookOpen,
+  Clock,
+} from "lucide-react";
 import { Card, Input, InputGroup, ListBox, Select } from "@heroui/react";
 
 import { CurrentTalkCard } from "~widgets/schedule/ui/CurrentTalk";
@@ -37,7 +44,7 @@ export function ProgramPage() {
       [
         ...new Set(talks.map((t) => t.room?.name).filter(Boolean)),
       ].sort() as string[],
-    [talks]
+    [talks],
   );
 
   const currentTalk = useMemo(() => {
@@ -56,7 +63,7 @@ export function ProgramPage() {
       .filter((t) => t.startTime && new Date(t.startTime).getTime() > nowMs)
       .sort(
         (a, b) =>
-          new Date(a.startTime).getTime() - new Date(b.startTime).getTime()
+          new Date(a.startTime).getTime() - new Date(b.startTime).getTime(),
       );
 
     if (upcoming.length > 0) return upcoming[0];
@@ -109,7 +116,10 @@ export function ProgramPage() {
 
           <div className="flex items-center gap-2 text-xs text-white/80 bg-white/10 px-3 py-1.5 rounded-xl border border-white/15">
             <Clock className="size-3.5 text-[#d4a84b]" />
-            <span>Бишкек: <strong className="font-mono text-white">{timeString}</strong></span>
+            <span>
+              Бишкек:{" "}
+              <strong className="font-mono text-white">{timeString}</strong>
+            </span>
           </div>
         </div>
 
@@ -118,17 +128,25 @@ export function ProgramPage() {
             Программа конференции и каталог докладов
           </h1>
           <p className="text-xs sm:text-sm text-white/80 max-w-2xl leading-relaxed">
-            XVIII Международная научно-практическая конференция-конкурс научных докладов «Инновационные технологии и передовые решения». Расписание секционных защит и поиск материалов.
+            XVIII Международная научно-практическая конференция-конкурс научных
+            докладов «Инновационные технологии и передовые решения». Расписание
+            секционных защит и поиск материалов.
           </p>
         </div>
 
         <div className="relative z-10 pt-2 flex flex-wrap items-center gap-3 text-xs">
           <div className="px-3 py-1.5 rounded-xl bg-white/10 border border-white/15 flex items-center gap-2 font-medium">
             <BookOpen className="size-3.5 text-[#d4a84b]" />
-            <span>Всего докладов в базе: <strong className="text-white">{talks.length}</strong></span>
+            <span>
+              Всего докладов в базе:{" "}
+              <strong className="text-white">{talks.length}</strong>
+            </span>
           </div>
           <div className="px-3 py-1.5 rounded-xl bg-white/10 border border-white/15 flex items-center gap-2 font-medium">
-            <span>Аудиторий/залов: <strong className="text-white">{halls.length || 3}</strong></span>
+            <span>
+              Аудиторий/залов:{" "}
+              <strong className="text-white">{halls.length || 3}</strong>
+            </span>
           </div>
         </div>
       </div>

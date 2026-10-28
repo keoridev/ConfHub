@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { Card, Button } from "@heroui/react";
 import type { Section } from "~entities/talk/model/types";
+import { getSectionMeta } from "~shared/lib";
 import type { SubmissionFormValues, CoAuthorItem } from "../model/types";
 import { CoAuthorsEditor } from "./CoAuthorsEditor";
 import { KeywordsInput } from "./KeywordsInput";
@@ -132,12 +133,11 @@ export function SubmissionForm({
             </span>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            {sections.map((s) => {
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
+            {sections.map((s, idx) => {
               const isSelected = sectionId === String(s.id);
-              const isIT = s.id === 1 || s.title.toLowerCase().includes("it");
-              const isEng = s.id === 2 || s.title.toLowerCase().includes("инжен");
-              const Icon = isIT ? Laptop : isEng ? Cpu : Leaf;
+              const meta = getSectionMeta(s.title, idx);
+              const Icon = meta.icon;
 
               return (
                 <button
@@ -146,35 +146,33 @@ export function SubmissionForm({
                   onClick={() =>
                     setValue("sectionId", String(s.id), { shouldValidate: true })
                   }
-                  className={`p-3.5 rounded-2xl border-2 text-left transition-all duration-200 cursor-pointer flex flex-col justify-between gap-3 ${
+                  className={`p-4 rounded-2xl border-2 text-left transition-all duration-200 cursor-pointer flex flex-col justify-between gap-3 group relative ${
                     isSelected
-                      ? "border-[#1a4d3e] bg-[#1a4d3e]/5 ring-2 ring-[#1a4d3e]/20 shadow-xs"
-                      : "border-[#1a4d3e]/15 bg-[#f5f3ed]/40 hover:border-[#1a4d3e]/30 hover:bg-white"
+                      ? "border-[#1a4d3e] bg-[#1a4d3e]/5 ring-2 ring-[#1a4d3e]/20 shadow-sm"
+                      : "border-[#1a4d3e]/15 bg-white hover:border-[#1a4d3e]/35 hover:shadow-xs"
                   }`}
                 >
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-start justify-between w-full">
                     <div
-                      className="size-8 rounded-xl flex items-center justify-center text-white shadow-xs"
-                      style={{ backgroundColor: s.color || "#1a4d3e" }}
+                      className="size-10 rounded-2xl flex items-center justify-center text-white shadow-xs transition-transform group-hover:scale-105"
+                      style={{ backgroundColor: meta.bgColor || "#1a4d3e" }}
                     >
-                      <Icon className="size-4" />
+                      <Icon className="size-5" />
                     </div>
                     {isSelected ? (
-                      <span className="size-5 rounded-full bg-[#1a4d3e] text-white flex items-center justify-center">
+                      <span className="size-5 rounded-full bg-[#1a4d3e] text-white flex items-center justify-center shrink-0">
                         <Check className="size-3 stroke-[3]" />
                       </span>
                     ) : (
-                      <span className="size-5 rounded-full border border-[#1a4d3e]/20" />
+                      <span className="size-5 rounded-full border-2 border-[#1a4d3e]/25 group-hover:border-[#1a4d3e]/50 shrink-0 transition-colors" />
                     )}
                   </div>
-                  <div>
-                    <p className="text-sm font-bold text-[#1a4d3e]">{s.title}</p>
-                    <p className="text-[11px] text-muted-foreground mt-0.5">
-                      {isIT
-                        ? "ИИ, разработка, алгоритмы"
-                        : isEng
-                        ? "Робототехника, приборы"
-                        : "Экология и мониторинг"}
+                  <div className="space-y-1">
+                    <p className="text-sm font-bold text-[#1a4d3e] leading-snug line-clamp-3">
+                      {s.title}
+                    </p>
+                    <p className="text-xs text-muted-foreground leading-normal line-clamp-2">
+                      {meta.subtitle}
                     </p>
                   </div>
                 </button>

@@ -161,10 +161,18 @@ class ScheduleRemoteDataSourceImpl implements ScheduleRemoteDataSource {
 
   List<SectionModel> _getFallbackSections() {
     return const [
-      SectionModel(id: 1, conferenceId: 1, title: 'Искусственный интеллект и ML', sortOrder: 1),
-      SectionModel(id: 2, conferenceId: 1, title: 'Мобильная и веб-разработка', sortOrder: 2),
-      SectionModel(id: 3, conferenceId: 1, title: 'Кибербезопасность и сети', sortOrder: 3),
-      SectionModel(id: 4, conferenceId: 1, title: 'Робототехника и IoT', sortOrder: 4),
+      SectionModel(id: 1, conferenceId: 1, title: 'Искусственный интеллект и машинное обучение в устойчивом развитии', sortOrder: 1),
+      SectionModel(id: 2, conferenceId: 1, title: 'Традиции и инновации в архитектурном и дизайнерском решениях', sortOrder: 2),
+      SectionModel(id: 3, conferenceId: 1, title: 'Динамика и исследование сейсмостойкости сооружений', sortOrder: 3),
+      SectionModel(id: 4, conferenceId: 1, title: 'Энергоэффективные композиционные материалы для зеленого строительства', sortOrder: 4),
+      SectionModel(id: 5, conferenceId: 1, title: 'Управление инновациями в секторах экономики (промышленность, строительство, транспорт, электроэнергетика, агропромышленный комплекс)', sortOrder: 5),
+      SectionModel(id: 6, conferenceId: 1, title: 'Энергосберегающие и экологически чистые производства и транспорт', sortOrder: 6),
+      SectionModel(id: 7, conferenceId: 1, title: 'Правовые и социально-экономические аспекты устойчивого развития', sortOrder: 7),
+      SectionModel(id: 8, conferenceId: 1, title: 'История развития, современное состояние и перспективы совершенствования системы учета и экономического развития', sortOrder: 8),
+      SectionModel(id: 9, conferenceId: 1, title: 'Цифровизация, качество и устойчивость в системе образования', sortOrder: 9),
+      SectionModel(id: 10, conferenceId: 1, title: 'Современные стратегии маркетинговых исследований и электронной коммерции', sortOrder: 10),
+      SectionModel(id: 11, conferenceId: 1, title: 'Вызовы и возможности для специалистов будущего: инновации, практики и перспективы', sortOrder: 11),
+      SectionModel(id: 12, conferenceId: 1, title: 'Язык и мышление: психологические и лингвистические аспекты', sortOrder: 12),
     ];
   }
 

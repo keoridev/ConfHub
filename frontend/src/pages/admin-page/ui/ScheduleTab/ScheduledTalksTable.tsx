@@ -1,7 +1,8 @@
 import { Link } from "react-router-dom";
-import { CalendarDays } from "lucide-react";
+import { CalendarDays, Trash2 } from "lucide-react";
 import { pathKeys } from "~shared/lib";
 import type { Room, Talk } from "~entities/talk/model/types";
+import { useAdminDeleteTalkMutation } from "~entities/talk/api/queries";
 import { ROOM_COLORS } from "../../model/constants";
 import { fmt, fmtDate } from "../../lib/formatters";
 
@@ -11,9 +12,25 @@ interface ScheduledTalksTableProps {
 }
 
 export function ScheduledTalksTable({ talks, rooms }: ScheduledTalksTableProps) {
+  const deleteMutation = useAdminDeleteTalkMutation();
   const sortedTalks = [...talks].sort(
     (a, b) => new Date(a.startTime!).getTime() - new Date(b.startTime!).getTime()
   );
+
+  const handleDeleteTalk = async (talk: Talk) => {
+    if (
+      !window.confirm(
+        `Удалить запланированный доклад «${talk.title}»?\n\nДоклад будет полностью удалён из базы и расписания.`
+      )
+    ) {
+      return;
+    }
+    try {
+      await deleteMutation.mutateAsync(talk.id);
+    } catch (err: any) {
+      alert(err?.response?.data?.error || "Не удалось удалить доклад");
+    }
+  };
 
   return (
     <>
@@ -60,9 +77,19 @@ export function ScheduledTalksTable({ talks, rooms }: ScheduledTalksTableProps) 
                     </td>
                     <td className="admin-td-section">{talk.section?.title ?? "—"}</td>
                     <td>
-                      <Link to={pathKeys.talk.build(String(talk.id))} className="admin-table-link">
-                        Открыть
-                      </Link>
+                      <div className="flex items-center gap-2">
+                        <Link to={pathKeys.talk.build(String(talk.id))} className="admin-table-link">
+                          Открыть
+                        </Link>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteTalk(talk)}
+                          className="p-1 text-rose-500/70 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                          title="Удалить доклад"
+                        >
+                          <Trash2 className="size-3.5" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 );

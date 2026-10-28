@@ -10,6 +10,7 @@ import {
   FileText,
   Sparkles,
   AlertCircle,
+  Trash2,
 } from "lucide-react";
 import { Card, Button, Chip } from "@heroui/react";
 import { pathKeys } from "~shared/lib";
@@ -22,6 +23,7 @@ interface SubmittedSuccessViewProps {
   user?: User | null;
   onReset: () => void;
   onEditSubmission: () => void;
+  onDeleteSubmission?: () => void;
 }
 
 export function SubmittedSuccessView({
@@ -238,6 +240,15 @@ export function SubmittedSuccessView({
               <Edit3 className="size-3.5 mr-1.5" />
               Редактировать эту заявку
             </Button>
+            {onDeleteSubmission && (
+              <Button
+                className="w-full sm:w-auto px-4 py-3 bg-rose-50 border border-rose-200 hover:bg-rose-100 text-rose-700 font-bold rounded-xl cursor-pointer text-xs transition-colors"
+                onClick={onDeleteSubmission}
+              >
+                <Trash2 className="size-3.5 mr-1.5" />
+                Удалить заявку
+              </Button>
+            )}
           </div>
 
           <div className="flex items-center gap-2.5 w-full sm:w-auto">

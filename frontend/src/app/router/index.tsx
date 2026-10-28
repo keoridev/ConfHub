@@ -23,8 +23,25 @@ const router = createBrowserRouter([
     path: pathKeys.root,
     element: <AppLayout />,
     errorElement: (
-      <div className="min-h-screen flex items-center justify-center bg-[#f5f3ed]">
-        <h1 className="text-3xl font-bold text-[#1a4d3e]">404 — страница не найдена</h1>
+      <div className="min-h-screen flex flex-col items-center justify-center bg-[#f5f3ed] p-6 text-center space-y-4">
+        <h1 className="text-3xl font-extrabold text-[#1a4d3e]">Что-то пошло не так</h1>
+        <p className="text-sm text-muted-foreground max-w-md">
+          Произошла ошибка при отображении раздела. Попробуйте обновить страницу или вернуться на главную.
+        </p>
+        <div className="flex items-center gap-3 pt-2">
+          <button
+            onClick={() => window.location.reload()}
+            className="px-5 py-2.5 rounded-xl bg-[#1a4d3e] text-white font-bold text-sm cursor-pointer shadow-xs hover:bg-[#143d31] transition-colors"
+          >
+            Обновить страницу
+          </button>
+          <a
+            href="/"
+            className="px-5 py-2.5 rounded-xl border border-[#1a4d3e]/20 text-[#1a4d3e] font-bold text-sm hover:bg-[#1a4d3e]/10 transition-colors"
+          >
+            На главную
+          </a>
+        </div>
       </div>
     ),
     children: [

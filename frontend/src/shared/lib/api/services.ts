@@ -85,6 +85,9 @@ export const talkService = {
     }
   ) => apiClient.patch<Talk>(`/my/talks/${id}`, data),
 
+  deleteMyTalk: (id: number) => apiClient.delete(`/my/talks/${id}`),
+  adminDeleteTalk: (id: number) => apiClient.delete(`/admin/talks/${id}`),
+
   uploadDocument: (talkId: number, file: File, onProgress?: (p: number) => void) =>
     apiClient.upload<Document>(`/talks/${talkId}/document`, file, onProgress),
 

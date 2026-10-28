@@ -3,11 +3,9 @@ import {
   Award,
   BookOpen,
   Building2,
-  Laptop,
-  Cpu,
-  Leaf,
 } from "lucide-react";
 import { Card } from "@heroui/react";
+import { SECTIONS_CONFIG } from "~shared/lib";
 
 export function EventOverview() {
   const timelineSteps = [
@@ -48,26 +46,7 @@ export function EventOverview() {
     },
   ];
 
-  const sectionsList = [
-    {
-      icon: Laptop,
-      title: "IT и искусственный интеллект",
-      topics: "Машинное обучение, нейросетевые модели, компьютерное зрение, архитектура ПО, кибербезопасность и Big Data.",
-      color: "#0589c7",
-    },
-    {
-      icon: Cpu,
-      title: "Инженерия и робототехника",
-      topics: "Аппаратные системы, робототехнические комплексы, микроконтроллеры Arduino/STM32, приборостроение и автоматизация.",
-      color: "#72c200",
-    },
-    {
-      icon: Leaf,
-      title: "Экология и устойчивое развитие",
-      topics: "Экологический мониторинг, качество воздуха и водных ресурсов Кыргызстана, зелёная энергетика и переработка сырья.",
-      color: "#0D9488",
-    },
-  ];
+  const sectionsList = SECTIONS_CONFIG;
 
   return (
     <div id="about-event" className="space-y-10 sm:space-y-12">
@@ -178,29 +157,31 @@ export function EventOverview() {
             </h2>
           </div>
           <span className="text-xs font-semibold text-muted-foreground">
-            3 ключевых профиля исследований
+            12 ключевых профилей исследований
           </span>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {sectionsList.map((sec, idx) => {
             const Icon = sec.icon;
             return (
               <Card
                 key={idx}
-                className="p-5 sm:p-6 bg-white border border-[#1a4d3e]/15 rounded-3xl shadow-xs space-y-3 relative overflow-hidden"
+                className="p-5 sm:p-6 bg-white border border-[#1a4d3e]/15 rounded-3xl shadow-xs space-y-3 relative overflow-hidden flex flex-col justify-between"
               >
-                <div
-                  className="size-11 sm:size-12 rounded-2xl flex items-center justify-center text-white shadow-xs"
-                  style={{ backgroundColor: sec.color }}
-                >
-                  <Icon className="size-5 sm:size-6" />
+                <div className="space-y-3">
+                  <div
+                    className="size-11 sm:size-12 rounded-2xl flex items-center justify-center text-white shadow-xs"
+                    style={{ backgroundColor: sec.bgColor || "#1a4d3e" }}
+                  >
+                    <Icon className="size-5 sm:size-6" />
+                  </div>
+                  <h3 className="text-base sm:text-lg font-extrabold text-[#1a4d3e] leading-snug">
+                    {sec.title}
+                  </h3>
                 </div>
-                <h3 className="text-base sm:text-lg font-extrabold text-[#1a4d3e]">
-                  {sec.title}
-                </h3>
-                <p className="text-xs text-muted-foreground leading-relaxed">
-                  {sec.topics}
+                <p className="text-xs text-muted-foreground leading-relaxed pt-2 border-t border-[#1a4d3e]/10">
+                  {sec.subtitle}
                 </p>
               </Card>
             );

@@ -9,9 +9,11 @@ import {
   ExternalLink,
   Eye,
   X,
+  Trash2,
 } from "lucide-react";
 import { pathKeys } from "~shared/lib";
 import type { Talk } from "~entities/talk/model/types";
+import { useAdminDeleteTalkMutation } from "~entities/talk/api/queries";
 import { statusLabel, statusClass } from "../../model/constants";
 import { fmt } from "../../lib/formatters";
 
@@ -25,6 +27,28 @@ export function AllTalksTable({ talks, loading }: AllTalksTableProps) {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [hasDocFilter, setHasDocFilter] = useState<"all" | "with_doc" | "no_doc">("all");
   const [previewTalk, setPreviewTalk] = useState<Talk | null>(null);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
+
+  const deleteMutation = useAdminDeleteTalkMutation();
+
+  const handleDeleteTalk = async (talk: Talk) => {
+    const confirmed = window.confirm(
+      `Вы действительно хотите удалить доклад «${talk.title}»?\n\nВнимание: удаление необратимо, также будут удалены прикреплённые файлы и оценка AI.`
+    );
+    if (!confirmed) return;
+
+    try {
+      setDeletingId(talk.id);
+      await deleteMutation.mutateAsync(talk.id);
+      if (previewTalk?.id === talk.id) {
+        setPreviewTalk(null);
+      }
+    } catch (err: any) {
+      alert(err?.response?.data?.error || "Не удалось удалить доклад");
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   const filteredTalks = useMemo(() => {
     return talks.filter((t) => {
@@ -293,11 +317,11 @@ export function AllTalksTable({ talks, loading }: AllTalksTableProps) {
                         )}
                       </td>
                       <td>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1.5">
                           <button
                             type="button"
                             onClick={() => setPreviewTalk(talk)}
-                            className="px-2.5 py-1 rounded-lg border border-[#1a4d3e]/20 hover:bg-[#1a4d3e]/10 text-xs font-semibold text-[#1a4d3e] transition-colors cursor-pointer flex items-center gap-1"
+                            className="px-2 py-1 rounded-lg border border-[#1a4d3e]/20 hover:bg-[#1a4d3e]/10 text-xs font-semibold text-[#1a4d3e] transition-colors cursor-pointer flex items-center gap-1"
                             title="Быстрый просмотр"
                           >
                             <Eye className="size-3" />
@@ -305,11 +329,20 @@ export function AllTalksTable({ talks, loading }: AllTalksTableProps) {
                           </button>
                           <Link
                             to={pathKeys.talk.build(String(talk.id))}
-                            className="p-1 text-[#1a4d3e]/60 hover:text-[#1a4d3e] transition-colors"
+                            className="p-1 text-[#1a4d3e]/60 hover:text-[#1a4d3e] transition-colors rounded-lg hover:bg-[#1a4d3e]/5"
                             title="Открыть страницу доклада"
                           >
                             <ExternalLink className="size-3.5" />
                           </Link>
+                          <button
+                            type="button"
+                            disabled={deletingId === talk.id}
+                            onClick={() => handleDeleteTalk(talk)}
+                            className="p-1 text-rose-500/70 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer disabled:opacity-40"
+                            title="Удалить доклад из базы"
+                          >
+                            <Trash2 className="size-3.5" />
+                          </button>
                         </div>
                       </td>
                     </tr>
@@ -438,21 +471,33 @@ export function AllTalksTable({ talks, loading }: AllTalksTableProps) {
               </div>
             )}
 
-            <div className="pt-2 flex items-center justify-end gap-3 border-t border-[#1a4d3e]/10">
-              <Link
-                to={pathKeys.talk.build(String(previewTalk.id))}
-                className="py-2.5 px-4 rounded-xl bg-[#1a4d3e] hover:bg-[#143d31] text-white text-xs font-bold flex items-center gap-1.5 transition-colors"
-              >
-                <ExternalLink className="size-3.5 text-[#d4a84b]" />
-                <span>Открыть полную страницу доклада</span>
-              </Link>
+            <div className="pt-2 flex flex-wrap items-center justify-between gap-3 border-t border-[#1a4d3e]/10">
               <button
                 type="button"
-                onClick={() => setPreviewTalk(null)}
-                className="py-2.5 px-4 rounded-xl border border-[#1a4d3e]/20 hover:bg-[#1a4d3e]/5 text-xs font-bold text-[#1a4d3e] transition-colors cursor-pointer"
+                disabled={deletingId === previewTalk.id}
+                onClick={() => handleDeleteTalk(previewTalk)}
+                className="py-2.5 px-4 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer border border-rose-200 disabled:opacity-40"
               >
-                Закрыть
+                <Trash2 className="size-3.5 text-rose-600" />
+                <span>Удалить доклад</span>
               </button>
+
+              <div className="flex items-center gap-3">
+                <Link
+                  to={pathKeys.talk.build(String(previewTalk.id))}
+                  className="py-2.5 px-4 rounded-xl bg-[#1a4d3e] hover:bg-[#143d31] text-white text-xs font-bold flex items-center gap-1.5 transition-colors"
+                >
+                  <ExternalLink className="size-3.5 text-[#d4a84b]" />
+                  <span>Открыть полную страницу доклада</span>
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => setPreviewTalk(null)}
+                  className="py-2.5 px-4 rounded-xl border border-[#1a4d3e]/20 hover:bg-[#1a4d3e]/5 text-xs font-bold text-[#1a4d3e] transition-colors cursor-pointer"
+                >
+                  Закрыть
+                </button>
+              </div>
             </div>
           </div>
         </div>

@@ -226,24 +226,73 @@ export function useTalkQuery(id: number) {
 export function useTalksQuery(conferenceId: number = 1, status?: string) {
   return useQuery({
     queryKey: queryKeys.talks.byConference(conferenceId, status),
-    queryFn: () =>
-      apiClient
-        .get<Talk[]>(`/conferences/${conferenceId}/talks`, {
+    queryFn: async () => {
+      try {
+        const res = await apiClient.get<Talk[]>(`/conferences/${conferenceId}/talks`, {
           params: status ? { status } : undefined,
-        })
-        .then((res) => res.data),
+        });
+        return Array.isArray(res.data) ? res.data : [];
+      } catch {
+        return [];
+      }
+    },
   });
 }
 
 export function useJuryQueueQuery(conferenceId: number = 1, status: string = "pending_review") {
   return useQuery({
     queryKey: ["talks", "jury-queue", conferenceId, status],
-    queryFn: () =>
-      apiClient
-        .get<Talk[]>(`/conferences/${conferenceId}/talks`, {
+    queryFn: async () => {
+      try {
+        const res = await apiClient.get<Talk[]>(`/conferences/${conferenceId}/talks`, {
           params: { status },
-        })
-        .then((res) => res.data),
+        });
+        return Array.isArray(res.data) ? res.data : [];
+      } catch (err: any) {
+        if (err?.response?.status === 404 || err?.response?.status === 403) {
+          return [];
+        }
+        throw err;
+      }
+    },
+  });
+}
+
+export function useMyTalksQuery() {
+  return useQuery({
+    queryKey: ["my", "talks"],
+    queryFn: async () => {
+      try {
+        const res = await apiClient.get<Talk[]>("/my/talks");
+        return Array.isArray(res.data) ? res.data : [];
+      } catch {
+        return [];
+      }
+    },
+  });
+}
+
+export function useDeleteMyTalkMutation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => apiClient.delete(`/my/talks/${id}`).then((res) => res.data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["my", "talks"] });
+      qc.invalidateQueries({ queryKey: queryKeys.talks.all });
+      qc.invalidateQueries({ queryKey: ["talks", "jury-queue"] });
+    },
+  });
+}
+
+export function useAdminDeleteTalkMutation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => apiClient.delete(`/admin/talks/${id}`).then((res) => res.data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["my", "talks"] });
+      qc.invalidateQueries({ queryKey: queryKeys.talks.all });
+      qc.invalidateQueries({ queryKey: ["talks", "jury-queue"] });
+    },
   });
 }
 

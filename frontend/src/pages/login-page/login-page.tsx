@@ -266,7 +266,7 @@ export function LoginPage() {
 
                   <div>
                     <label className="block text-xs font-bold uppercase tracking-wider text-[#1a4d3e] mb-1.5">
-                      Учебное заведение / ВУЗ / Школа
+                      Учебное заведение / ВУЗ
                     </label>
                     <div className="relative">
                       <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#1a4d3e]/40">
@@ -286,7 +286,7 @@ export function LoginPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-bold uppercase tracking-wider text-[#1a4d3e] mb-1.5">
-                      Учебная группа / Класс <span className="text-[10px] lowercase text-muted-foreground font-normal">(опционально)</span>
+                      Учебная группа<span className="text-[10px] lowercase text-muted-foreground font-normal">(опционально)</span>
                     </label>
                     <div className="relative">
                       <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#1a4d3e]/40">

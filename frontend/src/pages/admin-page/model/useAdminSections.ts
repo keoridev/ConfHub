@@ -63,12 +63,27 @@ export function useAdminSections(sections: Section[], refetchSections: () => Pro
 
   const deleteSection = useCallback(
     async (id: number) => {
-      if (!confirm("Удалить секцию? Если есть связанные доклады — бэкенд вернёт ошибку.")) return;
+      if (!confirm("Вы действительно хотите удалить эту секцию?")) return;
       try {
         await apiClient.delete(`/admin/sections/${id}`);
         await refetchSections();
       } catch (e: any) {
-        alert(e?.response?.data?.error?.message || "Не удалось удалить");
+        if (e?.response?.status === 409) {
+          const force = confirm(
+            "В этой секции есть зарегистрированные доклады. Отвязать эти доклады и всё равно удалить секцию?"
+          );
+          if (force) {
+            try {
+              await apiClient.delete(`/admin/sections/${id}?force=true`);
+              await refetchSections();
+              return;
+            } catch (err: any) {
+              alert(err?.response?.data?.error?.message || "Не удалось принудительно удалить секцию");
+              return;
+            }
+          }
+        }
+        alert(e?.response?.data?.error?.message || "Не удалось удалить секцию");
       }
     },
     [refetchSections]

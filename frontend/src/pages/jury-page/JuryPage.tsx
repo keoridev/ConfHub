@@ -145,8 +145,10 @@ export function JuryPage() {
     }
   };
 
+  const safeTalks = Array.isArray(talks) ? talks : [];
+
   const filteredTalks = useMemo(() => {
-    return talks.filter((t) => {
+    return safeTalks.filter((t) => {
       const secId = t.sectionId ?? t.section?.id;
       if (selectedSectionId !== "all" && String(secId) !== selectedSectionId) {
         return false;
@@ -174,7 +176,7 @@ export function JuryPage() {
       }
       return true;
     });
-  }, [talks, selectedSectionId, searchQuery]);
+  }, [safeTalks, selectedSectionId, searchQuery]);
 
   return (
     <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10 space-y-8">
@@ -183,7 +185,7 @@ export function JuryPage() {
         onOpenLogout={() => setIsLogoutModalOpen(true)}
         activeTab={activeTab}
         setActiveTab={setActiveTab}
-        tabCount={talks.length}
+        tabCount={safeTalks.length}
         sections={sections}
         selectedSectionId={selectedSectionId}
         setSelectedSectionId={setSelectedSectionId}

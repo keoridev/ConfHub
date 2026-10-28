@@ -18,22 +18,33 @@ export function SectionCard({
   onEdit,
   onDelete,
 }: SectionCardProps) {
+  const isBusy = talkCount > 0;
   const badgeColor = ROOM_COLORS[index % ROOM_COLORS.length];
 
   return (
     <div className="admin-crud-card">
       <div className="admin-crud-card-left">
         <div className="admin-crud-card-badge" style={{ backgroundColor: badgeColor }}>
-          {section.sortOrder}
+          {index + 1}
         </div>
         <div>
           <div className="admin-crud-card-title">{section.title}</div>
-          <div className="admin-crud-card-meta">
-            {talkCount} {formatTalkWord(talkCount)}
-          </div>
         </div>
       </div>
       <div className="admin-crud-card-actions">
+        <div className="admin-crud-card-meta">
+          {isBusy ? (
+            <>
+              <span className="admin-room-busy-dot" />
+              <span>Занята · {talkCount} {formatTalkWord(talkCount)}</span>
+            </>
+          ) : (
+            <>
+              <span className="admin-room-free-dot" />
+              <span>Свободна</span>
+            </>
+          )}
+        </div>
         <button className="admin-icon-btn" title="Редактировать" onClick={() => onEdit(section)}>
           <Pencil className="size-4" />
         </button>

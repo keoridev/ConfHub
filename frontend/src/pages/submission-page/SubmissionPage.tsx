@@ -10,10 +10,13 @@ import {
   useValidateTalkMutation,
   useSectionsQuery,
   useTalkQuery,
+  useMyTalksQuery,
+  useDeleteMyTalkMutation,
   useCurrentUserQuery,
   useLogout,
   queryKeys,
 } from "~entities/talk/api/queries";
+import type { Talk } from "~entities/talk/model/types";
 import { ConfirmLogoutModal } from "~shared/ui";
 
 import {
@@ -30,6 +33,8 @@ import { UserBar } from "./ui/UserBar";
 import { SubmissionForm } from "./ui/SubmissionForm";
 import { MaterialsAndAiStep } from "./ui/MaterialsAndAiStep";
 import { SubmittedSuccessView } from "./ui/SubmittedSuccessView";
+import { MyActiveSubmissionsList } from "./ui/MyActiveSubmissionsList";
+import { ConfirmDeleteTalkModal } from "./ui/ConfirmDeleteTalkModal";
 
 export function SubmissionPage() {
   const queryClient = useQueryClient();
@@ -51,6 +56,29 @@ export function SubmissionPage() {
   const createTalk = useCreateTalkMutation();
   const uploadDoc = useUploadDocumentMutation();
   const validateTalk = useValidateTalkMutation();
+  const { data: myTalks = [], refetch: refetchMyTalks } = useMyTalksQuery();
+  const deleteTalkMutation = useDeleteMyTalkMutation();
+  const [talkToDelete, setTalkToDelete] = useState<Talk | null>(null);
+
+  const handleConfirmDelete = async () => {
+    if (!talkToDelete) return;
+    try {
+      await deleteTalkMutation.mutateAsync(talkToDelete.id);
+      toast.success(`Заявка «${talkToDelete.title}» успешно удалена`);
+      if (createdTalkId === talkToDelete.id) {
+        handleResetForm();
+      }
+      setTalkToDelete(null);
+      refetchMyTalks();
+    } catch (err: any) {
+      toast.error(err.response?.data?.error?.message || "Ошибка при удалении заявки");
+    }
+  };
+
+  const handleSelectActiveTalk = (talkId: number) => {
+    setCreatedTalkId(talkId);
+    setIsSubmitted(true);
+  };
 
   const hasWordDocument = Boolean(
     talk?.document &&
@@ -469,6 +497,16 @@ export function SubmissionPage() {
               onOpenLogout={() => setIsLogoutModalOpen(true)}
             />
 
+            {myTalks.length > 0 && (
+              <MyActiveSubmissionsList
+                talks={myTalks}
+                activeTalkId={createdTalkId}
+                onSelectTalk={handleSelectActiveTalk}
+                onDeleteClick={(t) => setTalkToDelete(t)}
+                onNewSubmission={handleResetForm}
+              />
+            )}
+
             <SubmissionForm
               register={register}
               handleSubmit={handleSubmit}
@@ -492,6 +530,7 @@ export function SubmissionPage() {
             user={user}
             onReset={handleResetForm}
             onEditSubmission={handleEditSubmission}
+            onDeleteSubmission={() => setTalkToDelete(talk || null)}
           />
         ) : (
           <MaterialsAndAiStep
@@ -517,6 +556,14 @@ export function SubmissionPage() {
           />
         )}
       </div>
+
+      <ConfirmDeleteTalkModal
+        isOpen={Boolean(talkToDelete)}
+        talkTitle={talkToDelete?.title}
+        isPending={deleteTalkMutation.isPending}
+        onClose={() => setTalkToDelete(null)}
+        onConfirm={handleConfirmDelete}
+      />
 
       <ConfirmLogoutModal
         isOpen={isLogoutModalOpen}

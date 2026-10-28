@@ -46,12 +46,27 @@ export function useAdminRooms(refetchRooms: () => Promise<unknown>) {
 
   const deleteRoom = useCallback(
     async (id: number) => {
-      if (!confirm("Удалить аудиторию? Если она используется в расписании — бэкенд вернёт ошибку.")) return;
+      if (!confirm("Вы действительно хотите удалить эту аудиторию?")) return;
       try {
         await apiClient.delete(`/admin/rooms/${id}`);
         await refetchRooms();
       } catch (e: any) {
-        alert(e?.response?.data?.error?.message || "Не удалось удалить");
+        if (e?.response?.status === 409) {
+          const force = confirm(
+            "В этой аудитории есть запланированные доклады. Снять доклады с расписания и всё равно удалить аудиторию?"
+          );
+          if (force) {
+            try {
+              await apiClient.delete(`/admin/rooms/${id}?force=true`);
+              await refetchRooms();
+              return;
+            } catch (err: any) {
+              alert(err?.response?.data?.error?.message || "Не удалось принудительно удалить аудиторию");
+              return;
+            }
+          }
+        }
+        alert(e?.response?.data?.error?.message || "Не удалось удалить аудиторию");
       }
     },
     [refetchRooms]

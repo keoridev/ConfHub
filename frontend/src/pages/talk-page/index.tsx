@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
   Clock,
@@ -17,25 +17,63 @@ import {
   School,
   Mail,
   Users,
+  Trash2,
 } from "lucide-react";
 import { Card, Skeleton } from "@heroui/react";
 import { toast } from "sonner";
 
-import { useTalkQuery } from "~entities/talk/api/queries";
+import {
+  useTalkQuery,
+  useCurrentUserQuery,
+  useAdminDeleteTalkMutation,
+  useDeleteMyTalkMutation,
+} from "~entities/talk/api/queries";
 import { pathKeys } from "~shared/lib";
 import { mockSections } from "~shared/mocks/mockData";
 import { fmtTime } from "~entities/talk";
 
 export function TalkPage() {
   const { talkId = "" } = useParams();
+  const navigate = useNavigate();
   const { data: talk, isLoading, isError } = useTalkQuery(Number(talkId));
+  const { data: user } = useCurrentUserQuery();
+  const adminDeleteMutation = useAdminDeleteTalkMutation();
+  const myDeleteMutation = useDeleteMyTalkMutation();
   const [copied, setCopied] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const handleCopyLink = () => {
     navigator.clipboard.writeText(window.location.href);
     setCopied(true);
     toast.success("Ссылка на доклад скопирована в буфер обмена!");
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const canDelete =
+    talk &&
+    user &&
+    (user.role === "admin" || Number(user.id) === Number(talk.authorId));
+
+  const handleDelete = async () => {
+    if (!talk) return;
+    const confirmed = window.confirm(
+      `Вы действительно хотите удалить доклад «${talk.title}»?\n\nВнимание: удаление необратимо.`
+    );
+    if (!confirmed) return;
+
+    try {
+      setIsDeleting(true);
+      if (user?.role === "admin") {
+        await adminDeleteMutation.mutateAsync(talk.id);
+      } else {
+        await myDeleteMutation.mutateAsync(talk.id);
+      }
+      toast.success("Доклад успешно удалён");
+      navigate(pathKeys.conference.build("demo"));
+    } catch (err: any) {
+      toast.error(err?.response?.data?.error || "Ошибка при удалении доклада");
+      setIsDeleting(false);
+    }
   };
 
   if (isLoading) {
@@ -94,6 +132,19 @@ export function TalkPage() {
         </Link>
 
         <div className="flex items-center gap-2">
+          {canDelete && (
+            <button
+              type="button"
+              disabled={isDeleting}
+              onClick={handleDelete}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 text-xs font-semibold text-rose-700 transition-colors cursor-pointer disabled:opacity-40"
+              title="Удалить доклад"
+            >
+              <Trash2 className="size-3.5 text-rose-600" />
+              <span>{isDeleting ? "Удаление..." : "Удалить доклад"}</span>
+            </button>
+          )}
+
           <button
             type="button"
             onClick={handleCopyLink}

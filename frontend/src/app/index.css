@@ -786,6 +786,13 @@
   gap: 0.5rem;
   flex-shrink: 0;
 }
+.admin-crud-card-actions .admin-crud-card-meta {
+  margin-top: 0;
+  margin-right: 0.25rem;
+  font-weight: 600;
+  color: #1a4d3ec0;
+  white-space: nowrap;
+}
 
 .admin-icon-btn {
   display: flex;
@@ -1066,5 +1073,32 @@
   .admin-tab-btn span { display: none; }
   .admin-tab-btn { padding: 0.875rem 0.625rem; }
   .admin-schedule-room-label { width: 4.5rem; font-size: 0.7rem; padding: 0.5rem 0.5rem; }
-  .admin-crud-card-title { max-width: 11rem; }
+  .admin-crud-card {
+    padding: 0.75rem 0.875rem;
+    gap: 0.625rem;
+  }
+  .admin-crud-card-left {
+    gap: 0.625rem;
+    flex: 1;
+    min-width: 0;
+  }
+  .admin-crud-card-badge {
+    width: 2rem;
+    height: 2rem;
+    font-size: 0.75rem;
+    border-radius: 0.5rem;
+  }
+  .admin-crud-card-title {
+    max-width: 100%;
+    white-space: normal;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    font-size: 0.82rem;
+    line-height: 1.25;
+  }
+  .admin-crud-card-meta {
+    font-size: 0.72rem;
+  }
 }
