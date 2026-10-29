@@ -48,11 +48,20 @@ export function ScheduleCard({
           <div className="w-full h-px bg-[#1a4d3e]/10 sm:hidden" />
 
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 flex-wrap mb-1">
+            <div className="flex items-center gap-2 flex-wrap mb-1.5">
               {talk.isKeynote && (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-100 text-amber-900 border border-amber-300 shadow-2xs">
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-100 text-amber-900 border border-amber-300 shadow-2xs">
                   <Star className="size-2.5 fill-amber-500 text-amber-500" />
-                  <span>КЛЮЧЕВОЙ ДОКЛАД</span>
+                  <span>КЛЮЧЕВОЙ ДОКЛАД СЕКЦИИ (15 МИН)</span>
+                </span>
+              )}
+              {talk.section?.title && (
+                <span
+                  className="inline-block px-2 py-0.5 rounded-md text-[10px] font-bold text-white shadow-2xs truncate max-w-[280px]"
+                  style={{ backgroundColor: talk.section.color || "#1a4d3e" }}
+                  title={talk.section.title}
+                >
+                  {talk.section.title}
                 </span>
               )}
             </div>
@@ -111,7 +120,7 @@ export function ScheduleCard({
             {talk.isKeynote && (
               <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-extrabold bg-amber-100 text-amber-900 border border-amber-300 shadow-2xs">
                 <Star className="size-3 fill-amber-500 text-amber-500" />
-                <span>Ключевой доклад</span>
+                <span>Ключевой доклад секции (15 мин)</span>
               </span>
             )}
 

@@ -6,6 +6,7 @@ import { pathKeys } from "~shared/lib";
 import { ConfirmLogoutModal } from "~shared/ui";
 import {
   useReviewTalkMutation,
+  useSetKeynoteMutation,
   useJuryQueueQuery,
   useRoomsQuery,
   useSectionsQuery,
@@ -38,6 +39,7 @@ export function JuryPage() {
   const { data: sections = [] } = useSectionsQuery();
 
   const reviewMutation = useReviewTalkMutation();
+  const keynoteMutation = useSetKeynoteMutation();
 
   const [targetTalk, setTargetTalk] = useState<Talk | null>(null);
   const [selectedDetailTalk, setSelectedDetailTalk] = useState<Talk | null>(null);
@@ -48,13 +50,13 @@ export function JuryPage() {
   );
 
   const [approveRoomId, setApproveRoomId] = useState("");
-  const [selectedDate, setSelectedDate] = useState("2026-10-05");
-  const [selectedSlot, setSelectedSlot] = useState("10:00 - 10:30");
+  const [selectedDate, setSelectedDate] = useState("2026-11-10");
+  const [selectedSlot, setSelectedSlot] = useState("10:00 - 10:10");
+  const [isKeynoteOption, setIsKeynoteOption] = useState(false);
   const [customStartTime, setCustomStartTime] = useState("");
   const [customEndTime, setCustomEndTime] = useState("");
 
   const [feedbackComment, setFeedbackComment] = useState("");
-
 
   const handleOpenApprove = (talk: Talk) => {
     setTargetTalk(talk);
@@ -65,7 +67,8 @@ export function JuryPage() {
         ? String(rooms[0].id)
         : "1"
     );
-    setSelectedDate("2026-10-05");
+    setSelectedDate("2026-11-10");
+    setIsKeynoteOption(Boolean(talk.isKeynote));
     setSelectedSlot(talk.isKeynote ? "10:00 - 10:15" : "10:00 - 10:10");
     setIsApproveModalOpen(true);
   };
@@ -92,6 +95,13 @@ export function JuryPage() {
     }
 
     try {
+      if (isKeynoteOption !== Boolean(targetTalk.isKeynote)) {
+        await keynoteMutation.mutateAsync({
+          talkId: targetTalk.id,
+          isKeynote: isKeynoteOption,
+        });
+      }
+
       await reviewMutation.mutateAsync({
         id: targetTalk.id,
         data: {
@@ -267,6 +277,8 @@ export function JuryPage() {
         customStartTime={customStartTime}
         setCustomStartTime={setCustomStartTime}
         setCustomEndTime={setCustomEndTime}
+        isKeynoteOption={isKeynoteOption}
+        setIsKeynoteOption={setIsKeynoteOption}
         onConfirm={handleConfirmApprove}
         isPending={reviewMutation.isPending}
       />

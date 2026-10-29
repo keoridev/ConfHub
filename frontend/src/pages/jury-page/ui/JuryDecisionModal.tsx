@@ -18,6 +18,8 @@ interface JuryApproveModalProps {
   customStartTime: string;
   setCustomStartTime: (time: string) => void;
   setCustomEndTime: (time: string) => void;
+  isKeynoteOption?: boolean;
+  setIsKeynoteOption?: (val: boolean) => void;
   onConfirm: (e: React.FormEvent) => void;
   isPending: boolean;
 }
@@ -36,10 +38,14 @@ export function JuryApproveModal({
   customStartTime,
   setCustomStartTime,
   setCustomEndTime,
+  isKeynoteOption,
+  setIsKeynoteOption,
   onConfirm,
   isPending,
 }: JuryApproveModalProps) {
   if (!isOpen || !targetTalk) return null;
+
+  const isKeynote = isKeynoteOption ?? targetTalk.isKeynote;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#1a4d3e]/40 backdrop-blur-xs p-3 sm:p-4">
@@ -50,7 +56,7 @@ export function JuryApproveModal({
               <span className="text-xs font-bold uppercase tracking-wider text-emerald-800 bg-emerald-100 px-2.5 py-0.5 rounded-full border border-emerald-300">
                 Утверждение в программу
               </span>
-              {targetTalk.isKeynote && (
+              {isKeynote && (
                 <span className="text-xs font-bold uppercase tracking-wider text-amber-900 bg-amber-100 px-2.5 py-0.5 rounded-full border border-amber-300 flex items-center gap-1 shadow-2xs">
                   <Star className="size-3 fill-amber-500 text-amber-500" />
                   <span>Ключевой доклад · 15 мин</span>
@@ -74,6 +80,37 @@ export function JuryApproveModal({
         </div>
 
         <form onSubmit={onConfirm} className="space-y-4 sm:space-y-5">
+          {/* Keynote designation toggle */}
+          <div className="p-3 rounded-2xl bg-amber-50/70 border border-amber-200 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5">
+              <Star className={`size-4 ${isKeynote ? "fill-amber-500 text-amber-500" : "text-amber-400"}`} />
+              <div>
+                <span className="text-xs font-bold text-amber-950 block">
+                  Главный (ключевой) доклад секции
+                </span>
+                <span className="text-[11px] text-amber-800/80">
+                  Регламент 15 мин · открывает секцию в 1-ю очередь
+                </span>
+              </div>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                checked={!!isKeynote}
+                onChange={(e) => {
+                  const checked = e.target.checked;
+                  setIsKeynoteOption?.(checked);
+                  if (checked) {
+                    setSelectedSlot("10:00 - 10:15");
+                  } else {
+                    setSelectedSlot("10:00 - 10:10");
+                  }
+                }}
+                className="size-5 rounded text-amber-600 focus:ring-amber-500 border-amber-300 cursor-pointer accent-amber-600"
+              />
+            </label>
+          </div>
+
           <div>
             <label className="block text-xs font-bold uppercase tracking-wider text-[#1a4d3e] mb-1.5">
               Аудитория проведения <span className="text-danger">*</span>
@@ -98,8 +135,8 @@ export function JuryApproveModal({
             </label>
             <div className="grid grid-cols-2 gap-2">
               {[
-                { date: "2026-10-05", label: "День 1 (5 окт)" },
-                { date: "2026-10-06", label: "День 2 (6 окт)" },
+                { date: "2026-11-10", label: "День 1 (10 нояб)" },
+                { date: "2026-11-11", label: "День 2 (11 нояб)" },
               ].map((d) => (
                 <button
                   key={d.date}
@@ -120,14 +157,21 @@ export function JuryApproveModal({
           <div>
             <div className="flex items-center justify-between gap-1 mb-2">
               <label className="block text-xs font-bold uppercase tracking-wider text-[#1a4d3e]">
-                {targetTalk.isKeynote ? "Временной слот ключевого доклада (15 минут)" : "Временной слот (регламент: 10 минут на статью)"}
+                {isKeynote ? "Временной слот ключевого доклада (15 минут)" : "Временной слот (регламент: 10 минут на статью)"}
               </label>
-              <span className="text-[11px] text-[#d4a84b] font-bold font-mono">
-                {targetTalk.isKeynote ? "⭐ 1-я очередь (15 мин)" : "10 мин / доклад"}
+              <span className="text-[11px] text-[#d4a84b] font-bold font-mono inline-flex items-center gap-1">
+                {isKeynote ? (
+                  <>
+                    <Star className="size-3 fill-amber-500 text-amber-500 shrink-0" />
+                    <span>1-я очередь (15 мин)</span>
+                  </>
+                ) : (
+                  "10 мин / доклад"
+                )}
               </span>
             </div>
 
-            {targetTalk.isKeynote && (
+            {isKeynote && (
               <div className="mb-3 p-2.5 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-900 flex items-center gap-2">
                 <Star className="size-4 fill-amber-500 text-amber-500 shrink-0" />
                 <span>
@@ -136,7 +180,7 @@ export function JuryApproveModal({
               </div>
             )}
 
-            {targetTalk.isKeynote && (
+            {isKeynote && (
               <div className="mb-3">
                 <span className="text-[11px] font-bold text-[#1a4d3e] block mb-1">
                   Слоты ключевого выступления (по 15 мин):
@@ -159,7 +203,10 @@ export function JuryApproveModal({
                             : "border-amber-300 bg-white text-amber-900 hover:bg-amber-100"
                         }`}
                       >
-                        ⭐ {slot}
+                        <span className="inline-flex items-center justify-center gap-1">
+                          <Star className={`size-3 shrink-0 ${isSelected ? "fill-white text-white" : "fill-amber-500 text-amber-600"}`} />
+                          <span>{slot}</span>
+                        </span>
                       </button>
                     );
                   })}
@@ -169,7 +216,7 @@ export function JuryApproveModal({
 
             <div>
               <span className="text-[11px] font-bold text-[#1a4d3e] block mb-1">
-                {targetTalk.isKeynote ? "Или выберите стандартный 10-минутный слот:" : "Слоты по 10 минут:"}
+                {isKeynote ? "Или выберите стандартный 10-минутный слот:" : "Слоты по 10 минут:"}
               </span>
               <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5 max-h-40 overflow-y-auto p-1.5 border border-[#1a4d3e]/10 rounded-2xl bg-[#f5f3ed]/30">
                 {TIME_SLOTS.map((slot) => {

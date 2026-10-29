@@ -6,6 +6,7 @@ class SectionModel extends Section {
     required super.conferenceId,
     required super.title,
     super.sortOrder,
+    super.supervisor,
   });
 
   factory SectionModel.fromJson(Map<String, dynamic> json) {
@@ -18,6 +19,7 @@ class SectionModel extends Section {
       sortOrder: json['sortOrder'] is int
           ? json['sortOrder'] as int
           : int.tryParse(json['sortOrder']?.toString() ?? '0') ?? 0,
+      supervisor: json['supervisor'] as String?,
     );
   }
 
@@ -27,6 +29,7 @@ class SectionModel extends Section {
       'conferenceId': conferenceId,
       'title': title,
       'sortOrder': sortOrder,
+      if (supervisor != null) 'supervisor': supervisor,
     };
   }
 }

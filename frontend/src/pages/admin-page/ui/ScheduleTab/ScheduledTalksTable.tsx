@@ -1,6 +1,9 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
-import { CalendarDays, Trash2 } from "lucide-react";
+import { CalendarDays, Trash2, Star } from "lucide-react";
+import { toast } from "sonner";
 import { pathKeys } from "~shared/lib";
+import { ConfirmDeleteTalkModal } from "~shared/ui";
 import type { Room, Talk } from "~entities/talk/model/types";
 import { useAdminDeleteTalkMutation } from "~entities/talk/api/queries";
 import { ROOM_COLORS } from "../../model/constants";
@@ -12,31 +15,42 @@ interface ScheduledTalksTableProps {
 }
 
 export function ScheduledTalksTable({ talks, rooms }: ScheduledTalksTableProps) {
-<<<<<<< HEAD
+  const [talkToDelete, setTalkToDelete] = useState<Talk | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deletedIds, setDeletedIds] = useState<Set<number>>(() => new Set());
   const deleteMutation = useAdminDeleteTalkMutation();
-  const sortedTalks = [...talks].sort(
-    (a, b) => new Date(a.startTime!).getTime() - new Date(b.startTime!).getTime()
-  );
-=======
-  const sortedTalks = [...talks].sort((a, b) => {
-    if (a.isKeynote && !b.isKeynote) return -1;
-    if (!a.isKeynote && b.isKeynote) return 1;
-    return new Date(a.startTime!).getTime() - new Date(b.startTime!).getTime();
-  });
->>>>>>> 38985a4ec470f6b0620df1907d7c0e07f93286ea
 
-  const handleDeleteTalk = async (talk: Talk) => {
-    if (
-      !window.confirm(
-        `Удалить запланированный доклад «${talk.title}»?\n\nДоклад будет полностью удалён из базы и расписания.`
-      )
-    ) {
-      return;
-    }
+  const sortedTalks = talks
+    .filter((t) => !deletedIds.has(t.id))
+    .sort((a, b) => {
+      if (a.isKeynote && !b.isKeynote) return -1;
+      if (!a.isKeynote && b.isKeynote) return 1;
+      return new Date(a.startTime!).getTime() - new Date(b.startTime!).getTime();
+    });
+
+  const handleConfirmDelete = async () => {
+    if (!talkToDelete) return;
+    const talk = talkToDelete;
     try {
+      setIsDeleting(true);
+      setDeletedIds((prev) => new Set(prev).add(talk.id));
       await deleteMutation.mutateAsync(talk.id);
+      toast.success(`Доклад «${talk.title}» удалён`);
+      setTalkToDelete(null);
     } catch (err: any) {
-      alert(err?.response?.data?.error || "Не удалось удалить доклад");
+      setDeletedIds((prev) => {
+        const next = new Set(prev);
+        next.delete(talk.id);
+        return next;
+      });
+      const errorMsg =
+        err?.response?.data?.error?.message ||
+        (typeof err?.response?.data?.error === "string" ? err.response.data.error : null) ||
+        err?.message ||
+        "Не удалось удалить доклад";
+      toast.error(errorMsg);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -97,8 +111,9 @@ export function ScheduledTalksTable({ talks, rooms }: ScheduledTalksTableProps) 
                       <div className="flex items-center gap-1.5 flex-wrap">
                         <span className="font-bold text-[#1a4d3e]">{talk.title}</span>
                         {talk.isKeynote && (
-                          <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded-md text-[10px] font-extrabold bg-amber-100 text-amber-900 border border-amber-300">
-                            ⭐ Главный
+                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-extrabold bg-amber-100 text-amber-900 border border-amber-300">
+                            <Star className="size-2.5 fill-amber-600 text-amber-600 shrink-0" />
+                            <span>Главный</span>
                           </span>
                         )}
                       </div>
@@ -112,7 +127,7 @@ export function ScheduledTalksTable({ talks, rooms }: ScheduledTalksTableProps) 
                         </Link>
                         <button
                           type="button"
-                          onClick={() => handleDeleteTalk(talk)}
+                          onClick={() => setTalkToDelete(talk)}
                           className="p-1 text-rose-500/70 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
                           title="Удалить доклад"
                         >
@@ -127,6 +142,16 @@ export function ScheduledTalksTable({ talks, rooms }: ScheduledTalksTableProps) 
           </table>
         </div>
       </div>
+
+      <ConfirmDeleteTalkModal
+        isOpen={Boolean(talkToDelete)}
+        talkTitle={talkToDelete?.title}
+        speakerName={talkToDelete?.speakerName}
+        sectionTitle={talkToDelete?.section?.title}
+        isPending={isDeleting}
+        onClose={() => setTalkToDelete(null)}
+        onConfirm={handleConfirmDelete}
+      />
     </>
   );
 }

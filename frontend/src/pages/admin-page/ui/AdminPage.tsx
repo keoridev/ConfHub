@@ -151,6 +151,11 @@ export function AdminPage() {
             talksByRoom={scheduleManager.talksByRoom}
             minTime={scheduleManager.minTime}
             totalMinutes={scheduleManager.totalMinutes}
+            availableDates={scheduleManager.availableDates}
+            selectedDate={scheduleManager.selectedDate}
+            onSelectDate={scheduleManager.setSelectedDate}
+            dayStartHour={scheduleManager.dayStartHour}
+            dayEndHour={scheduleManager.dayEndHour}
           />
         )}
       </main>

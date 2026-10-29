@@ -210,13 +210,23 @@ export function useReviewTalkMutation() {
 export function useSetKeynoteMutation() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ talkId, isKeynote }: { talkId: number; isKeynote: boolean }) =>
-      apiClient.patch<Talk>(`/admin/talks/${talkId}/keynote`, { isKeynote }).then((res) => res.data),
+    mutationFn: async ({ talkId, isKeynote }: { talkId: number; isKeynote: boolean }) => {
+      try {
+        return (await apiClient.patch<Talk>(`/admin/talks/${talkId}/keynote`, { isKeynote })).data;
+      } catch {
+        try {
+          return (await apiClient.patch<Talk>(`/jury/talks/${talkId}/keynote`, { isKeynote })).data;
+        } catch {
+          return (await apiClient.patch<Talk>(`/talks/${talkId}/keynote`, { isKeynote })).data;
+        }
+      }
+    },
     onSuccess: (_, { talkId }) => {
       qc.invalidateQueries({ queryKey: queryKeys.talks.detail(talkId) });
       qc.invalidateQueries({ queryKey: queryKeys.talks.all });
       qc.invalidateQueries({ queryKey: queryKeys.sections.all });
       qc.invalidateQueries({ queryKey: ["talks", "jury-queue"] });
+      qc.invalidateQueries({ queryKey: ["talks"] });
     },
   });
 }
@@ -290,10 +300,20 @@ export function useDeleteMyTalkMutation() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (id: number) => apiClient.delete(`/my/talks/${id}`).then((res) => res.data),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["my", "talks"] });
-      qc.invalidateQueries({ queryKey: queryKeys.talks.all });
-      qc.invalidateQueries({ queryKey: ["talks", "jury-queue"] });
+    onSuccess: (_, id) => {
+      qc.removeQueries({ queryKey: queryKeys.talks.detail(id) });
+      qc.setQueriesData({ queryKey: ["talks"] }, (old: any) => {
+        if (!Array.isArray(old)) return old;
+        return old.filter((t: any) => t && t.id !== id);
+      });
+      qc.setQueriesData({ queryKey: ["my"] }, (old: any) => {
+        if (!Array.isArray(old)) return old;
+        return old.filter((t: any) => t && t.id !== id);
+      });
+      qc.invalidateQueries({ queryKey: ["talks"] });
+      qc.invalidateQueries({ queryKey: ["my"] });
+      qc.invalidateQueries({ queryKey: queryKeys.sections.all });
+      qc.invalidateQueries({ queryKey: queryKeys.rooms.all });
     },
   });
 }
@@ -301,11 +321,39 @@ export function useDeleteMyTalkMutation() {
 export function useAdminDeleteTalkMutation() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (id: number) => apiClient.delete(`/admin/talks/${id}`).then((res) => res.data),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["my", "talks"] });
-      qc.invalidateQueries({ queryKey: queryKeys.talks.all });
-      qc.invalidateQueries({ queryKey: ["talks", "jury-queue"] });
+    mutationFn: async (id: number) => {
+      let lastErr: any = null;
+      try {
+        return (await apiClient.delete(`/admin/talks/${id}`)).data;
+      } catch (e: any) {
+        lastErr = e;
+      }
+      try {
+        return (await apiClient.delete(`/jury/talks/${id}`)).data;
+      } catch (e: any) {
+        lastErr = e;
+      }
+      try {
+        return (await apiClient.delete(`/talks/${id}`)).data;
+      } catch (e: any) {
+        lastErr = e;
+      }
+      throw lastErr;
+    },
+    onSuccess: (_, id) => {
+      qc.removeQueries({ queryKey: queryKeys.talks.detail(id) });
+      qc.setQueriesData({ queryKey: ["talks"] }, (old: any) => {
+        if (!Array.isArray(old)) return old;
+        return old.filter((t: any) => t && t.id !== id);
+      });
+      qc.setQueriesData({ queryKey: ["my"] }, (old: any) => {
+        if (!Array.isArray(old)) return old;
+        return old.filter((t: any) => t && t.id !== id);
+      });
+      qc.invalidateQueries({ queryKey: ["talks"] });
+      qc.invalidateQueries({ queryKey: ["my"] });
+      qc.invalidateQueries({ queryKey: queryKeys.sections.all });
+      qc.invalidateQueries({ queryKey: queryKeys.rooms.all });
     },
   });
 }

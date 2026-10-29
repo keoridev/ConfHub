@@ -3,6 +3,7 @@ import {
   Award,
   BookOpen,
   Building2,
+  UserCheck,
 } from "lucide-react";
 import { Card } from "@heroui/react";
 import { SECTIONS_CONFIG } from "~shared/lib";
@@ -157,7 +158,7 @@ export function EventOverview() {
             </h2>
           </div>
           <span className="text-xs font-semibold text-muted-foreground">
-            12 ключевых профилей исследований
+            13 конкурсных научных направлений
           </span>
         </div>
 
@@ -180,9 +181,17 @@ export function EventOverview() {
                     {sec.title}
                   </h3>
                 </div>
-                <p className="text-xs text-muted-foreground leading-relaxed pt-2 border-t border-[#1a4d3e]/10">
-                  {sec.subtitle}
-                </p>
+                <div className="pt-2 border-t border-[#1a4d3e]/10 space-y-2">
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    {sec.subtitle}
+                  </p>
+                  {sec.supervisor && (
+                    <div className="flex items-center gap-1.5 text-xs text-[#1a4d3e] font-semibold pt-1">
+                      <UserCheck className="size-3.5 text-[#d4a84b] shrink-0" />
+                      <span className="truncate">Ответственный: {sec.supervisor}</span>
+                    </div>
+                  )}
+                </div>
               </Card>
             );
           })}

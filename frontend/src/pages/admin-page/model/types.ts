@@ -14,6 +14,7 @@ export interface SectionFormState {
   id?: number;
   title: string;
   sortOrder: string;
+  supervisor?: string;
 }
 
 export interface RoomFormState {

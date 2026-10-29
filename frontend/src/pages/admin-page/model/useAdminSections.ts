@@ -19,6 +19,7 @@ export function useAdminSections(sections: Section[], refetchSections: () => Pro
       mode: "create",
       title: "",
       sortOrder: String(sections.length + 1),
+      supervisor: "",
     });
 
   const openSecEdit = (s: Section) =>
@@ -28,6 +29,7 @@ export function useAdminSections(sections: Section[], refetchSections: () => Pro
       id: s.id,
       title: s.title,
       sortOrder: String(s.sortOrder),
+      supervisor: s.supervisor || "",
     });
 
   const closeSecForm = () => setSecForm((f) => ({ ...f, open: false }));
@@ -40,17 +42,18 @@ export function useAdminSections(sections: Section[], refetchSections: () => Pro
     setSecSaving(true);
     setSecError("");
     try {
+      const payload = {
+        title: secForm.title.trim(),
+        sortOrder: Number(secForm.sortOrder) || 1,
+        supervisor: secForm.supervisor?.trim() || undefined,
+      };
       if (secForm.mode === "create") {
         await apiClient.post("/admin/sections", {
           conferenceId: 1,
-          title: secForm.title.trim(),
-          sortOrder: Number(secForm.sortOrder) || 1,
+          ...payload,
         });
       } else {
-        await apiClient.patch(`/admin/sections/${secForm.id}`, {
-          title: secForm.title.trim(),
-          sortOrder: Number(secForm.sortOrder) || 1,
-        });
+        await apiClient.patch(`/admin/sections/${secForm.id}`, payload);
       }
       await refetchSections();
       closeSecForm();

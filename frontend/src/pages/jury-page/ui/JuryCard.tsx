@@ -20,10 +20,13 @@ import {
   MessageSquare,
   School,
   Eye,
+  Star,
+  Trash2,
 } from "lucide-react";
 import { Card, Button } from "@heroui/react";
-import { useAIResultQuery } from "~entities/talk/api/queries";
+import { useAIResultQuery, useAdminDeleteTalkMutation } from "~entities/talk/api/queries";
 import { apiClient } from "~shared/lib/api/client";
+import { ConfirmDeleteTalkModal } from "~shared/ui";
 import type { Talk } from "~entities/talk/model/types";
 import type { AIResultResponse } from "../model/types";
 
@@ -43,10 +46,31 @@ export function JuryCard({
   onInspectClick,
 }: JuryCardProps) {
   const [isDownloading, setIsDownloading] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false);
+  const deleteMutation = useAdminDeleteTalkMutation();
 
   const { data: ai, isLoading: aiLoading } = useAIResultQuery(talk.id) as {
     data: AIResultResponse | undefined;
     isLoading: boolean;
+  };
+
+  const handleConfirmDelete = async () => {
+    try {
+      setIsDeleting(true);
+      await deleteMutation.mutateAsync(talk.id);
+      toast.success("Доклад успешно удалён из базы");
+      setIsConfirmDeleteOpen(false);
+    } catch (err: any) {
+      const errorMsg =
+        err?.response?.data?.error?.message ||
+        (typeof err?.response?.data?.error === "string" ? err.response.data.error : null) ||
+        err?.message ||
+        "Не удалось удалить доклад";
+      toast.error(errorMsg);
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   const sectionTitle = talk.section?.title ?? "Без секции";
@@ -124,20 +148,41 @@ export function JuryCard({
     <Card className="border border-[#1a4d3e]/15 bg-white shadow-sm hover:shadow-md transition-all duration-200 rounded-2xl overflow-hidden flex flex-col justify-between">
       <div className="p-4 sm:p-6 space-y-3 sm:space-y-4">
         {/* Header: Section + ID + Status */}
-        <div className="flex flex-wrap items-center justify-between gap-2.5 pb-3 border-b border-[#1a4d3e]/10">
-          <div className="flex items-center gap-2">
-            <span
-              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold text-white shadow-xs"
-              style={{ backgroundColor: talk.section?.color || "#1a4d3e" }}
-            >
-              <SectionIcon className="size-3.5" />
-              {sectionTitle}
-            </span>
-            <span className="text-xs font-mono text-muted-foreground bg-[#1a4d3e]/5 px-2 py-0.5 rounded-md border border-[#1a4d3e]/10">
-              №{talk.id}
-            </span>
+        <div className="space-y-2 pb-3 border-b border-[#1a4d3e]/10">
+          <div className="flex flex-wrap items-center justify-between gap-2.5">
+            <div className="flex items-center gap-2">
+              <span
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold text-white shadow-xs"
+                style={{ backgroundColor: talk.section?.color || "#1a4d3e" }}
+              >
+                <SectionIcon className="size-3.5" />
+                {sectionTitle}
+              </span>
+              <span className="text-xs font-mono text-muted-foreground bg-[#1a4d3e]/5 px-2 py-0.5 rounded-md border border-[#1a4d3e]/10">
+                №{talk.id}
+              </span>
+            </div>
+            {renderStatusBadge()}
           </div>
-          {renderStatusBadge()}
+
+          {talk.isKeynote && (
+            <div className="bg-amber-100 border border-amber-300 rounded-xl px-2.5 py-1 text-xs font-extrabold text-amber-900 flex items-center justify-between shadow-2xs">
+              <span className="flex items-center gap-1.5">
+                <Star className="size-3.5 fill-amber-500 text-amber-500" />
+                <span>Ключевой доклад секции (15 мин)</span>
+              </span>
+              <span className="text-[10px] uppercase tracking-wider font-mono bg-white/70 px-1.5 py-0.2 rounded font-bold">
+                1-я очередь
+              </span>
+            </div>
+          )}
+
+          {talk.section?.supervisor && (
+            <div className="text-[11px] text-muted-foreground flex items-center gap-1 pt-0.5">
+              <UserCheck className="size-3 text-[#d4a84b] shrink-0" />
+              <span>Ответств. за секцию: <strong className="text-[#1a4d3e]">{talk.section.supervisor}</strong></span>
+            </div>
+          )}
         </div>
 
         {/* Title and Speaker info */}
@@ -317,16 +362,41 @@ export function JuryCard({
             На доработку
           </Button>
 
-          <Button
-            size="sm"
+          <button
+            type="button"
             className="py-2 px-2.5 sm:px-3 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-bold rounded-xl transition-all cursor-pointer text-xs"
             onClick={() => onRejectClick(talk)}
             aria-label="Отклонить заявку"
+            title="Отклонить заявку"
           >
             <X className="size-4" />
-          </Button>
+          </button>
+
+          <button
+            type="button"
+            className="py-2 px-2.5 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 font-bold rounded-xl transition-all cursor-pointer text-xs disabled:opacity-40"
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsConfirmDeleteOpen(true);
+            }}
+            disabled={isDeleting}
+            aria-label="Удалить доклад"
+            title="Удалить доклад из базы"
+          >
+            <Trash2 className="size-3.5" />
+          </button>
         </div>
       </div>
+
+      <ConfirmDeleteTalkModal
+        isOpen={isConfirmDeleteOpen}
+        talkTitle={talk.title}
+        speakerName={talk.speakerName}
+        sectionTitle={talk.section?.title}
+        isPending={isDeleting}
+        onClose={() => setIsConfirmDeleteOpen(false)}
+        onConfirm={handleConfirmDelete}
+      />
     </Card>
   );
 }

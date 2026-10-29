@@ -21,6 +21,7 @@ export interface Section {
   title: string;
   sortOrder: number;
   color?: string;
+  supervisor?: string;
   talksCount?: number;
   roomsCount?: number;
   rooms?: SectionRoomInfo[];
@@ -63,6 +64,7 @@ export interface Room {
   id: number;
   conferenceId: number;
   name: string;
+  capacity?: number;
 }
 
 export interface Talk {

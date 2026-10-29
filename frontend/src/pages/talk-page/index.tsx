@@ -17,11 +17,8 @@ import {
   School,
   Mail,
   Users,
-<<<<<<< HEAD
   Trash2,
-=======
   Star,
->>>>>>> 38985a4ec470f6b0620df1907d7c0e07f93286ea
 } from "lucide-react";
 import { Card, Skeleton } from "@heroui/react";
 import { toast } from "sonner";
@@ -31,20 +28,23 @@ import {
   useCurrentUserQuery,
   useAdminDeleteTalkMutation,
   useDeleteMyTalkMutation,
+  useSectionsQuery,
 } from "~entities/talk/api/queries";
 import { pathKeys } from "~shared/lib";
-import { mockSections } from "~shared/mocks/mockData";
+import { ConfirmDeleteTalkModal } from "~shared/ui";
 import { fmtTime } from "~entities/talk";
 
 export function TalkPage() {
   const { talkId = "" } = useParams();
   const navigate = useNavigate();
   const { data: talk, isLoading, isError } = useTalkQuery(Number(talkId));
+  const { data: sections = [] } = useSectionsQuery();
   const { data: user } = useCurrentUserQuery();
   const adminDeleteMutation = useAdminDeleteTalkMutation();
   const myDeleteMutation = useDeleteMyTalkMutation();
   const [copied, setCopied] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false);
 
   const handleCopyLink = () => {
     navigator.clipboard.writeText(window.location.href);
@@ -53,29 +53,32 @@ export function TalkPage() {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const canDelete =
+  const canDelete = Boolean(
     talk &&
     user &&
-    (user.role === "admin" || Number(user.id) === Number(talk.authorId));
+    (user.role === "admin" || user.role === "jury" || Number(user.id) === Number(talk.authorId))
+  );
 
-  const handleDelete = async () => {
+  const handleConfirmDelete = async () => {
     if (!talk) return;
-    const confirmed = window.confirm(
-      `Вы действительно хотите удалить доклад «${talk.title}»?\n\nВнимание: удаление необратимо.`
-    );
-    if (!confirmed) return;
-
     try {
       setIsDeleting(true);
-      if (user?.role === "admin") {
+      if (user?.role === "admin" || user?.role === "jury") {
         await adminDeleteMutation.mutateAsync(talk.id);
       } else {
         await myDeleteMutation.mutateAsync(talk.id);
       }
       toast.success("Доклад успешно удалён");
+      setIsConfirmDeleteOpen(false);
       navigate(pathKeys.conference.build("demo"));
     } catch (err: any) {
-      toast.error(err?.response?.data?.error || "Ошибка при удалении доклада");
+      const errorMsg =
+        err?.response?.data?.error?.message ||
+        (typeof err?.response?.data?.error === "string" ? err.response.data.error : null) ||
+        err?.message ||
+        "Ошибка при удалении доклада";
+      toast.error(errorMsg);
+    } finally {
       setIsDeleting(false);
     }
   };
@@ -113,7 +116,7 @@ export function TalkPage() {
 
   const section =
     talk.section ||
-    mockSections.find((s) => s.id === (talk.sectionId ?? talk.section?.id));
+    sections.find((s) => s.id === (talk.sectionId ?? talk.section?.id));
 
   const hasDocument = !!talk.document;
   const isPptx =
@@ -140,7 +143,7 @@ export function TalkPage() {
             <button
               type="button"
               disabled={isDeleting}
-              onClick={handleDelete}
+              onClick={() => setIsConfirmDeleteOpen(true)}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 text-xs font-semibold text-rose-700 transition-colors cursor-pointer disabled:opacity-40"
               title="Удалить доклад"
             >
@@ -442,6 +445,16 @@ export function TalkPage() {
           Подать заявку на доклад
         </Link>
       </div>
+
+      <ConfirmDeleteTalkModal
+        isOpen={isConfirmDeleteOpen}
+        talkTitle={talk?.title}
+        speakerName={talk?.speakerName}
+        sectionTitle={talk?.section?.title}
+        isPending={isDeleting}
+        onClose={() => setIsConfirmDeleteOpen(false)}
+        onConfirm={handleConfirmDelete}
+      />
     </div>
   );
 }

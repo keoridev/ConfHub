@@ -87,6 +87,7 @@ export const talkService = {
 
   deleteMyTalk: (id: number) => apiClient.delete(`/my/talks/${id}`),
   adminDeleteTalk: (id: number) => apiClient.delete(`/admin/talks/${id}`),
+  deleteTalk: (id: number) => apiClient.delete(`/talks/${id}`),
 
   uploadDocument: (talkId: number, file: File, onProgress?: (p: number) => void) =>
     apiClient.upload<Document>(`/talks/${talkId}/document`, file, onProgress),

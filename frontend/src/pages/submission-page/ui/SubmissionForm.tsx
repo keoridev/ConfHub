@@ -1,3 +1,4 @@
+import { useState, useMemo } from "react";
 import {
   UseFormRegister,
   UseFormHandleSubmit,
@@ -8,9 +9,6 @@ import {
 import {
   BookOpen,
   Check,
-  Laptop,
-  Cpu,
-  Leaf,
   User as UserIcon,
   School,
   GraduationCap,
@@ -18,8 +16,8 @@ import {
   UserCheck,
   FileCheck,
   FileText,
-  Building,
   Clock,
+  Search,
 } from "lucide-react";
 import { Card, Button } from "@heroui/react";
 import type { Section } from "~entities/talk/model/types";
@@ -58,6 +56,7 @@ export function SubmissionForm({
   onSubmit,
   isPending,
 }: SubmissionFormProps) {
+  const [sectionSearch, setSectionSearch] = useState("");
   const sectionId = watch("sectionId");
   const titleValue = watch("title") || "";
   const speakerNameValue = watch("speakerName") || "";
@@ -68,13 +67,23 @@ export function SubmissionForm({
   const supervisorValue = watch("supervisor") || "";
   const abstractValue = watch("abstract") || "";
 
+  const filteredSections = useMemo(() => {
+    if (!sectionSearch.trim()) return sections;
+    const q = sectionSearch.toLowerCase();
+    return sections.filter(
+      (s) =>
+        s.title.toLowerCase().includes(q) ||
+        (s.supervisor || "").toLowerCase().includes(q)
+    );
+  }, [sections, sectionSearch]);
+
   return (
-    <Card className="border border-[#1a4d3e]/20 bg-white p-7 sm:p-9 rounded-3xl shadow-sm">
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-7">
+    <Card className="border border-[#1a4d3e]/20 bg-white p-3.5 sm:p-6 md:p-8 rounded-2xl sm:rounded-3xl shadow-sm">
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 sm:space-y-7">
         {/* Title */}
         <div>
           <div className="flex items-center justify-between mb-2">
-            <label className="block text-sm font-bold text-[#1a4d3e]">
+            <label className="block text-xs sm:text-sm font-bold text-[#1a4d3e]">
               Название темы доклада <span className="text-danger">*</span>
             </label>
             <div className="flex items-center gap-3">
@@ -126,28 +135,45 @@ export function SubmissionForm({
 
         {/* Sections */}
         <div>
-          <div className="flex flex-wrap items-center justify-between gap-1 mb-2.5">
-            <label className="text-sm font-bold text-[#1a4d3e] inline-flex items-center gap-1 shrink-0">
-              <span>Секция конференции</span>
-              <span className="text-danger font-bold">*</span>
-            </label>
-            <span className="text-xs text-muted-foreground">
-              Регламент: 10 мин (15 мин для ключевых) · ключевые в 1-ю очередь
-            </span>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2.5">
+            <div>
+              <label className="text-xs sm:text-sm font-bold text-[#1a4d3e] inline-flex items-center gap-1 shrink-0">
+                <span>Секция конференции</span>
+                <span className="text-danger font-bold">*</span>
+              </label>
+              <p className="text-[11px] sm:text-xs text-muted-foreground mt-0.5">
+                Регламент: 10 мин (15 мин для ключевых) · ключевые в 1-ю очередь
+              </p>
+            </div>
+
+            {/* Quick search among 13 sections */}
+            <div className="relative w-full sm:w-64">
+              <Search className="size-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-[#1a4d3e]/40 pointer-events-none" />
+              <input
+                type="text"
+                value={sectionSearch}
+                onChange={(e) => setSectionSearch(e.target.value)}
+                placeholder="Поиск по 13 направлениям..."
+                className="w-full pl-8 pr-7 py-1.5 rounded-xl border border-[#1a4d3e]/20 bg-[#f5f3ed]/50 text-xs text-[#1a4d3e] placeholder:text-[#1a4d3e]/40 focus:outline-none focus:ring-2 focus:ring-[#1a4d3e]/20"
+              />
+              {sectionSearch && (
+                <button
+                  type="button"
+                  onClick={() => setSectionSearch("")}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-[#1a4d3e]/40 hover:text-[#1a4d3e]"
+                >
+                  ×
+                </button>
+              )}
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
-            {sections.map((s, idx) => {
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 p-2 sm:p-3 border border-[#1a4d3e]/15 rounded-2xl bg-[#f5f3ed]/25">
+            {filteredSections.map((s, idx) => {
               const isSelected = sectionId === String(s.id);
-<<<<<<< HEAD
               const meta = getSectionMeta(s.title, idx);
               const Icon = meta.icon;
-=======
-              const isIT = s.id === 1 || s.title.toLowerCase().includes("it");
-              const isEng = s.id === 2 || s.title.toLowerCase().includes("инжен");
-              const Icon = isIT ? Laptop : isEng ? Cpu : Leaf;
               const talksCount = s.talksCount ?? 0;
->>>>>>> 38985a4ec470f6b0620df1907d7c0e07f93286ea
 
               return (
                 <button
@@ -156,18 +182,18 @@ export function SubmissionForm({
                   onClick={() =>
                     setValue("sectionId", String(s.id), { shouldValidate: true })
                   }
-                  className={`p-4 rounded-2xl border-2 text-left transition-all duration-200 cursor-pointer flex flex-col justify-between gap-3 group relative ${
+                  className={`p-3 sm:p-4 rounded-xl sm:rounded-2xl border-2 text-left transition-all duration-200 cursor-pointer flex flex-col justify-between gap-2.5 group relative ${
                     isSelected
                       ? "border-[#1a4d3e] bg-[#1a4d3e]/5 ring-2 ring-[#1a4d3e]/20 shadow-sm"
                       : "border-[#1a4d3e]/15 bg-white hover:border-[#1a4d3e]/35 hover:shadow-xs"
                   }`}
                 >
-                  <div className="flex items-start justify-between w-full">
+                  <div className="flex items-start justify-between w-full gap-2">
                     <div
-                      className="size-10 rounded-2xl flex items-center justify-center text-white shadow-xs transition-transform group-hover:scale-105"
+                      className="size-8 sm:size-10 rounded-xl sm:rounded-2xl flex items-center justify-center text-white shadow-xs transition-transform group-hover:scale-105 shrink-0"
                       style={{ backgroundColor: meta.bgColor || "#1a4d3e" }}
                     >
-                      <Icon className="size-5" />
+                      <Icon className="size-4 sm:size-5" />
                     </div>
                     {isSelected ? (
                       <span className="size-5 rounded-full bg-[#1a4d3e] text-white flex items-center justify-center shrink-0">
@@ -177,65 +203,29 @@ export function SubmissionForm({
                       <span className="size-5 rounded-full border-2 border-[#1a4d3e]/25 group-hover:border-[#1a4d3e]/50 shrink-0 transition-colors" />
                     )}
                   </div>
-<<<<<<< HEAD
-                  <div className="space-y-1">
-                    <p className="text-sm font-bold text-[#1a4d3e] leading-snug line-clamp-3">
-                      {s.title}
-                    </p>
-                    <p className="text-xs text-muted-foreground leading-normal line-clamp-2">
-                      {meta.subtitle}
-=======
-                  <div>
-                    <div className="flex items-center justify-between gap-1">
-                      <p className="text-sm font-bold text-[#1a4d3e]">{s.title}</p>
-                      {s.hasKeynote && (
-                        <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-amber-100 text-amber-800 font-bold border border-amber-300 shrink-0" title="В секции есть ключевая лекция">
-                          ⭐ Ключевой
-                        </span>
-                      )}
+                  <div className="space-y-1 w-full min-w-0">
+                    <div className="flex items-start justify-between gap-1">
+                      <p className="text-xs sm:text-sm font-bold text-[#1a4d3e] leading-snug break-words">
+                        {s.title}
+                      </p>
                     </div>
-                    <p className="text-[11px] text-muted-foreground mt-0.5">
-                      {isIT
-                        ? "ИИ, разработка, алгоритмы"
-                        : isEng
-                        ? "Робототехника, приборы"
-                        : "Экология и мониторинг"}
->>>>>>> 38985a4ec470f6b0620df1907d7c0e07f93286ea
-                    </p>
+                    {(s.supervisor || meta.supervisor) && (
+                      <p className="text-[10px] sm:text-[11px] text-[#1a4d3e] font-semibold flex items-center gap-1 mt-0.5 truncate" title={`Ответственный: ${s.supervisor || meta.supervisor}`}>
+                        <UserCheck className="size-3 text-[#d4a84b] shrink-0" />
+                        <span className="truncate">{s.supervisor || meta.supervisor}</span>
+                      </p>
+                    )}
 
-                    {/* Section articles count and room distribution */}
-                    <div className="mt-2.5 pt-2 border-t border-[#1a4d3e]/10 space-y-1">
-                      <div className="flex items-center justify-between text-[11px]">
-                        <span className="text-muted-foreground flex items-center gap-1">
-                          <FileText className="size-3 text-[#1a4d3e]/70" />
-                          <span>Статей в секции:</span>
-                        </span>
-                        <span className="font-bold text-[#1a4d3e] bg-white px-1.5 py-0.5 rounded-md border border-[#1a4d3e]/15">
-                          {talksCount > 0 ? `${talksCount} ст.` : "0 (станьте первым!)"}
-                        </span>
-                      </div>
-
-                      <div className="flex items-center justify-between text-[11px]">
-                        <span className="text-muted-foreground flex items-center gap-1">
-                          <Building className="size-3 text-[#1a4d3e]/70" />
-                          <span>В аудиториях:</span>
-                        </span>
-                        <span className="font-semibold text-[#1a4d3e] truncate max-w-[120px]" title={s.rooms && s.rooms.length > 0 ? s.rooms.map((r) => `${r.name}: ${r.talksCount} ст.`).join(", ") : "Формируются"}>
-                          {s.rooms && s.rooms.length > 0
-                            ? s.rooms.map((r) => `${r.name} (${r.talksCount})`).join(", ")
-                            : "Формируются"}
-                        </span>
-                      </div>
-
-                      <div className="flex items-center justify-between text-[10px] text-muted-foreground pt-0.5">
-                        <span className="flex items-center gap-1 text-[#1a4d3e]/70 font-medium">
-                          <Clock className="size-2.5 text-[#d4a84b]" />
-                          <span>10 мин / доклад</span>
-                        </span>
-                        <span className="text-[10px] text-emerald-700 font-semibold">
-                          Идёт приём
-                        </span>
-                      </div>
+                    {/* Section stats */}
+                    <div className="mt-2 pt-1.5 border-t border-[#1a4d3e]/10 flex items-center justify-between text-[10px] sm:text-[11px] text-muted-foreground">
+                      <span className="flex items-center gap-1">
+                        <FileText className="size-3 text-[#1a4d3e]/70" />
+                        <span>{talksCount > 0 ? `${talksCount} ст.` : "0 ст."}</span>
+                      </span>
+                      <span className="flex items-center gap-1 text-[#1a4d3e]/70 font-medium">
+                        <Clock className="size-2.5 text-[#d4a84b]" />
+                        <span>10 мин (кл: 15 мин)</span>
+                      </span>
                     </div>
                   </div>
                 </button>
@@ -247,23 +237,29 @@ export function SubmissionForm({
           {sectionId && (() => {
             const currentSection = sections.find((s) => String(s.id) === sectionId);
             if (!currentSection) return null;
+            const currentMeta = getSectionMeta(currentSection.title);
+            const supName = currentSection.supervisor || currentMeta.supervisor;
             return (
-              <div className="mt-3 p-3 rounded-2xl bg-[#1a4d3e]/5 border border-[#1a4d3e]/15 flex flex-wrap items-center justify-between gap-2 text-xs animate-in fade-in">
-                <div className="flex items-center gap-2">
-                  <span className="size-2 rounded-full bg-emerald-500 animate-pulse" />
-                  <span className="font-bold text-[#1a4d3e]">
-                    Выбрана секция: «{currentSection.title}»
+              <div className="mt-3 p-3 rounded-xl sm:rounded-2xl bg-[#1a4d3e]/5 border border-[#1a4d3e]/15 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs animate-in fade-in">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="size-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+                  <span className="font-bold text-[#1a4d3e] truncate">
+                    Секция: «{currentSection.title}»
                   </span>
                 </div>
-                <div className="flex flex-wrap items-center gap-2">
+                <div className="flex flex-wrap items-center gap-1.5">
+                  {supName && (
+                    <span className="px-2 py-0.5 rounded-md bg-white border border-[#1a4d3e]/15 font-semibold text-[#1a4d3e] flex items-center gap-1">
+                      <UserCheck className="size-3 text-[#d4a84b]" />
+                      <span className="truncate max-w-[200px]">Ответственный: <strong>{supName}</strong></span>
+                    </span>
+                  )}
                   <span className="px-2 py-0.5 rounded-md bg-white border border-[#1a4d3e]/15 font-semibold text-[#1a4d3e]">
                     Подано статей: <strong>{currentSection.talksCount ?? 0}</strong>
                   </span>
-                  <span className="px-2 py-0.5 rounded-md bg-white border border-[#1a4d3e]/15 font-semibold text-[#1a4d3e]">
-                    Аудитории: <strong>{currentSection.rooms && currentSection.rooms.length > 0 ? currentSection.rooms.map(r => `${r.name} (${r.talksCount} ст.)`).join(', ') : 'Назначаются жюри'}</strong>
-                  </span>
-                  <span className="px-2 py-0.5 rounded-md bg-[#d4a84b]/20 text-[#1a4d3e] font-bold">
-                    ⏱️ 10 мин на статью
+                  <span className="px-2 py-0.5 rounded-md bg-[#d4a84b]/20 text-[#1a4d3e] font-bold inline-flex items-center gap-1">
+                    <Clock className="size-3 text-[#1a4d3e]" />
+                    <span>10 мин (ключевой: 15 мин)</span>
                   </span>
                 </div>
               </div>

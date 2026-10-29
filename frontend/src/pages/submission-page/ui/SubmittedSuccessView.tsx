@@ -33,6 +33,7 @@ export function SubmittedSuccessView({
   user,
   onReset,
   onEditSubmission,
+  onDeleteSubmission,
 }: SubmittedSuccessViewProps) {
   const aiResult = talk?.aiResult?.result;
 

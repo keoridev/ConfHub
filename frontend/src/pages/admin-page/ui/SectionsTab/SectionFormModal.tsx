@@ -42,6 +42,18 @@ export function SectionFormModal({
             />
           </div>
           <div className="admin-field">
+            <label className="admin-label">Ответственный / Руководитель секции</label>
+            <input
+              className="admin-input"
+              placeholder="Например: Жамалова Венера Жумашбековна"
+              value={form.supervisor || ""}
+              onChange={(e) => onChange((f) => ({ ...f, supervisor: e.target.value }))}
+            />
+            <span className="text-[11px] text-muted-foreground mt-0.5 block">
+              ФИО преподавателя или учёного, ответственного за научное руководство секцией
+            </span>
+          </div>
+          <div className="admin-field">
             <label className="admin-label">Порядок сортировки</label>
             <input
               className="admin-input admin-input-sm"

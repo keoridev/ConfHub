@@ -31,18 +31,32 @@ export function useTalkFilters(talks: Talk[]) {
           (t.tags || []).some((tag) => tag.toLowerCase().includes(q))
       )
       .sort((a, b) => {
-        // 1. Keynote talks always first
-        if (a.isKeynote && !b.isKeynote) return -1;
-        if (!a.isKeynote && b.isKeynote) return 1;
+        const isFilteringSpecificSection = sectionId !== null && sectionId !== "" && sectionId !== "all";
 
-        // 2. Start time order if available
-        if (a.startTime && b.startTime) {
-          return Date.parse(a.startTime) - Date.parse(b.startTime);
+        // If viewing a specific section: that section's keynote is ALWAYS strictly first!
+        if (isFilteringSpecificSection) {
+          if (a.isKeynote && !b.isKeynote) return -1;
+          if (!a.isKeynote && b.isKeynote) return 1;
         }
-        if (a.startTime) return -1;
-        if (b.startTime) return 1;
 
-        // 3. Otherwise order of registration (created_at ASC)
+        // 1. Chronological order by start time
+        if (a.startTime && b.startTime) {
+          const timeDiff = Date.parse(a.startTime) - Date.parse(b.startTime);
+          if (timeDiff !== 0) return timeDiff;
+          // If starting at same time: section keynotes go first
+          if (a.isKeynote && !b.isKeynote) return -1;
+          if (!a.isKeynote && b.isKeynote) return 1;
+        }
+        if (a.startTime && !b.startTime) return -1;
+        if (!a.startTime && b.startTime) return 1;
+
+        // If neither has start time, keynotes go first within same section
+        if (a.sectionId === b.sectionId) {
+          if (a.isKeynote && !b.isKeynote) return -1;
+          if (!a.isKeynote && b.isKeynote) return 1;
+        }
+
+        // 2. Otherwise order of registration (created_at ASC)
         return (a.createdAt ? Date.parse(a.createdAt) : 0) - (b.createdAt ? Date.parse(b.createdAt) : 0);
       });
   }, [talks, search, sectionId, hall]);

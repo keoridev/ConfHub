@@ -20,10 +20,17 @@ import {
   Mail,
   Users,
   Tag,
+  Star,
+  Trash2,
 } from "lucide-react";
 import { Button } from "@heroui/react";
-import { useAIResultQuery } from "~entities/talk/api/queries";
+import {
+  useAIResultQuery,
+  useSetKeynoteMutation,
+  useAdminDeleteTalkMutation,
+} from "~entities/talk/api/queries";
 import { apiClient } from "~shared/lib/api/client";
+import { ConfirmDeleteTalkModal } from "~shared/ui";
 import type { Talk } from "~entities/talk/model/types";
 import type { AIResultResponse } from "../model/types";
 
@@ -45,6 +52,11 @@ export function JuryTalkDetailModal({
   onRevisionClick,
 }: JuryTalkDetailModalProps) {
   const [isDownloading, setIsDownloading] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false);
+  const keynoteMutation = useSetKeynoteMutation();
+  const deleteMutation = useAdminDeleteTalkMutation();
+
   const { data: ai, isLoading: aiLoading } = useAIResultQuery(talk?.id ?? 0) as {
     data: AIResultResponse | undefined;
     isLoading: boolean;
@@ -53,9 +65,39 @@ export function JuryTalkDetailModal({
   if (!isOpen || !talk) return null;
 
   const sectionTitle = talk.section?.title ?? "Без секции";
+  const sectionSupervisor = talk.section?.supervisor;
   const aiResult = ai?.result;
   const sectionFitScore = aiResult?.sectionFit?.score;
   const annotationMatchScore = aiResult?.annotationMatch?.score;
+
+  const handleToggleKeynote = async () => {
+    try {
+      const next = !talk.isKeynote;
+      await keynoteMutation.mutateAsync({ talkId: talk.id, isKeynote: next });
+      toast.success(next ? "Доклад назначен ключевым секции (15 мин)!" : "Снят статус ключевого");
+    } catch (err: any) {
+      toast.error(err?.response?.data?.error?.message || "Ошибка изменения статуса");
+    }
+  };
+
+  const handleConfirmDelete = async () => {
+    try {
+      setIsDeleting(true);
+      await deleteMutation.mutateAsync(talk.id);
+      toast.success("Доклад успешно удалён из базы");
+      setIsConfirmDeleteOpen(false);
+      onClose();
+    } catch (err: any) {
+      const errorMsg =
+        err?.response?.data?.error?.message ||
+        (typeof err?.response?.data?.error === "string" ? err.response.data.error : null) ||
+        err?.message ||
+        "Ошибка при удалении доклада";
+      toast.error(errorMsg);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   const isIT = talk.sectionId === 1 || sectionTitle.toLowerCase().includes("it");
   const isEng = talk.sectionId === 2 || sectionTitle.toLowerCase().includes("инжен");
@@ -102,6 +144,12 @@ export function JuryTalkDetailModal({
               <span className="text-xs font-mono text-muted-foreground bg-[#1a4d3e]/5 px-2 py-0.5 rounded-md border border-[#1a4d3e]/10">
                 Заявка №{talk.id}
               </span>
+              {talk.isKeynote && (
+                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-900 border border-amber-300 shadow-2xs">
+                  <Star className="size-3.5 fill-amber-500 text-amber-500" />
+                  Ключевой доклад секции (15 мин)
+                </span>
+              )}
               {talk.status === "approved" && (
                 <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
                   <CheckCircle2 className="size-3.5 text-emerald-600" />
@@ -148,7 +196,7 @@ export function JuryTalkDetailModal({
               <GraduationCap className="size-4 text-[#d4a84b]" />
               Докладчик и научный руководитель
             </h4>
-            <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-3 text-xs">
+            <div className="grid sm:grid-cols-2 md:grid-cols-4 gap-3 text-xs">
               <div className="p-3 bg-white rounded-xl border border-[#1a4d3e]/10">
                 <span className="text-muted-foreground block text-[11px] mb-0.5">Докладчик:</span>
                 <p className="font-bold text-[#1a4d3e] text-sm">{talk.speakerName}</p>
@@ -160,6 +208,14 @@ export function JuryTalkDetailModal({
                 <span className="text-muted-foreground block text-[11px] mb-0.5">Научный руководитель:</span>
                 <p className="font-bold text-[#1a4d3e] text-sm">{talk.supervisor || "Не указан"}</p>
               </div>
+              {sectionSupervisor && (
+                <div className="p-3 bg-white rounded-xl border border-[#1a4d3e]/10">
+                  <span className="text-muted-foreground block text-[11px] mb-0.5">Ответств. за секцию:</span>
+                  <p className="font-bold text-[#1a4d3e] text-sm truncate" title={sectionSupervisor}>
+                    {sectionSupervisor}
+                  </p>
+                </div>
+              )}
               <div className="p-3 bg-white rounded-xl border border-[#1a4d3e]/10">
                 <span className="text-muted-foreground block text-[11px] mb-0.5">Университет / Контакты:</span>
                 <p className="font-semibold text-[#1a4d3e] truncate">{talk.university || "—"}</p>
@@ -417,13 +473,41 @@ export function JuryTalkDetailModal({
 
         {/* Modal Action Footer */}
         <div className="p-3.5 sm:p-5 border-t border-[#1a4d3e]/10 bg-white flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 sm:gap-3 shrink-0">
-          <Button
-            variant="tertiary"
-            onClick={onClose}
-            className="rounded-xl font-bold text-xs cursor-pointer order-last sm:order-first py-2 sm:py-2.5"
-          >
-            Закрыть досье
-          </Button>
+          <div className="flex items-center gap-2 flex-wrap order-last sm:order-first">
+            <Button
+              variant="tertiary"
+              onClick={onClose}
+              className="rounded-xl font-bold text-xs cursor-pointer py-2 sm:py-2.5"
+            >
+              Закрыть досье
+            </Button>
+
+            <button
+              type="button"
+              onClick={handleToggleKeynote}
+              disabled={keynoteMutation.isPending}
+              className={`py-2 px-3 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer border ${
+                talk.isKeynote
+                  ? "bg-amber-100 border-amber-300 text-amber-900 hover:bg-amber-200 shadow-2xs"
+                  : "border-[#1a4d3e]/20 text-[#1a4d3e] hover:bg-[#1a4d3e]/10"
+              }`}
+              title={talk.isKeynote ? "Снять статус ключевого" : "Назначить ключевым докладом (15 мин, 1-я очередь)"}
+            >
+              <Star className={`size-3.5 ${talk.isKeynote ? "fill-amber-500 text-amber-500" : ""}`} />
+              <span>{talk.isKeynote ? "Снять статус ключевого" : "Главный (15 мин)"}</span>
+            </button>
+
+            <button
+              type="button"
+              disabled={isDeleting}
+              onClick={() => setIsConfirmDeleteOpen(true)}
+              className="py-2 px-2.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer border border-rose-200 disabled:opacity-40"
+              title="Удалить доклад"
+            >
+              <Trash2 className="size-3.5 text-rose-600" />
+              <span>{isDeleting ? "Удаление..." : "Удалить"}</span>
+            </button>
+          </div>
 
           <div className="grid grid-cols-3 sm:flex items-center gap-1.5 sm:gap-2">
             <Button
@@ -464,6 +548,16 @@ export function JuryTalkDetailModal({
           </div>
         </div>
       </div>
+
+      <ConfirmDeleteTalkModal
+        isOpen={isConfirmDeleteOpen}
+        talkTitle={talk.title}
+        speakerName={talk.speakerName}
+        sectionTitle={talk.section?.title}
+        isPending={isDeleting}
+        onClose={() => setIsConfirmDeleteOpen(false)}
+        onConfirm={handleConfirmDelete}
+      />
     </div>
   );
 }
