@@ -1,0 +1,1524 @@
+openapi: 3.0.3
+info:
+  title: ConfApp — API студенческой конференции
+  description: |
+    Система расписания и приёма докладов студенческой конференции COMTEHNO.
+    Все даты в ISO 8601 с часовым поясом Бишкека (+06:00).
+    JSON-поля в camelCase.
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:8080
+    description: Локальная разработка
+
+tags:
+  - name: health
+    description: Проверка здоровья
+  - name: auth
+    description: Авторизация
+  - name: conferences
+    description: Конференции (публичное)
+  - name: sections
+    description: Секции (публичное)
+  - name: rooms
+    description: Аудитории
+  - name: talks
+    description: Доклады (публичное)
+  - name: student
+    description: Кабинет ученика
+  - name: jury
+    description: Кабинет жюри
+  - name: admin
+    description: Админка
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+              example: VALIDATION_ERROR
+            message:
+              type: string
+              example: "название должно быть от 5 до 200 символов"
+            fields:
+              type: object
+              additionalProperties:
+                type: string
+
+    UserPublic:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        login:
+          type: string
+        fullName:
+          type: string
+        groupName:
+          type: string
+          nullable: true
+        role:
+          type: string
+          enum: [student, jury, admin]
+        mustChangePassword:
+          type: boolean
+        consentRequired:
+          type: boolean
+
+    CoAuthor:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          description: ФИО или имя соавтора
+          example: "Абдылдаев Т.М."
+        fullName:
+          type: string
+          description: Полное имя соавтора (алиас для name)
+          example: "Абдылдаев Т.М."
+        email:
+          type: string
+          format: email
+          nullable: true
+          description: Электронная почта соавтора
+          example: "abdyldaev@kstu.kg"
+        phone:
+          type: string
+          nullable: true
+          description: Номер телефона соавтора
+          example: "+996 555 123 456"
+        university:
+          type: string
+          nullable: true
+          description: ВУЗ или учебное заведение соавтора
+          example: "КГТУ им. И. Раззакова"
+        group:
+          type: string
+          nullable: true
+          description: Академическая группа или класс соавтора
+          example: "ИС-21"
+        gradeOrGroup:
+          type: string
+          nullable: true
+          description: Академическая группа соавтора (алиас для group)
+          example: "ИС-21"
+
+    Conference:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 1
+        title:
+          type: string
+          example: "Студенческая научно-практическая конференция COMTEHNO 2026"
+        startsAt:
+          type: string
+          format: date-time
+          example: "2026-10-20T09:00:00+06:00"
+        endsAt:
+          type: string
+          format: date-time
+          example: "2026-10-20T17:00:00+06:00"
+        isCurrent:
+          type: boolean
+          example: true
+        createdAt:
+          type: string
+          format: date-time
+          example: "2026-10-01T10:00:00+06:00"
+      example:
+        title: "Студенческая научно-практическая конференция COMTEHNO 2026"
+        startsAt: "2026-10-20T09:00:00+06:00"
+        endsAt: "2026-10-20T17:00:00+06:00"
+        isCurrent: true
+
+    Section:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 1
+        conferenceId:
+          type: integer
+          format: int64
+          example: 1
+        title:
+          type: string
+          example: "Информационные технологии и искусственный интеллект"
+        sortOrder:
+          type: integer
+          example: 1
+      example:
+        conferenceId: 1
+        title: "Информационные технологии и искусственный интеллект"
+        sortOrder: 1
+
+    Room:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 1
+        conferenceId:
+          type: integer
+          format: int64
+          example: 1
+        name:
+          type: string
+          example: "Ауд. 101"
+      example:
+        conferenceId: 1
+        name: "Ауд. 101"
+
+    TalkPublic:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        conferenceId:
+          type: integer
+          format: int64
+        title:
+          type: string
+        speakerName:
+          type: string
+        gradeOrGroup:
+          type: string
+          nullable: true
+        supervisor:
+          type: string
+          nullable: true
+        section:
+          $ref: '#/components/schemas/Section'
+        abstract:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        coAuthors:
+          type: array
+          items:
+            $ref: '#/components/schemas/CoAuthor'
+          description: Соавторы доклада
+          example: ["Абдылдаев Т.М.", "Исаков Д.С."]
+        keywords:
+          type: array
+          items:
+            type: string
+          description: Ключевые слова
+          example: ["экология", "нейросети", "iot"]
+        authorEmail:
+          type: string
+          nullable: true
+          description: Почта автора
+          example: "student1@example.com"
+        university:
+          type: string
+          nullable: true
+          description: ВУЗ или учебное заведение
+          example: "КГТУ им. И. Раззакова"
+        status:
+          type: string
+          enum: [pending_review, approved, rejected, needs_revision]
+        room:
+          $ref: '#/components/schemas/Room'
+        startTime:
+          type: string
+          format: date-time
+          nullable: true
+        endTime:
+          type: string
+          format: date-time
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+
+    Talk:
+      allOf:
+        - $ref: '#/components/schemas/TalkPublic'
+        - type: object
+          properties:
+            authorId:
+              type: integer
+              format: int64
+            juryComment:
+              type: string
+              nullable: true
+            reviewedBy:
+              type: integer
+              format: int64
+              nullable: true
+            reviewedAt:
+              type: string
+              format: date-time
+              nullable: true
+            aiAttempts:
+              type: integer
+            document:
+              $ref: '#/components/schemas/Document'
+            presentation:
+              $ref: '#/components/schemas/Document'
+            aiResult:
+              $ref: '#/components/schemas/AIResult'
+
+    Document:
+      type: object
+      nullable: true
+      properties:
+        id:
+          type: integer
+          format: int64
+        talkId:
+          type: integer
+          format: int64
+        originalName:
+          type: string
+        mime:
+          type: string
+        sizeBytes:
+          type: integer
+          format: int64
+        hasText:
+          type: boolean
+        uploadedAt:
+          type: string
+          format: date-time
+
+    AIResult:
+      type: object
+      nullable: true
+      properties:
+        id:
+          type: integer
+          format: int64
+        talkId:
+          type: integer
+          format: int64
+        attemptNo:
+          type: integer
+        model:
+          type: string
+        result:
+          $ref: '#/components/schemas/AIResultData'
+        createdAt:
+          type: string
+          format: date-time
+
+    AIResultData:
+      type: object
+      properties:
+        documentChecked:
+          type: boolean
+        documentUnreadable:
+          type: boolean
+        sectionFit:
+          type: object
+          properties:
+            score:
+              type: integer
+              minimum: 0
+              maximum: 100
+            verdict:
+              type: string
+              enum: [fits, partial, not_fit]
+            comment:
+              type: string
+        annotationMatch:
+          type: object
+          nullable: true
+          properties:
+            score:
+              type: integer
+              minimum: 0
+              maximum: 100
+            verdict:
+              type: string
+              enum: [match, partial, mismatch]
+            comment:
+              type: string
+        issues:
+          type: array
+          items:
+            type: object
+            properties:
+              type:
+                type: string
+                enum: [annotation_mismatch, wrong_section, missing_conclusion, truncated, off_topic, too_short, other]
+              severity:
+                type: string
+                enum: [low, medium, high]
+              description:
+                type: string
+        suggestions:
+          type: array
+          items:
+            type: string
+        overallVerdict:
+          type: string
+          enum: [ok, attention, problem]
+        createdAt:
+          type: string
+          format: date-time
+
+    ImportResult:
+      type: object
+      properties:
+        created:
+          type: array
+          items:
+            type: object
+            properties:
+              fullName:
+                type: string
+              groupName:
+                type: string
+                nullable: true
+              login:
+                type: string
+              tempPassword:
+                type: string
+        skipped:
+          type: array
+          items:
+            type: object
+            properties:
+              row:
+                type: integer
+              reason:
+                type: string
+
+paths:
+  /api/health:
+    get:
+      tags: [health]
+      summary: Проверка здоровья
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+
+  /api/conferences:
+    get:
+      tags: [conferences]
+      summary: Список конференций
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Conference'
+
+  /api/conferences/current:
+    get:
+      tags: [conferences]
+      summary: Текущая конференция
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Conference'
+        '404':
+          description: Не найдена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/sections:
+    get:
+      tags: [sections]
+      summary: Секции конференции
+      parameters:
+        - name: conferenceId
+          in: query
+          schema:
+            type: integer
+          description: ID конференции (по умолчанию текущая)
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Section'
+
+  /api/rooms:
+    get:
+      tags: [rooms]
+      summary: Аудитории конференции
+      parameters:
+        - name: conferenceId
+          in: query
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Room'
+
+  /api/conferences/{id}/talks:
+    get:
+      tags: [talks]
+      summary: Доклады конференции
+      description: |
+        По умолчанию status=approved (публичные). Для других статусов нужен Bearer жюри/админа.
+        Сортировка по startTime ASC.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            example: 1
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [approved, pending_review, rejected, needs_revision]
+            default: approved
+            example: "approved"
+        - name: sectionId
+          in: query
+          schema:
+            type: integer
+            example: 1
+        - name: q
+          in: query
+          schema:
+            type: string
+            example: "нейросети"
+          description: Поиск по названию, ФИО, аннотации, тегам
+        - name: tag
+          in: query
+          schema:
+            type: string
+            example: "ml"
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TalkPublic'
+
+  /api/talks/{id}:
+    get:
+      tags: [talks]
+      summary: Доклад по ID
+      description: Гость — только approved, автор — свои, жюри/админ — все
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            example: 1
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TalkPublic'
+        '404':
+          description: Не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/auth/login:
+    post:
+      tags: [auth]
+      summary: Вход
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [login, password]
+              properties:
+                login:
+                  type: string
+                  example: "student1"
+                password:
+                  type: string
+                  example: "student123"
+            example:
+              login: "student1"
+              password: "student123"
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                  user:
+                    $ref: '#/components/schemas/UserPublic'
+        '401':
+          description: Неверный логин или пароль
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/auth/me:
+    get:
+      tags: [auth]
+      summary: Текущий пользователь
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserPublic'
+
+  /api/auth/change-password:
+    post:
+      tags: [auth]
+      summary: Смена пароля
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [oldPassword, newPassword]
+              properties:
+                oldPassword:
+                  type: string
+                  example: "student123"
+                newPassword:
+                  type: string
+                  minLength: 8
+                  example: "NewStudentPass123!"
+                consent:
+                  type: boolean
+                  description: Обязательно true для студентов при первом входе
+                  example: true
+            example:
+              oldPassword: "student123"
+              newPassword: "NewStudentPass123!"
+              consent: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                  user:
+                    $ref: '#/components/schemas/UserPublic'
+
+  /api/talks:
+    post:
+      tags: [student]
+      summary: Создать заявку
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title, abstract]
+              properties:
+                conferenceId:
+                  type: integer
+                  description: По умолчанию текущая (можно опустить)
+                  example: 1
+                sectionId:
+                  type: integer
+                  nullable: true
+                  description: ID секции (необязательно, 1 - IT и ИИ, 2 - Робототехника, 3 - Экология)
+                  example: 1
+                title:
+                  type: string
+                  minLength: 5
+                  maxLength: 200
+                  example: "Применение нейросетей для мониторинга экологии"
+                supervisor:
+                  type: string
+                  maxLength: 150
+                  example: "Мамбетов К.Б."
+                abstract:
+                  type: string
+                  minLength: 50
+                  maxLength: 3000
+                  example: "В данной работе рассматривается разработка системы мониторинга состояния окружающей среды с использованием датчиков качества воздуха и алгоритмов машинного обучения. Точность предсказаний превысила 92%."
+                tags:
+                  type: array
+                  items:
+                    type: string
+                    maxLength: 30
+                  maxItems: 5
+                  example: ["экология", "нейросети", "iot"]
+                coAuthors:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/CoAuthor'
+                  description: Соавторы доклада
+                keywords:
+                  type: array
+                  items:
+                    type: string
+                    maxLength: 50
+                  description: Ключевые слова
+                  example: ["экология", "нейросети", "iot"]
+                authorEmail:
+                  type: string
+                  format: email
+                  description: Почта автора для связи
+                  example: "student1@example.com"
+                university:
+                  type: string
+                  maxLength: 200
+                  description: ВУЗ или учебное заведение
+                  example: "КГТУ им. И. Раззакова"
+                gradeOrGroup:
+                  type: string
+                  maxLength: 50
+                  description: Академическая группа или класс
+                  example: "ИС-21"
+            example:
+              sectionId: 1
+              title: "Применение нейросетей для мониторинга экологии"
+              supervisor: "Мамбетов К.Б."
+              abstract: "В данной работе рассматривается разработка системы мониторинга состояния окружающей среды с использованием датчиков качества воздуха и алгоритмов машинного обучения. Точность предсказаний превысила 92%."
+              tags: ["экология", "нейросети", "iot"]
+              coAuthors:
+                - name: "Абдылдаев Т.М."
+                  university: "КГТУ им. И. Раззакова"
+                  group: "ИС-21"
+                  email: "abdyldaev@kstu.kg"
+              keywords: ["экология", "нейросети", "iot"]
+              authorEmail: "student1@example.com"
+              university: "КГТУ им. И. Раззакова"
+              gradeOrGroup: "ИС-21"
+      responses:
+        '201':
+          description: Создана
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Talk'
+        '409':
+          description: Лимит заявок
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/my/talks:
+    get:
+      tags: [student]
+      summary: Мои заявки
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Talk'
+
+  /api/my/talks/{id}:
+    get:
+      tags: [student]
+      summary: Моя заявка
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Talk'
+    patch:
+      tags: [student]
+      summary: Редактировать заявку
+      description: Только в статусах pending_review и needs_revision
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            example: 1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                sectionId:
+                  type: integer
+                  example: 1
+                title:
+                  type: string
+                  example: "Применение нейросетей для мониторинга экологии (исправлено)"
+                supervisor:
+                  type: string
+                  example: "Мамбетов К.Б."
+                abstract:
+                  type: string
+                  example: "Обновленная аннотация работы с добавлением результатов сравнительного анализа производительности моделей на микрокомпьютере Raspberry Pi."
+                tags:
+                  type: array
+                  items:
+                    type: string
+                  example: ["экология", "нейросети", "iot"]
+                coAuthors:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/CoAuthor'
+                  description: Соавторы доклада
+                keywords:
+                  type: array
+                  items:
+                    type: string
+                  description: Ключевые слова
+                  example: ["экология", "нейросети", "iot"]
+                authorEmail:
+                  type: string
+                  description: Почта автора
+                  example: "student1@example.com"
+                university:
+                  type: string
+                  description: ВУЗ или учебное заведение
+                  example: "КГТУ им. И. Раззакова"
+                gradeOrGroup:
+                  type: string
+                  description: Академическая группа или класс
+                  example: "ИС-21"
+            example:
+              sectionId: 1
+              title: "Применение нейросетей для мониторинга экологии (исправлено)"
+              supervisor: "Мамбетов К.Б."
+              abstract: "Обновленная аннотация работы с добавлением результатов сравнительного анализа производительности моделей на микрокомпьютере Raspberry Pi."
+              tags: ["экология", "нейросети", "iot"]
+              coAuthors:
+                - name: "Абдылдаев Т.М."
+                  university: "КГТУ им. И. Раззакова"
+                  group: "ИС-21"
+                  email: "abdyldaev@kstu.kg"
+              keywords: ["экология", "нейросети", "iot"]
+              authorEmail: "student1@example.com"
+              university: "КГТУ им. И. Раззакова"
+              gradeOrGroup: "ИС-21"
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Talk'
+
+  /api/talks/{id}/document:
+    post:
+      tags: [student]
+      summary: Загрузить документ (PDF/DOCX/PPTX/PPT)
+      description: Макс. 10 МБ, проверка по magic bytes (поддерживаются PDF, DOCX, PPTX, PPT)
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '201':
+          description: Загружен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Document'
+        '413':
+          description: Файл слишком большой
+        '415':
+          description: Неподдерживаемый формат
+    get:
+      tags: [student]
+      summary: Скачать документ заявки
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Файл документа
+
+  /api/talks/{id}/presentation:
+    post:
+      tags: [student]
+      summary: Загрузить презентацию (PPTX/PPT/PDF)
+      description: Макс. 10 МБ, проверка по magic bytes
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '201':
+          description: Загружена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Document'
+        '413':
+          description: Файл слишком большой
+        '415':
+          description: Неподдерживаемый формат
+    get:
+      tags: [student]
+      summary: Скачать презентацию заявки
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Файл презентации
+
+  /api/talks/{id}/validate:
+    post:
+      tags: [student]
+      summary: AI-проверка заявки (необязательно)
+      description: |
+        Необязательная автоматическая проверка заявки с помощью AI.
+        Проверка не является обязательной для отправки, рецензирования или одобрения заявки.
+        Лимиты — 3 на заявку, AI_DAILY_LIMIT в сутки.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Результат проверки
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AIResult'
+        '429':
+          description: Лимит исчерпан (AI_LIMIT_REACHED или AI_DAILY_LIMIT_REACHED)
+
+  /api/talks/{id}/ai-result:
+    get:
+      tags: [student]
+      summary: Последний AI-результат
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AIResult'
+        '404':
+          description: Проверка ещё не запускалась
+
+  /api/jury/talks/{id}:
+    get:
+      tags: [jury]
+      summary: Заявка для жюри (полная)
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Talk'
+
+  /api/jury/talks/{id}/document:
+    get:
+      tags: [jury]
+      summary: Скачать файл заявки
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Файл
+          headers:
+            Content-Disposition:
+              schema:
+                type: string
+            X-Content-Type-Options:
+              schema:
+                type: string
+
+  /api/jury/talks/{id}/presentation:
+    get:
+      tags: [jury]
+      summary: Скачать презентацию заявки
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Файл презентации
+          headers:
+            Content-Disposition:
+              schema:
+                type: string
+            X-Content-Type-Options:
+              schema:
+                type: string
+
+  /api/jury/talks/{id}/review:
+    patch:
+      tags: [jury]
+      summary: Решение жюри
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status:
+                  type: string
+                  enum: [approved, rejected, needs_revision]
+                  example: "approved"
+                juryComment:
+                  type: string
+                  description: Обязателен для rejected и needs_revision
+                  example: "Работа рекомендована к очному докладу."
+                roomId:
+                  type: integer
+                  description: Обязателен для approved (1 - Ауд. 101, 2 - Ауд. 204, 3 - Ауд. 305, 4 - Конференц-зал)
+                  example: 1
+                startTime:
+                  type: string
+                  format: date-time
+                  description: Обязателен для approved (ISO 8601)
+                  example: "2026-10-20T10:00:00+06:00"
+                endTime:
+                  type: string
+                  format: date-time
+                  description: Обязателен для approved (ISO 8601)
+                  example: "2026-10-20T10:15:00+06:00"
+            examples:
+              approved:
+                summary: Одобрение с аудиторией и временем
+                value:
+                  status: "approved"
+                  roomId: 1
+                  startTime: "2026-10-20T10:00:00+06:00"
+                  endTime: "2026-10-20T10:15:00+06:00"
+                  juryComment: "Работа одобрена, назначено время доклада."
+              needs_revision:
+                summary: Возврат на доработку с комментарием
+                value:
+                  status: "needs_revision"
+                  juryComment: "Пожалуйста, расширьте аннотацию и опишите практическую ценность проекта."
+              rejected:
+                summary: Отклонение заявки
+                value:
+                  status: "rejected"
+                  juryComment: "Тема работы не соответствует выбранной секции конференции."
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Talk'
+        '409':
+          description: Конфликт расписания (SCHEDULE_CONFLICT)
+
+  /api/admin/users:
+    post:
+      tags: [admin]
+      summary: Создать пользователя
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [fullName, role]
+              properties:
+                fullName:
+                  type: string
+                  example: "Асанов Асан Асанович"
+                groupName:
+                  type: string
+                  example: "ИС-21"
+                role:
+                  type: string
+                  enum: [student, jury, admin]
+                  example: "student"
+                login:
+                  type: string
+                  description: Для студентов генерируется автоматически (для jury/admin можно указать свой)
+                  example: "asanov"
+            example:
+              fullName: "Асанов Асан Асанович"
+              groupName: "ИС-21"
+              role: "student"
+      responses:
+        '201':
+          description: Создан
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    $ref: '#/components/schemas/UserPublic'
+                  tempPassword:
+                    type: string
+                    description: Показывается один раз
+    get:
+      tags: [admin]
+      summary: Список пользователей
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: role
+          in: query
+          schema:
+            type: string
+            example: "student"
+        - name: q
+          in: query
+          schema:
+            type: string
+            example: "Асанов"
+        - name: isActive
+          in: query
+          schema:
+            type: boolean
+            example: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UserPublic'
+
+  /api/admin/users/import:
+    post:
+      tags: [admin]
+      summary: Импорт пользователей из CSV
+      description: |
+        CSV с заголовком fullName,groupName (опционально role,login).
+        Роль по умолчанию student. ?format=csv для скачивания результата.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: format
+          in: query
+          schema:
+            type: string
+            enum: [json, csv]
+            example: "json"
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImportResult'
+
+  /api/admin/users/{id}:
+    patch:
+      tags: [admin]
+      summary: Редактировать пользователя
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            example: 1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                fullName:
+                  type: string
+                  example: "Асанов Асан Асанович"
+                groupName:
+                  type: string
+                  example: "ИС-22"
+                role:
+                  type: string
+                  example: "student"
+                isActive:
+                  type: boolean
+                  example: true
+            example:
+              fullName: "Асанов Асан Асанович"
+              groupName: "ИС-22"
+              role: "student"
+              isActive: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserPublic'
+
+  /api/admin/users/{id}/reset-password:
+    post:
+      tags: [admin]
+      summary: Сброс пароля
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tempPassword:
+                    type: string
+                  message:
+                    type: string
+
+  /api/admin/conferences:
+    post:
+      tags: [admin]
+      summary: Создать конференцию
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Conference'
+      responses:
+        '201':
+          description: Создана
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Conference'
+
+  /api/admin/conferences/{id}:
+    patch:
+      tags: [admin]
+      summary: Обновить конференцию
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Conference'
+      responses:
+        '200':
+          description: OK
+    delete:
+      tags: [admin]
+      summary: Удалить конференцию
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Удалена
+        '409':
+          description: Есть ссылки
+
+  /api/admin/sections:
+    post:
+      tags: [admin]
+      summary: Создать секцию
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Section'
+      responses:
+        '201':
+          description: Создана
+
+  /api/admin/sections/{id}:
+    patch:
+      tags: [admin]
+      summary: Обновить секцию
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Section'
+      responses:
+        '200':
+          description: OK
+    delete:
+      tags: [admin]
+      summary: Удалить секцию
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Удалена
+        '409':
+          description: Есть заявки
+
+  /api/admin/rooms:
+    post:
+      tags: [admin]
+      summary: Создать аудиторию
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Room'
+      responses:
+        '201':
+          description: Создана
+
+  /api/admin/rooms/{id}:
+    patch:
+      tags: [admin]
+      summary: Обновить аудиторию
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Room'
+      responses:
+        '200':
+          description: OK
+    delete:
+      tags: [admin]
+      summary: Удалить аудиторию
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Удалена
+        '409':
+          description: Используется в заявках
+
+  /api/admin/talks/{id}/reset-ai-attempts:
+    post:
+      tags: [admin]
+      summary: Сброс AI-попыток заявки
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: OK

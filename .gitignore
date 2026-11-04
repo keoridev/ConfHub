@@ -1,6 +1,3 @@
-# Backend (separate git repo)
-backend/
-
 # Dependencies
 node_modules/
 **/node_modules/
@@ -38,3 +35,12 @@ logs/
 *.njsproj
 *.sln
 *.sw?
+
+# Backend runtime files and secrets
+.env
+.env.*
+!.env.example
+backend/uploads/
+backend/app
+backend/bin/
+backend/*.exe
