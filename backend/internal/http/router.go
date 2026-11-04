@@ -69,6 +69,8 @@ func NewRouter(h *Handler, jwtSecret string, db *repo.DB, corsOrigins []string) 
 			// ── Shared talk routes ───────────
 			withPW.POST("/api/talks/:id/validate", h.ValidateTalk)
 			withPW.GET("/api/talks/:id/ai-result", h.GetAIResult)
+			withPW.GET("/api/talks/:id/document", h.DownloadDocument)
+			withPW.GET("/api/talks/:id/presentation", h.DownloadPresentation)
 
 			// ── Student routes ───────────────
 			student := withPW.Group("")
@@ -81,9 +83,7 @@ func NewRouter(h *Handler, jwtSecret string, db *repo.DB, corsOrigins []string) 
 				student.PATCH("/api/my/talks/:id", h.UpdateMyTalk)
 				student.DELETE("/api/my/talks/:id", h.DeleteMyTalk)
 				student.POST("/api/talks/:id/document", h.UploadDocument)
-				student.GET("/api/talks/:id/document", h.DownloadDocument)
 				student.POST("/api/talks/:id/presentation", h.UploadPresentation)
-				student.GET("/api/talks/:id/presentation", h.DownloadPresentation)
 			}
 
 			// ── Jury routes ──────────────────

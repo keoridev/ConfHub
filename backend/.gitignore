@@ -1,0 +1,35 @@
+# Binaries
+/app
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Environment
+.env
+
+# Uploads
+/uploads/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Go
+/vendor/
+*.test
+coverage.out
+coverage.html
+
+# Docker
+pgdata/
+
+# Temporary
+/tmp/

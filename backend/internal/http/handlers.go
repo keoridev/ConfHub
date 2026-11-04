@@ -669,9 +669,31 @@ func (h *Handler) UploadPresentation(c *gin.Context) {
 }
 
 func (h *Handler) DownloadPresentation(c *gin.Context) {
+	user := mw.GetUser(c)
+	if user == nil {
+		mw.WriteError(c, http.StatusUnauthorized, "UNAUTHORIZED", "необходима авторизация")
+		return
+	}
+
 	talkID, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
 		mw.WriteError(c, http.StatusBadRequest, "INVALID_PARAM", "неверный id")
+		return
+	}
+
+	talk, err := h.db.GetTalk(c.Request.Context(), talkID)
+	if err != nil || talk == nil {
+		mw.WriteError(c, http.StatusNotFound, "NOT_FOUND", "заявка не найдена")
+		return
+	}
+
+	// Только автор доклада (студент), жюри и администратор имеют доступ
+	if user.Role == "student" && talk.AuthorID != user.ID {
+		mw.WriteError(c, http.StatusForbidden, "FORBIDDEN", "нет доступа к чужой презентации")
+		return
+	}
+	if user.Role != "admin" && user.Role != "jury" && user.Role != "student" {
+		mw.WriteError(c, http.StatusForbidden, "FORBIDDEN", "недостаточно прав")
 		return
 	}
 
@@ -800,9 +822,31 @@ func (h *Handler) GetJuryTalk(c *gin.Context) {
 }
 
 func (h *Handler) DownloadDocument(c *gin.Context) {
+	user := mw.GetUser(c)
+	if user == nil {
+		mw.WriteError(c, http.StatusUnauthorized, "UNAUTHORIZED", "необходима авторизация")
+		return
+	}
+
 	talkID, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
 		mw.WriteError(c, http.StatusBadRequest, "INVALID_PARAM", "неверный id")
+		return
+	}
+
+	talk, err := h.db.GetTalk(c.Request.Context(), talkID)
+	if err != nil || talk == nil {
+		mw.WriteError(c, http.StatusNotFound, "NOT_FOUND", "заявка не найдена")
+		return
+	}
+
+	// Только автор доклада (студент), жюри и администратор имеют доступ
+	if user.Role == "student" && talk.AuthorID != user.ID {
+		mw.WriteError(c, http.StatusForbidden, "FORBIDDEN", "нет доступа к чужому документу")
+		return
+	}
+	if user.Role != "admin" && user.Role != "jury" && user.Role != "student" {
+		mw.WriteError(c, http.StatusForbidden, "FORBIDDEN", "недостаточно прав")
 		return
 	}
 
