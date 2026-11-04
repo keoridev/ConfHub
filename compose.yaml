@@ -1,0 +1,108 @@
+name: confhub
+
+x-backend: &backend
+  image: confhub-backend:local
+  build:
+    context: ./backend
+    dockerfile: ../deploy/backend.Dockerfile
+  environment: &backend-env
+    PORT: "8080"
+    DATABASE_URL: postgres://${POSTGRES_USER:-confhub}:${POSTGRES_PASSWORD:?Run bash setup.sh}@db:5432/${POSTGRES_DB:-confhub}?sslmode=disable
+    JWT_SECRET: ${JWT_SECRET:?Run bash setup.sh}
+    SEED_ADMIN_LOGIN: ${SEED_ADMIN_LOGIN:-admin}
+    SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD:?Run bash setup.sh}
+    UPLOAD_DIR: /app/uploads
+    CORS_ORIGINS: ${PUBLIC_URL:?Run bash setup.sh}
+    GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+    GEMINI_MODEL: ${GEMINI_MODEL:-gemini-3.5-flash-lite}
+    MAX_TALKS_PER_STUDENT: ${MAX_TALKS_PER_STUDENT:-10}
+    AI_DAILY_LIMIT: ${AI_DAILY_LIMIT:-20}
+  logging:
+    driver: json-file
+    options:
+      max-size: "10m"
+      max-file: "3"
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-confhub}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Run bash setup.sh}
+      POSTGRES_DB: ${POSTGRES_DB:-confhub}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"']
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    logging:
+      driver: json-file
+      options: {max-size: "10m", max-file: "3"}
+
+  init:
+    <<: *backend
+    restart: "no"
+    entrypoint: [/bin/sh, -ec]
+    command: ['app --migrate && app --seed --prod']
+    depends_on:
+      db: {condition: service_healthy}
+
+  bootstrap:
+    image: postgres:16-alpine
+    restart: "no"
+    environment:
+      PGHOST: db
+      PGUSER: ${POSTGRES_USER:-confhub}
+      PGPASSWORD: ${POSTGRES_PASSWORD:?Run bash setup.sh}
+      PGDATABASE: ${POSTGRES_DB:-confhub}
+    volumes:
+      - ./deploy/bootstrap.sql:/bootstrap.sql:ro
+    command: [psql, -v, ON_ERROR_STOP=1, -f, /bootstrap.sql]
+    depends_on:
+      init: {condition: service_completed_successfully}
+
+  app:
+    <<: *backend
+    restart: unless-stopped
+    init: true
+    volumes:
+      - uploads:/app/uploads
+    depends_on:
+      bootstrap: {condition: service_completed_successfully}
+    healthcheck:
+      test: [CMD, wget, -q, -O, /dev/null, http://127.0.0.1:8080/api/health]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 15s
+
+  web:
+    build:
+      context: .
+      dockerfile: deploy/web.Dockerfile
+      args:
+        FRONTEND_DIR: frontend
+    restart: unless-stopped
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS:?Run bash setup.sh}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      app: {condition: service_healthy}
+    logging:
+      driver: json-file
+      options: {max-size: "10m", max-file: "3"}
+
+volumes:
+  pgdata:
+  uploads:
+  caddy_data:
+  caddy_config:

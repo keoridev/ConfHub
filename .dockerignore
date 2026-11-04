@@ -1,0 +1,16 @@
+.git
+.env
+.env.*
+**/.git
+**/.env
+**/.env.*
+**/node_modules
+**/dist
+**/uploads
+backups
+.backup.*
+.restore.*
+docs
+tests
+*.zip
+*.tar.gz

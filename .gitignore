@@ -44,3 +44,11 @@ backend/uploads/
 backend/app
 backend/bin/
 backend/*.exe
+
+# Deployment runtime
+backups/
+.backup.*/
+.restore.*/
+.maintenance.lock
+.deployed-revisions
+.deployment-pending
