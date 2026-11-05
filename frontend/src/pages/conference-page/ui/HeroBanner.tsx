@@ -125,7 +125,7 @@ export function HeroBanner({
               Приём тезисов
             </span>
             <span className="text-emerald-300 font-extrabold text-xs sm:text-sm">
-              Открыт до 5 ноября 2026
+              Открыт до 10 ноября 2026
             </span>
           </div>
         </div>

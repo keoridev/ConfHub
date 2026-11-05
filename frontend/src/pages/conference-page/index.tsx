@@ -3,14 +3,15 @@ import { Link } from "react-router-dom";
 import { Send, CalendarDays, ArrowRight } from "lucide-react";
 import { Card } from "@heroui/react";
 
-import { useTalksQuery } from "~entities/talk/api/queries";
-import { pathKeys } from "~shared/lib";
+import { useTalksQuery, useSectionsQuery } from "~entities/talk/api/queries";
+import { pathKeys, SECTIONS_CONFIG } from "~shared/lib";
 
 import { HeroBanner } from "./ui/HeroBanner";
 import { EventOverview } from "./ui/EventOverview";
 
 export function ConferencePage() {
   const { data: talks = [] } = useTalksQuery();
+  const { data: sections = [] } = useSectionsQuery();
   const [currentTime, setCurrentTime] = useState(() => new Date());
 
   useEffect(() => {
@@ -26,13 +27,15 @@ export function ConferencePage() {
     second: "2-digit",
   });
 
+  const sectionsCount = sections.length > 0 ? sections.length : SECTIONS_CONFIG.length;
+
   return (
     <div className="w-full max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-5 sm:py-8 space-y-10 sm:space-y-14">
       {/* 1. Main Hero Banner with Conference Institutional Info & Countdown */}
       <HeroBanner
         timeString={timeString}
         talksCount={talks.length}
-        hallsCount={3}
+        hallsCount={sectionsCount}
       />
 
       {/* 2. Institutional Overview: Organizers, RoadMap / Stages & Sections */}
@@ -48,7 +51,7 @@ export function ConferencePage() {
             Примите участие в международном конкурсе научных работ
           </h3>
           <p className="text-xs sm:text-sm text-white/80 leading-relaxed">
-            Подайте тезисы и материалы доклада до 5 ноября 2026 года для прохождения экспертной оценки жюри и включения в сборник трудов конференции.
+            Подайте тезисы и материалы доклада до 10 ноября 2026 года для прохождения экспертной оценки жюри и включения в сборник трудов конференции.
           </p>
         </div>
 
