@@ -292,14 +292,14 @@ func (db *DB) DeleteConference(ctx context.Context, id int64) error {
 
 func (db *DB) CreateSection(ctx context.Context, s *models.Section) error {
 	return db.Pool.QueryRow(ctx,
-		`INSERT INTO sections (conference_id, title, sort_order) VALUES ($1, $2, $3) RETURNING id`,
-		s.ConferenceID, s.Title, s.SortOrder,
+		`INSERT INTO sections (conference_id, title, sort_order, supervisor) VALUES ($1, $2, $3, $4) RETURNING id`,
+		s.ConferenceID, s.Title, s.SortOrder, s.Supervisor,
 	).Scan(&s.ID)
 }
 
 func (db *DB) ListSections(ctx context.Context, conferenceID int64) ([]models.Section, error) {
 	rows, err := db.Pool.Query(ctx,
-		`SELECT id, conference_id, title, sort_order FROM sections WHERE conference_id = $1 ORDER BY sort_order, id`,
+		`SELECT id, conference_id, title, sort_order, supervisor FROM sections WHERE conference_id = $1 ORDER BY sort_order, id`,
 		conferenceID)
 	if err != nil {
 		return nil, err
@@ -308,7 +308,7 @@ func (db *DB) ListSections(ctx context.Context, conferenceID int64) ([]models.Se
 	var list []models.Section
 	for rows.Next() {
 		var s models.Section
-		if err := rows.Scan(&s.ID, &s.ConferenceID, &s.Title, &s.SortOrder); err != nil {
+		if err := rows.Scan(&s.ID, &s.ConferenceID, &s.Title, &s.SortOrder, &s.Supervisor); err != nil {
 			return nil, err
 		}
 		list = append(list, s)
@@ -319,8 +319,8 @@ func (db *DB) ListSections(ctx context.Context, conferenceID int64) ([]models.Se
 func (db *DB) GetSection(ctx context.Context, id int64) (*models.Section, error) {
 	s := &models.Section{}
 	err := db.Pool.QueryRow(ctx,
-		`SELECT id, conference_id, title, sort_order FROM sections WHERE id = $1`, id,
-	).Scan(&s.ID, &s.ConferenceID, &s.Title, &s.SortOrder)
+		`SELECT id, conference_id, title, sort_order, supervisor FROM sections WHERE id = $1`, id,
+	).Scan(&s.ID, &s.ConferenceID, &s.Title, &s.SortOrder, &s.Supervisor)
 	if err == pgx.ErrNoRows {
 		return nil, nil
 	}
@@ -329,7 +329,7 @@ func (db *DB) GetSection(ctx context.Context, id int64) (*models.Section, error)
 
 func (db *DB) UpdateSection(ctx context.Context, s *models.Section) error {
 	_, err := db.Pool.Exec(ctx,
-		`UPDATE sections SET title=$2, sort_order=$3 WHERE id=$1`, s.ID, s.Title, s.SortOrder)
+		`UPDATE sections SET title=$2, sort_order=$3, supervisor=$4 WHERE id=$1`, s.ID, s.Title, s.SortOrder, s.Supervisor)
 	return err
 }
 

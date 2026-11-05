@@ -164,10 +164,15 @@ components:
         sortOrder:
           type: integer
           example: 1
+        supervisor:
+          type: string
+          nullable: true
+          example: "Жамалова Венера Жумашбековна"
       example:
         conferenceId: 1
         title: "Информационные технологии и искусственный интеллект"
         sortOrder: 1
+        supervisor: "Жамалова Венера Жумашбековна"
 
     Room:
       type: object

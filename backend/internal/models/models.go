@@ -63,10 +63,11 @@ type Conference struct {
 // ── Section ──────────────────────────────────
 
 type Section struct {
-	ID           int64  `json:"id"`
-	ConferenceID int64  `json:"conferenceId"`
-	Title        string `json:"title"`
-	SortOrder    int    `json:"sortOrder"`
+	ID           int64   `json:"id"`
+	ConferenceID int64   `json:"conferenceId"`
+	Title        string  `json:"title"`
+	SortOrder    int     `json:"sortOrder"`
+	Supervisor   *string `json:"supervisor,omitempty"`
 }
 
 // ── Room ─────────────────────────────────────

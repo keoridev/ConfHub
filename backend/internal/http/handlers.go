@@ -1163,6 +1163,12 @@ func (h *Handler) AdminCreateSection(c *gin.Context) {
 		mw.WriteError(c, http.StatusBadRequest, "INVALID_JSON", "неверный формат")
 		return
 	}
+	if s.ConferenceID == 0 {
+		conf, _ := h.db.GetCurrentConference(c.Request.Context())
+		if conf != nil {
+			s.ConferenceID = conf.ID
+		}
+	}
 	if err := h.db.CreateSection(c.Request.Context(), &s); err != nil {
 		mw.WriteError(c, http.StatusInternalServerError, "INTERNAL", "ошибка создания")
 		return
@@ -1185,6 +1191,9 @@ func (h *Handler) AdminUpdateSection(c *gin.Context) {
 	if err := h.db.UpdateSection(c.Request.Context(), &s); err != nil {
 		mw.WriteError(c, http.StatusInternalServerError, "INTERNAL", "ошибка обновления")
 		return
+	}
+	if updated, err := h.db.GetSection(c.Request.Context(), id); err == nil && updated != nil {
+		s = *updated
 	}
 	mw.WriteJSON(c, http.StatusOK, s)
 }

@@ -37,7 +37,8 @@ CREATE TABLE sections (
     id            BIGSERIAL PRIMARY KEY,
     conference_id BIGINT NOT NULL REFERENCES conferences(id),
     title         TEXT NOT NULL,
-    sort_order    INT DEFAULT 0
+    sort_order    INT DEFAULT 0,
+    supervisor    TEXT
 );
 
 -- ── Rooms ────────────────────────────────────
