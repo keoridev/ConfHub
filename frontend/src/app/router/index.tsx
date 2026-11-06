@@ -5,6 +5,7 @@ import {
 
 import { AppLayout } from "~app/layout";
 import { loginPageRoute } from "~pages/login-page";
+import { changePasswordPageRoute } from "~pages/change-password-page";
 import { ConferencePage } from "~pages/conference-page";
 import { ProgramPage } from "~pages/program-page";
 import { SubmissionPage } from "~pages/submission-page";
@@ -18,6 +19,10 @@ const router = createBrowserRouter([
   {
     path: pathKeys.login,
     ...loginPageRoute,
+  },
+  {
+    path: pathKeys.changePassword,
+    ...changePasswordPageRoute,
   },
   {
     path: pathKeys.root,

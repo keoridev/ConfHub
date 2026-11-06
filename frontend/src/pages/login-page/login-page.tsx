@@ -55,7 +55,9 @@ export function LoginPage() {
   // If already logged in, redirect to the appropriate page
   useEffect(() => {
     if (currentUser) {
-      if (redirectUrl) {
+      if (currentUser.mustChangePassword) {
+        navigate(pathKeys.changePassword, { replace: true });
+      } else if (redirectUrl) {
         navigate(redirectUrl, { replace: true });
       } else if (currentUser.role === "admin") {
         navigate(pathKeys.admin, { replace: true });

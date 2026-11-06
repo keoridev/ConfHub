@@ -20,6 +20,11 @@ export function RoleGuard({ children, allowedRoles }: RoleGuardProps) {
     );
   }
 
+  // 0. A temporary password must be replaced before anything else works
+  if (user?.mustChangePassword) {
+    return <Navigate to={pathKeys.changePassword} replace />;
+  }
+
   // 1. Admin can do ABSOLUTELY EVERYTHING
   if (user?.role === "admin") {
     return <>{children}</>;

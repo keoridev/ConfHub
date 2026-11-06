@@ -59,6 +59,24 @@ export function useRegisterMutation() {
   });
 }
 
+export function useChangePasswordMutation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: { oldPassword: string; newPassword: string; consent: boolean }) =>
+      apiClient
+        .post<{ user: User; token?: string }>("/auth/change-password", data)
+        .then((res) => res.data),
+    onSuccess: (data) => {
+      // The old token is revoked after a password change; switch to the new one.
+      if (data.token) {
+        apiClient.setToken(data.token);
+      }
+      qc.setQueryData(queryKeys.auth.user, data.user);
+      localStorage.setItem("user", JSON.stringify(data.user));
+    },
+  });
+}
+
 export function useCurrentUserQuery() {
   return useQuery({
     queryKey: queryKeys.auth.user,

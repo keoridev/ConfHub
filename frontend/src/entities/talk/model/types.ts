@@ -7,6 +7,7 @@ export interface User {
   email?: string;
   role: 'student' | 'jury' | 'admin';
   mustChangePassword: boolean;
+  consentRequired?: boolean;
 }
 
 export interface SectionRoomInfo {
