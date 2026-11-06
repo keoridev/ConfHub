@@ -17,7 +17,6 @@ RUN adduser -D -u 1000 appuser
 
 COPY --from=builder /build/app /usr/local/bin/app
 COPY --from=builder /build/migrations /migrations
-COPY openapi.yaml /openapi.yaml
 COPY entrypoint.sh /entrypoint.sh
 
 RUN chmod +x /entrypoint.sh && \

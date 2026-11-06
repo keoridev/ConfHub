@@ -1,6 +1,6 @@
 {$SITE_ADDRESS} {
 	encode zstd gzip
-	@api path /api /api/* /docs /openapi.yaml
+	@api path /api /api/*
 	handle @api {
 		reverse_proxy app:8080
 	}

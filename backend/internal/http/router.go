@@ -2,7 +2,6 @@ package handler
 
 import (
 	"net/http"
-	"os"
 
 	"github.com/gin-gonic/gin"
 
@@ -20,19 +19,6 @@ func NewRouter(h *Handler, jwtSecret string, db *repo.DB, corsOrigins []string) 
 	r.Use(middleware.RequestLogger(h.logger))
 	r.Use(middleware.CORS(corsOrigins))
 	r.Use(middleware.MaxBodySize(11 * 1024 * 1024)) // 11 MB (10 for upload + overhead)
-
-	// ── Swagger UI & OpenAPI ─────────────────
-	r.GET("/openapi.yaml", func(c *gin.Context) {
-		if _, err := os.Stat("openapi.yaml"); err == nil {
-			c.File("openapi.yaml")
-			return
-		}
-		c.File("/openapi.yaml")
-	})
-	r.GET("/docs", func(c *gin.Context) {
-		c.Header("Content-Type", "text/html; charset=utf-8")
-		c.String(http.StatusOK, swaggerUIHTML)
-	})
 
 	// ── Public routes (no auth) ──────────────
 	r.GET("/api/health", h.Health)
@@ -133,36 +119,4 @@ func NewRouter(h *Handler, jwtSecret string, db *repo.DB, corsOrigins []string) 
 
 	return r
 }
-
-const swaggerUIHTML = `<!DOCTYPE html>
-<html lang="ru">
-<head>
-  <meta charset="UTF-8">
-  <title>ConfApp API Documentation</title>
-  <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5/swagger-ui.css">
-  <style>
-    html { box-sizing: border-box; overflow: -moz-scrollbars-vertical; overflow-y: scroll; }
-    *, *:before, *:after { box-sizing: inherit; }
-    body { margin: 0; background: #fafafa; }
-  </style>
-</head>
-<body>
-  <div id="swagger-ui"></div>
-  <script src="https://unpkg.com/swagger-ui-dist@5/swagger-ui-bundle.js"></script>
-  <script>
-    window.onload = () => {
-      window.ui = SwaggerUIBundle({
-        url: '/openapi.yaml',
-        dom_id: '#swagger-ui',
-        deepLinking: true,
-        presets: [
-          SwaggerUIBundle.presets.apis,
-          SwaggerUIBundle.SwaggerUIStandalonePreset
-        ],
-        layout: "BaseLayout"
-      });
-    };
-  </script>
-</body>
-</html>`
 

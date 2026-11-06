@@ -17,7 +17,6 @@ RUN apk add --no-cache ca-certificates tzdata \
 WORKDIR /app
 COPY --from=builder /out/app /usr/local/bin/app
 COPY --from=builder /build/migrations /app/migrations
-COPY --from=builder /build/openapi.yaml /app/openapi.yaml
 USER appuser
 EXPOSE 8080
 ENTRYPOINT ["app"]

@@ -28,6 +28,11 @@ func main() {
 	seedFlag := flag.Bool("seed", false, "Seed the database with test data")
 	migrateFlag := flag.Bool("migrate", false, "Run database migrations")
 	prodFlag := flag.Bool("prod", false, "Production mode (seed creates only admin)")
+	createUserFlag := flag.Bool("create-user", false, "Create a user and print a temporary password")
+	roleFlag := flag.String("role", "jury", "Role for -create-user: student, jury or admin")
+	nameFlag := flag.String("name", "", "Full name for -create-user")
+	loginFlag := flag.String("login", "", "Login for -create-user (generated from -name if empty)")
+	groupFlag := flag.String("group", "", "Group for -create-user")
 	flag.Parse()
 
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}))
@@ -67,6 +72,24 @@ func main() {
 			os.Exit(1)
 		}
 		logger.Info("seed complete")
+		return
+	}
+
+	if *createUserFlag {
+		req := service.CreateUserRequest{FullName: strings.TrimSpace(*nameFlag), Role: *roleFlag}
+		if *loginFlag != "" {
+			req.Login = loginFlag
+		}
+		if *groupFlag != "" {
+			req.GroupName = groupFlag
+		}
+		res, err := service.NewService(db, nil, cfg).CreateUser(ctx, req)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "Ошибка:", err)
+			os.Exit(1)
+		}
+		fmt.Printf("Пользователь создан\nФИО: %s\nРоль: %s\nЛогин: %s\nВременный пароль: %s\n",
+			res.User.FullName, res.User.Role, res.User.Login, res.TempPassword)
 		return
 	}
 
