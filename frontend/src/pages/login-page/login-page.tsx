@@ -278,7 +278,7 @@ export function LoginPage() {
                         type="text"
                         value={regUniversity}
                         onChange={(e) => setRegUniversity(e.target.value)}
-                        placeholder="Например: МУИТ или КГТУ"
+                        placeholder="Например: МУИТ"
                         className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-[#f5f3ed]/60 border border-[#1a4d3e]/20 text-sm text-[#1a4d3e] focus:outline-none focus:ring-2 focus:ring-[#1a4d3e] focus:bg-white transition-all font-medium"
                       />
                     </div>

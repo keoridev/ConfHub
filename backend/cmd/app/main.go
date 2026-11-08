@@ -477,12 +477,12 @@ func seed(ctx context.Context, db *repo.DB, cfg *config.Config, prodMode bool) e
 			coAuthors: []models.CoAuthor{
 				{
 					Name:       "Абдылдаев Т.М.",
-					University: strPtr("КГТУ им. И. Раззакова"),
+					University: strPtr("МУИТ"),
 					Group:      strPtr("ИС-21"),
-					Email:      strPtr("abdyldaev@kstu.kg"),
+					Email:      strPtr("abdyldaev@muit.kg"),
 				},
 			},
-			university: "КГТУ им. И. Раззакова", email: "student1@kstu.kg",
+			university: "МУИТ", email: "student1@muit.kg",
 			supervisor: "Мамбетов К.Б.",
 		},
 		{
@@ -494,11 +494,11 @@ func seed(ctx context.Context, db *repo.DB, cfg *config.Config, prodMode bool) e
 			coAuthors: []models.CoAuthor{
 				{
 					Name:       "Осмонов А.К.",
-					University: strPtr("КГТУ им. И. Раззакова"),
+					University: strPtr("МУИТ"),
 					Group:      strPtr("ИС-21"),
 				},
 			},
-			university: "КГТУ им. И. Раззакова", email: "student1@kstu.kg",
+			university: "МУИТ", email: "student1@muit.kg",
 			supervisor: "Токтосунов А.А.",
 		},
 		{
@@ -529,7 +529,7 @@ func seed(ctx context.Context, db *repo.DB, cfg *config.Config, prodMode bool) e
 			abstract:   "Работа посвящена анализу данных мониторинга качества воздуха в Бишкеке. Использованы данные с 12 станций за весь 2025 год. Выявлены сезонные закономерности: пики загрязнения приходятся на январь и февраль. Предложены рекомендации для городских властей.",
 			authorIdx:  0, sectionIdx: 2, status: "needs_revision",
 			tags: []string{"экология", "воздух"}, keywords: []string{"экология", "воздух", "бишкек"},
-			university: "КГТУ им. И. Раззакова", email: "student1@kstu.kg",
+			university: "МУИТ", email: "student1@muit.kg",
 			supervisor: "Бейшеева Г.М.",
 		},
 		{

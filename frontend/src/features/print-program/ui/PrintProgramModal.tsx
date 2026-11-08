@@ -390,7 +390,7 @@ export function PrintProgramModal({
               Министерство науки, высшего образования и инноваций КР
             </p>
             <p style="font-size: 12px; font-weight: 900; color: #111; margin: 0;">
-              Международный университет инновационных технологий (МУИТ) · КГТУ
+              Международный университет инновационных технологий (МУИТ)
             </p>
           </div>
 
@@ -414,7 +414,7 @@ export function PrintProgramModal({
               10 – 18 ноября 2026 года
             </p>
             <p style="font-size: 10px; color: #555; margin: 0;">
-              г. Бишкек, Кыргызская Республика
+              МУИТ, г. Бишкек · Очно и онлайн
             </p>
           </div>
         </div>
@@ -527,17 +527,17 @@ export function PrintProgramModal({
 
         <div class="header-box">
           <p class="header-inst">
-            Кыргызский Государственный Технический Университет им. И. Раззакова · МУИТ
+            Министерство науки, высшего образования и инноваций КР &nbsp;•&nbsp; МУИТ
           </p>
           <h1 class="header-title">
             XVIII МЕЖДУНАРОДНАЯ НАУЧНО-ПРАКТИЧЕСКАЯ КОНФЕРЕНЦИЯ-КОНКУРС
           </h1>
           <p class="header-sub">
-            «Инновационные технологии и устойчивое развитие в XXI веке»
+            «ИННОВАЦИОННЫЕ ТЕХНОЛОГИИ И ПЕРЕДОВЫЕ РЕШЕНИЯ»
           </p>
           <div class="header-meta">
-            <strong>Дата:</strong> 10 ноября 2026 г. &nbsp;•&nbsp;
-            <strong>Место:</strong> Главный корпус КГТУ / МУИТ, г. Бишкек
+            <strong>Дата:</strong> 10 – 18 ноября 2026 г. &nbsp;•&nbsp;
+            <strong>Место:</strong> МУИТ, г. Бишкек (очно и онлайн)
             ${showTime ? "&nbsp;•&nbsp; <strong>Регламент:</strong> Ключевой доклад — 15 мин, секционный — 10 мин" : ""}
           </div>
           ${
@@ -566,7 +566,7 @@ export function PrintProgramModal({
         </table>
 
         <div class="footer-note">
-          Оргкомитет конференции: тел. +996 (312) 54-51-62, email: conf@kstu.kg · ConfHub 2026 · Формат: ${paperFormat} (${orientation === "landscape" ? "Альбомный" : "Книжный"}) · Дата формирования: ${new Date().toLocaleDateString("ru-RU")}
+          Оргкомитет: Международный университет инновационных технологий (МУИТ) · email: conf@intuit.kg · ConfHub 2026 · Формат: ${paperFormat} (${orientation === "landscape" ? "Альбомный" : "Книжный"}) · Дата формирования: ${new Date().toLocaleDateString("ru-RU")}
         </div>
 
         <script>
@@ -1050,7 +1050,7 @@ export function PrintProgramModal({
                     Министерство науки, высшего образования и инноваций КР
                   </p>
                   <p className="font-bold text-xs sm:text-sm text-neutral-800">
-                    Международный университет инновационных технологий (МУИТ) · КГТУ
+                    Международный университет инновационных технологий (МУИТ)
                   </p>
                 </div>
 
@@ -1073,7 +1073,7 @@ export function PrintProgramModal({
 
                 <div className="space-y-1 text-xs text-neutral-600">
                   <p className="font-bold text-black">10 – 18 ноября 2026 года</p>
-                  <p>МУИТ · Главный корпус КГТУ · г. Бишкек</p>
+                  <p>МУИТ, г. Бишкек · Очно и онлайн</p>
                   <p className="text-[10px] text-neutral-400 italic pt-2">
                     [Титульная страница брошюры • При печати начнётся со следующего листа]
                   </p>
@@ -1092,7 +1092,7 @@ export function PrintProgramModal({
                   density === "tiny" ? "text-[9px]" : density === "compact" ? "text-[10px]" : "text-xs"
                 } ${colorMode === "mono" ? "text-black" : "text-[#1a4d3e]"}`}
               >
-                Кыргызский Государственный Технический Университет им. И. Раззакова · МУИТ
+                Министерство науки, высшего образования и инноваций КР • МУИТ
               </p>
               <h1
                 className={`font-black text-black leading-snug ${
@@ -1106,7 +1106,7 @@ export function PrintProgramModal({
                   density === "tiny" ? "text-[10px]" : density === "compact" ? "text-xs" : "text-xs sm:text-sm"
                 } ${colorMode === "mono" ? "text-neutral-800" : "text-[#8a6d1c]"}`}
               >
-                «Инновационные технологии и устойчивое развитие в XXI веке»
+                «ИННОВАЦИОННЫЕ ТЕХНОЛОГИИ И ПЕРЕДОВЫЕ РЕШЕНИЯ»
               </p>
 
               <div
@@ -1116,12 +1116,12 @@ export function PrintProgramModal({
               >
                 <span className="inline-flex items-center gap-1">
                   <Calendar className="size-3 text-black shrink-0" />
-                  <span>Дата: <strong>10 ноября 2026 г.</strong></span>
+                  <span>Дата: <strong>10 – 18 ноября 2026 г.</strong></span>
                 </span>
                 <span>•</span>
                 <span className="inline-flex items-center gap-1">
                   <MapPin className="size-3 text-black shrink-0" />
-                  <span>Место: Главный корпус КГТУ / МУИТ, г. Бишкек</span>
+                  <span>Место: МУИТ, г. Бишкек (очно и онлайн)</span>
                 </span>
                 {showTime && (
                   <>
@@ -1449,7 +1449,7 @@ export function PrintProgramModal({
               }`}
             >
               <p>
-                Оргкомитет конференции: тел. +996 (312) 54-51-62, email: conf@kstu.kg
+                Оргкомитет: Международный университет инновационных технологий (МУИТ) · email: conf@intuit.kg
               </p>
               <p className="italic text-[9.5px] text-neutral-500">
                 Формат: {paperFormat} ({orientation === "landscape" ? "Альбомный" : "Книжный"}) · ConfHub 2026 · Дата печати: {new Date().toLocaleDateString("ru-RU")}

@@ -343,7 +343,7 @@ export function SubmissionForm({
                 </div>
                 <input
                   {...register("university")}
-                  placeholder="Например: КГТУ им. И. Раззакова или МУИТ"
+                  placeholder="Например: МУИТ"
                   className="w-full pl-10 pr-10 py-3 rounded-2xl bg-[#f5f3ed]/60 border-2 border-[#1a4d3e]/15 hover:border-[#1a4d3e]/30 text-sm text-[#1a4d3e] placeholder:text-[#1a4d3e]/40 focus:outline-none focus:border-[#1a4d3e] focus:ring-4 focus:ring-[#1a4d3e]/10 focus:bg-white transition-all font-medium"
                 />
                 {universityValue && (
