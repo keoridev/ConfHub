@@ -28,6 +28,7 @@ interface PrintProgramModalProps {
 export type PaperFormat = "A4" | "A5" | "Letter" | "A3";
 export type BorderStyle = "full" | "minimal" | "none";
 export type PrintDensity = "normal" | "compact" | "tiny";
+export type LayoutMode = "text" | "table";
 
 export function PrintProgramModal({
   isOpen,
@@ -36,16 +37,17 @@ export function PrintProgramModal({
   sections,
 }: PrintProgramModalProps) {
   // ── Paper & Print Setup ─────────────────────
-  const [paperFormat, setPaperFormat] = useState<PaperFormat>("A4");
+  const [layoutMode, setLayoutMode] = useState<LayoutMode>("text");
+  const [paperFormat, setPaperFormat] = useState<PaperFormat>("A5");
   const [orientation, setOrientation] = useState<"portrait" | "landscape">("portrait");
-  const [density, setDensity] = useState<PrintDensity>("normal");
+  const [density, setDensity] = useState<PrintDensity>("compact");
   const [colorMode, setColorMode] = useState<"mono" | "color">("mono");
-  const [borderStyle, setBorderStyle] = useState<BorderStyle>("full");
+  const [borderStyle, setBorderStyle] = useState<BorderStyle>("none");
 
   // ── Booklet / Layout Enhancements ───────────
-  const [isBookletMode, setIsBookletMode] = useState<boolean>(false);
-  const [showCoverPage, setShowCoverPage] = useState<boolean>(false);
-  const [sectionPageBreaks, setSectionPageBreaks] = useState<boolean>(false);
+  const [isBookletMode, setIsBookletMode] = useState<boolean>(true);
+  const [showCoverPage, setShowCoverPage] = useState<boolean>(true);
+  const [sectionPageBreaks, setSectionPageBreaks] = useState<boolean>(true);
 
   // ── Content Visibility Toggles ──────────────
   const [selectedSectionId, setSelectedSectionId] = useState<string>("all");
@@ -59,12 +61,13 @@ export function PrintProgramModal({
   const [showStats, setShowStats] = useState<boolean>(true);
 
   // ── Preset Helpers ──────────────────────────
-  const applyBookletPreset = () => {
+  const applyContinuousTextBookletPreset = () => {
+    setLayoutMode("text");
     setIsBookletMode(true);
     setPaperFormat("A5");
     setOrientation("portrait");
     setDensity("compact");
-    setBorderStyle("minimal");
+    setBorderStyle("none");
     setShowCoverPage(true);
     setSectionPageBreaks(true);
     setShowTime(true);
@@ -74,7 +77,24 @@ export function PrintProgramModal({
     setShowKeynoteBadge(true);
   };
 
+  const applyContinuousTextA4Preset = () => {
+    setLayoutMode("text");
+    setIsBookletMode(false);
+    setPaperFormat("A4");
+    setOrientation("portrait");
+    setDensity("normal");
+    setBorderStyle("none");
+    setShowCoverPage(false);
+    setSectionPageBreaks(false);
+    setShowTime(true);
+    setShowSupervisor(true);
+    setShowRoom(true);
+    setShowSectionSupervisor(true);
+    setShowKeynoteBadge(true);
+  };
+
   const applyA4StandardPreset = () => {
+    setLayoutMode("table");
     setIsBookletMode(false);
     setPaperFormat("A4");
     setOrientation("portrait");
@@ -382,6 +402,107 @@ export function PrintProgramModal({
       })
       .join("");
 
+    const textFlowHtml = sectionGroups
+      .map((group, groupIdx) => {
+        const sec = group.section;
+        const talksList = group.talks;
+        const roomName =
+          talksList.find((t) => t.room?.name)?.room?.name || "Аудитория уточняется";
+
+        const pageBreakBefore =
+          sectionPageBreaks && (groupIdx > 0 || showCoverPage)
+            ? "page-break-before: always; break-before: page;"
+            : "";
+
+        const secHeaderHtml = `
+          <div style="${pageBreakBefore} margin-top: ${groupIdx === 0 ? "0" : "24px"}; margin-bottom: 14px; border-bottom: 2px solid #000; padding-bottom: 5px; page-break-inside: avoid; break-inside: avoid; page-break-after: avoid; break-after: avoid;">
+            <div style="font-size: ${smallFont}; font-weight: 800; text-transform: uppercase; letter-spacing: 0.8px; color: ${isMono ? "#000" : "#1a4d3e"};">
+              СЕКЦИЯ №${sec.id}
+            </div>
+            <div style="font-size: ${titleFont}; font-weight: 900; color: #000; line-height: 1.25; margin-top: 2px;">
+              ${sec.title}
+            </div>
+            <div style="font-size: ${smallFont}; color: #333; margin-top: 4px; display: flex; flex-wrap: wrap; gap: 8px;">
+              ${showRoom ? `<span>Аудитория: <strong>${roomName}</strong></span>` : ""}
+              ${showSectionSupervisor && sec.supervisor ? `<span>• Руководитель секции: <strong>${sec.supervisor}</strong></span>` : ""}
+              <span>• Докладов: <strong>${talksList.length}</strong></span>
+            </div>
+          </div>
+        `;
+
+        if (talksList.length === 0) {
+          return (
+            secHeaderHtml +
+            `<p style="color: #666; font-style: italic; font-size: ${smallFont}; margin: 6px 0 16px 0;">
+              В данной секции пока нет запланированных докладов.
+            </p>`
+          );
+        }
+
+        const talksTextHtml = talksList
+          .map((talk, idx) => {
+            const durationMin =
+              talk.startTime && talk.endTime
+                ? Math.round(
+                    (new Date(talk.endTime).getTime() - new Date(talk.startTime).getTime()) /
+                      60000
+                  )
+                : talk.isKeynote
+                ? 15
+                : 10;
+
+            const timeStr =
+              talk.startTime && talk.endTime
+                ? `${fmt(talk.startTime)} – ${fmt(talk.endTime)}`
+                : "По графику";
+
+            const keynoteBadge =
+              showKeynoteBadge && talk.isKeynote
+                ? `<span style="font-size: ${smallFont}; font-weight: 800; background: ${isMono ? "#eee" : "#fef3c7"}; color: ${isMono ? "#000" : "#92400e"}; padding: 1px 5px; border-radius: 2px; text-transform: uppercase; margin-left: 4px;">★ Ключевой доклад</span>`
+                : "";
+
+            const coAuthorsHtml =
+              showCoAuthors && talk.coAuthors && talk.coAuthors.length > 0
+                ? `<div style="font-size: ${smallFont}; color: #555; margin-top: 1px;">
+                    Соавторы: <i>${talk.coAuthors.join(", ")}</i>
+                  </div>`
+                : "";
+
+            const abstractBlock =
+              includeAbstracts && talk.abstract
+                ? `<div style="font-size: ${smallFont}; color: #333; margin-top: 3px; text-align: justify; text-indent: 1.2em; line-height: 1.35;">
+                    ${talk.abstract}
+                  </div>`
+                : "";
+
+            return `
+              <div class="talk-entry" style="margin-bottom: 12px; page-break-inside: avoid; break-inside: avoid; line-height: 1.35; ${borderStyle === "minimal" ? "border-bottom: 1px dashed #ccc; padding-bottom: 8px;" : ""}">
+                <div style="font-size: ${baseFont}; font-weight: 800; color: #000;">
+                  ${idx + 1}. ${talk.title} ${keynoteBadge}
+                </div>
+                <div style="font-size: ${smallFont}; color: #222; margin-top: 2px;">
+                  ${showTime ? `<span style="font-family: monospace; font-weight: bold; margin-right: 6px;">[${timeStr}, ${durationMin} мин]</span>` : ""}
+                  Докладчик: <strong>${talk.speakerName}</strong>
+                  ${talk.gradeOrGroup ? ` (гр. ${talk.gradeOrGroup})` : ""}
+                  ${talk.university ? ` · ${talk.university}` : ""}
+                </div>
+                ${coAuthorsHtml}
+                ${showSupervisor && talk.supervisor ? `<div style="font-size: ${smallFont}; color: #333; margin-top: 1px;">Научный руководитель: <strong>${talk.supervisor}</strong></div>` : ""}
+                ${abstractBlock}
+              </div>
+            `;
+          })
+          .join("");
+
+        return `
+          <div class="section-text-block" style="margin-bottom: 20px; page-break-inside: avoid; break-inside: avoid;">
+            ${secHeaderHtml}
+            ${talksTextHtml}
+          </div>
+        `;
+      })
+      .join("");
+
     const coverPageHtml = showCoverPage
       ? `
         <div class="cover-page" style="page-break-after: always; break-after: page; min-height: 85vh; display: flex; flex-direction: column; justify-content: space-between; text-align: center; padding: 30px 15px; border: ${borderStyle !== "none" ? "2px double #1a4d3e" : "none"}; margin-bottom: 20px;">
@@ -551,19 +672,23 @@ export function PrintProgramModal({
           }
         </div>
 
-        <table class="program-table">
-          <thead>
-            <tr>
-              <th class="center" style="width: 32px;">№</th>
-              ${showTime ? `<th class="center" style="width: 95px;">Время</th>` : ""}
-              <th>Тема доклада и автор(ы)</th>
-              ${showSupervisor ? `<th style="width: 135px;">Науч. руководитель</th>` : ""}
-            </tr>
-          </thead>
-          <tbody>
-            ${tableRowsHtml}
-          </tbody>
-        </table>
+        ${
+          layoutMode === "text"
+            ? `<div class="program-text-flow" style="margin-top: 15px;">${textFlowHtml}</div>`
+            : `<table class="program-table">
+                <thead>
+                  <tr>
+                    <th class="center" style="width: 32px;">№</th>
+                    ${showTime ? `<th class="center" style="width: 95px;">Время</th>` : ""}
+                    <th>Тема доклада и автор(ы)</th>
+                    ${showSupervisor ? `<th style="width: 135px;">Науч. руководитель</th>` : ""}
+                  </tr>
+                </thead>
+                <tbody>
+                  ${tableRowsHtml}
+                </tbody>
+              </table>`
+        }
 
         <div class="footer-note">
           Оргкомитет: Международный университет инновационных технологий (МУИТ) · email: conf@intuit.kg · ConfHub 2026 · Формат: ${paperFormat} (${orientation === "landscape" ? "Альбомный" : "Книжный"}) · Дата формирования: ${new Date().toLocaleDateString("ru-RU")}
@@ -665,34 +790,46 @@ export function PrintProgramModal({
 
           {/* Quick Presets Bar */}
           <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-[#1a4d3e]/10">
-            <div className="flex items-center gap-2 text-xs">
+            <div className="flex flex-wrap items-center gap-2 text-xs">
               <span className="font-bold text-slate-700 flex items-center gap-1">
                 <BookOpen className="size-3.5 text-[#d4a84b]" />
-                <span>Шаблоны:</span>
+                <span>Шаблоны в 1 клик:</span>
               </span>
               <button
                 type="button"
-                onClick={applyBookletPreset}
+                onClick={applyContinuousTextBookletPreset}
                 className={`px-2.5 py-1 rounded-lg text-xs font-bold border transition-all cursor-pointer flex items-center gap-1.5 ${
-                  isBookletMode
+                  layoutMode === "text" && isBookletMode && paperFormat === "A5"
                     ? "bg-[#1a4d3e] text-white border-[#1a4d3e] shadow-xs"
                     : "bg-white text-slate-700 border-slate-300 hover:bg-slate-50"
                 }`}
               >
                 <BookOpen className="size-3" />
-                <span>Книжка / Брошюра (А5)</span>
+                <span>Сплошной текст (Книжка А5)</span>
+              </button>
+              <button
+                type="button"
+                onClick={applyContinuousTextA4Preset}
+                className={`px-2.5 py-1 rounded-lg text-xs font-bold border transition-all cursor-pointer flex items-center gap-1.5 ${
+                  layoutMode === "text" && !isBookletMode && paperFormat === "A4"
+                    ? "bg-[#1a4d3e] text-white border-[#1a4d3e] shadow-xs"
+                    : "bg-white text-slate-700 border-slate-300 hover:bg-slate-50"
+                }`}
+              >
+                <Layout className="size-3" />
+                <span>Сплошной текст (А4)</span>
               </button>
               <button
                 type="button"
                 onClick={applyA4StandardPreset}
                 className={`px-2.5 py-1 rounded-lg text-xs font-bold border transition-all cursor-pointer flex items-center gap-1.5 ${
-                  !isBookletMode && paperFormat === "A4"
+                  layoutMode === "table"
                     ? "bg-[#1a4d3e] text-white border-[#1a4d3e] shadow-xs"
                     : "bg-white text-slate-700 border-slate-300 hover:bg-slate-50"
                 }`}
               >
                 <FileSpreadsheet className="size-3" />
-                <span>Официальный А4</span>
+                <span>Таблица (Официальный А4)</span>
               </button>
             </div>
 
@@ -776,12 +913,46 @@ export function PrintProgramModal({
               </select>
             </div>
 
-            {/* 2. Borders & Visual Style */}
+            {/* 2. Layout Mode & Borders */}
             <div className="flex flex-wrap items-center gap-1.5 p-2 bg-white rounded-xl border border-slate-200">
               <span className="font-bold text-slate-700 w-full text-[11px] uppercase tracking-wider flex items-center gap-1">
                 <SlidersHorizontal className="size-3 text-[#1a4d3e]" />
-                <span>Рамки и оформление:</span>
+                <span>Вид и оформление:</span>
               </span>
+
+              {/* Layout Mode Selector */}
+              <div className="inline-flex p-0.5 rounded-md border border-slate-300 bg-slate-50 text-[11px] w-full mb-0.5">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setLayoutMode("text");
+                    setBorderStyle("none");
+                  }}
+                  className={`flex-1 px-2 py-0.5 rounded font-bold cursor-pointer transition-colors text-center ${
+                    layoutMode === "text"
+                      ? "bg-[#1a4d3e] text-white shadow-xs"
+                      : "text-slate-600 hover:text-black"
+                  }`}
+                  title="Сплошной книжный текст без рамок"
+                >
+                  📖 Сплошной текст
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setLayoutMode("table");
+                    if (borderStyle === "none") setBorderStyle("full");
+                  }}
+                  className={`flex-1 px-2 py-0.5 rounded font-bold cursor-pointer transition-colors text-center ${
+                    layoutMode === "table"
+                      ? "bg-[#1a4d3e] text-white shadow-xs"
+                      : "text-slate-600 hover:text-black"
+                  }`}
+                  title="Таблица с колонками"
+                >
+                  📊 Таблица
+                </button>
+              </div>
 
               {/* Border Style Toggle */}
               <div className="inline-flex p-0.5 rounded-md border border-slate-300 bg-slate-50 text-[11px]">
@@ -817,7 +988,7 @@ export function PrintProgramModal({
                       ? "bg-[#1a4d3e] text-white"
                       : "text-slate-600 hover:text-black"
                   }`}
-                  title="Без рамок — чистый журнальный стиль"
+                  title="Без рамок — чистый книжный стиль"
                 >
                   Без рамок
                 </button>
@@ -1150,10 +1321,186 @@ export function PrintProgramModal({
               )}
             </div>
 
-            {/* Unified Program Table */}
+            {/* Unified Program: Continuous Text OR Table */}
             {sectionGroups.length === 0 ? (
               <div className="text-center py-12 text-muted-foreground text-sm">
                 Нет одобренных докладов для выбранного направления.
+              </div>
+            ) : layoutMode === "text" ? (
+              <div className="space-y-6 pt-2">
+                {sectionGroups.map((group, groupIdx) => {
+                  const sec = group.section;
+                  const talksList = group.talks;
+                  const roomName =
+                    talksList.find((t) => t.room?.name)?.room?.name || "Аудитория уточняется";
+
+                  return (
+                    <section
+                      key={sec.id}
+                      className={`space-y-3 ${
+                        sectionPageBreaks && (groupIdx > 0 || showCoverPage)
+                          ? "pt-6 border-t-2 border-black print:break-before-page"
+                          : ""
+                      }`}
+                    >
+                      {/* Section heading */}
+                      <div className="border-b-2 border-black pb-1.5">
+                        <span
+                          className={`font-black uppercase tracking-wider block ${
+                            colorMode === "mono" ? "text-black" : "text-[#1a4d3e]"
+                          } ${density === "tiny" ? "text-[9.5px]" : "text-[11px]"}`}
+                        >
+                          СЕКЦИЯ №{sec.id}
+                        </span>
+                        <h2
+                          className={`font-black text-black leading-snug mt-0.5 ${
+                            density === "tiny"
+                              ? "text-xs sm:text-sm"
+                              : density === "compact"
+                              ? "text-sm sm:text-base"
+                              : "text-base sm:text-lg"
+                          }`}
+                        >
+                          {sec.title}
+                        </h2>
+                        <div
+                          className={`flex flex-wrap items-center gap-2 text-neutral-600 font-semibold pt-1 ${
+                            density === "tiny" ? "text-[9px]" : "text-[11px]"
+                          }`}
+                        >
+                          {showRoom && (
+                            <span>
+                              Аудитория: <strong className="text-black">{roomName}</strong>
+                            </span>
+                          )}
+                          {showSectionSupervisor && sec.supervisor && (
+                            <>
+                              <span>•</span>
+                              <span>
+                                Руководитель секции:{" "}
+                                <strong className="text-black">{sec.supervisor}</strong>
+                              </span>
+                            </>
+                          )}
+                          <span>•</span>
+                          <span>
+                            Докладов: <strong className="text-black">{talksList.length}</strong>
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Continuous flowing talks */}
+                      {talksList.length === 0 ? (
+                        <p className="italic text-neutral-500 text-xs py-2">
+                          В данной секции пока нет запланированных докладов.
+                        </p>
+                      ) : (
+                        <div
+                          className={`space-y-3 ${
+                            density === "tiny"
+                              ? "space-y-2"
+                              : density === "compact"
+                              ? "space-y-2.5"
+                              : "space-y-3.5"
+                          }`}
+                        >
+                          {talksList.map((talk, idx) => {
+                            const durationMin =
+                              talk.startTime && talk.endTime
+                                ? Math.round(
+                                    (new Date(talk.endTime).getTime() -
+                                      new Date(talk.startTime).getTime()) /
+                                      60000
+                                  )
+                                : talk.isKeynote
+                                ? 15
+                                : 10;
+                            const timeStr =
+                              talk.startTime && talk.endTime
+                                ? `${fmt(talk.startTime)} – ${fmt(talk.endTime)}`
+                                : "По графику";
+
+                            return (
+                              <article
+                                key={talk.id || idx}
+                                className={`leading-relaxed break-inside-avoid print:break-inside-avoid ${
+                                  density === "tiny"
+                                    ? "text-[9.5px]"
+                                    : density === "compact"
+                                    ? "text-[10.5px]"
+                                    : "text-xs sm:text-[12.5px]"
+                                } ${
+                                  borderStyle === "minimal"
+                                    ? "pb-2 border-b border-dashed border-neutral-300"
+                                    : ""
+                                }`}
+                              >
+                                <div>
+                                  <span className="font-extrabold text-black mr-1">
+                                    {idx + 1}.
+                                  </span>
+                                  <strong className="text-black font-extrabold">
+                                    {talk.title}
+                                  </strong>
+                                  {showKeynoteBadge && talk.isKeynote && (
+                                    <span
+                                      className={`ml-2 inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider ${
+                                        colorMode === "mono"
+                                          ? "bg-neutral-200 text-black border border-black"
+                                          : "bg-amber-100 text-amber-900 border border-amber-300"
+                                      }`}
+                                    >
+                                      ★ Ключевой доклад
+                                    </span>
+                                  )}
+                                </div>
+
+                                <div className="text-neutral-700 mt-0.5 flex flex-wrap items-center gap-x-2">
+                                  {showTime && (
+                                    <span className="font-mono font-bold text-black">
+                                      [{timeStr}, {durationMin} мин]
+                                    </span>
+                                  )}
+                                  <span>
+                                    Докладчик:{" "}
+                                    <strong className="text-black">{talk.speakerName}</strong>
+                                    {talk.gradeOrGroup && (
+                                      <span> (гр. {talk.gradeOrGroup})</span>
+                                    )}
+                                    {talk.university && <span> · {talk.university}</span>}
+                                  </span>
+                                </div>
+
+                                {showCoAuthors &&
+                                  talk.coAuthors &&
+                                  talk.coAuthors.length > 0 && (
+                                    <div className="text-neutral-600 text-[10px]">
+                                      Соавторы:{" "}
+                                      <span className="italic">
+                                        {talk.coAuthors.join(", ")}
+                                      </span>
+                                    </div>
+                                  )}
+
+                                {showSupervisor && talk.supervisor && (
+                                  <div className="text-neutral-800 font-medium text-[10.5px]">
+                                    Науч. рук.: <strong>{talk.supervisor}</strong>
+                                  </div>
+                                )}
+
+                                {includeAbstracts && talk.abstract && (
+                                  <div className="text-neutral-700 mt-1 pl-3 border-l-2 border-neutral-300 italic text-[10.5px] leading-snug">
+                                    {talk.abstract}
+                                  </div>
+                                )}
+                              </article>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </section>
+                  );
+                })}
               </div>
             ) : (
               <table
