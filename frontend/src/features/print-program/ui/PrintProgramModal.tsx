@@ -8,6 +8,12 @@ import {
   Star,
   ExternalLink,
   SlidersHorizontal,
+  BookOpen,
+  UserCheck,
+  Eye,
+  Layout,
+  FileSpreadsheet,
+  Check,
 } from "lucide-react";
 import type { Section, Talk } from "~entities/talk/model/types";
 import { fmt } from "~pages/admin-page/lib/formatters";
@@ -19,19 +25,69 @@ interface PrintProgramModalProps {
   sections: Section[];
 }
 
+export type PaperFormat = "A4" | "A5" | "Letter" | "A3";
+export type BorderStyle = "full" | "minimal" | "none";
+export type PrintDensity = "normal" | "compact" | "tiny";
+
 export function PrintProgramModal({
   isOpen,
   onClose,
   talks,
   sections,
 }: PrintProgramModalProps) {
-  // Filters & Customization Settings for Ideal Print
-  const [selectedSectionId, setSelectedSectionId] = useState<string>("all");
-  const [density, setDensity] = useState<"compact" | "normal">("normal");
-  const [colorMode, setColorMode] = useState<"mono" | "color">("mono");
+  // ── Paper & Print Setup ─────────────────────
+  const [paperFormat, setPaperFormat] = useState<PaperFormat>("A4");
   const [orientation, setOrientation] = useState<"portrait" | "landscape">("portrait");
-  const [includeAbstracts, setIncludeAbstracts] = useState<boolean>(false);
+  const [density, setDensity] = useState<PrintDensity>("normal");
+  const [colorMode, setColorMode] = useState<"mono" | "color">("mono");
+  const [borderStyle, setBorderStyle] = useState<BorderStyle>("full");
+
+  // ── Booklet / Layout Enhancements ───────────
+  const [isBookletMode, setIsBookletMode] = useState<boolean>(false);
+  const [showCoverPage, setShowCoverPage] = useState<boolean>(false);
+  const [sectionPageBreaks, setSectionPageBreaks] = useState<boolean>(false);
+
+  // ── Content Visibility Toggles ──────────────
+  const [selectedSectionId, setSelectedSectionId] = useState<string>("all");
+  const [showTime, setShowTime] = useState<boolean>(true);
+  const [showSupervisor, setShowSupervisor] = useState<boolean>(true);
+  const [showRoom, setShowRoom] = useState<boolean>(true);
+  const [showSectionSupervisor, setShowSectionSupervisor] = useState<boolean>(true);
+  const [showKeynoteBadge, setShowKeynoteBadge] = useState<boolean>(true);
   const [showCoAuthors, setShowCoAuthors] = useState<boolean>(true);
+  const [includeAbstracts, setIncludeAbstracts] = useState<boolean>(false);
+  const [showStats, setShowStats] = useState<boolean>(true);
+
+  // ── Preset Helpers ──────────────────────────
+  const applyBookletPreset = () => {
+    setIsBookletMode(true);
+    setPaperFormat("A5");
+    setOrientation("portrait");
+    setDensity("compact");
+    setBorderStyle("minimal");
+    setShowCoverPage(true);
+    setSectionPageBreaks(true);
+    setShowTime(true);
+    setShowSupervisor(true);
+    setShowRoom(true);
+    setShowSectionSupervisor(true);
+    setShowKeynoteBadge(true);
+  };
+
+  const applyA4StandardPreset = () => {
+    setIsBookletMode(false);
+    setPaperFormat("A4");
+    setOrientation("portrait");
+    setDensity("normal");
+    setBorderStyle("full");
+    setShowCoverPage(false);
+    setSectionPageBreaks(false);
+    setShowTime(true);
+    setShowSupervisor(true);
+    setShowRoom(true);
+    setShowSectionSupervisor(true);
+    setShowKeynoteBadge(true);
+  };
 
   // Filter approved or scheduled talks
   const approvedTalks = useMemo(() => {
@@ -88,9 +144,17 @@ export function PrintProgramModal({
     );
   }, [sectionGroups]);
 
+  // Compute column count
+  const columnCount = useMemo(() => {
+    let count = 2; // № + Тема/автор
+    if (showTime) count++;
+    if (showSupervisor) count++;
+    return count;
+  }, [showTime, showSupervisor]);
+
   if (!isOpen) return null;
 
-  // Dedicated clean window printing (Bulletproof across all browsers & printers)
+  // ── Clean Window Printing ───────────────────
   const handleOpenCleanPrint = () => {
     const win = window.open("", "_blank");
     if (!win) {
@@ -98,43 +162,105 @@ export function PrintProgramModal({
       return;
     }
 
-    const isCompact = density === "compact";
     const isMono = colorMode === "mono";
     const isLandscape = orientation === "landscape";
 
+    // Dynamic sizing variables based on paperFormat & density
+    const isA5 = paperFormat === "A5";
+    const isA3 = paperFormat === "A3";
+
+    let baseFont = "11px";
+    let smallFont = "10px";
+    let titleFont = "15px";
+    let cellPad = "6px 8px";
+    let pageMargin = "10mm";
+
+    if (isA5) {
+      baseFont = density === "tiny" ? "8px" : density === "compact" ? "9px" : "9.5px";
+      smallFont = density === "tiny" ? "7.5px" : "8px";
+      titleFont = "13px";
+      cellPad = density === "tiny" ? "2.5px 4px" : "3.5px 5px";
+      pageMargin = "6mm";
+    } else if (isA3) {
+      baseFont = "13px";
+      smallFont = "11.5px";
+      titleFont = "20px";
+      cellPad = "9px 12px";
+      pageMargin = "12mm";
+    } else {
+      // A4 / Letter
+      if (density === "compact") {
+        baseFont = "10px";
+        smallFont = "9px";
+        titleFont = "14px";
+        cellPad = "4px 6px";
+        pageMargin = "7mm";
+      } else if (density === "tiny") {
+        baseFont = "9px";
+        smallFont = "8px";
+        titleFont = "13px";
+        cellPad = "3px 4px";
+        pageMargin = "5mm";
+      }
+    }
+
+    // Border CSS rules based on borderStyle
+    let tableBorderCss = "border: 1.5px solid #000;";
+    let thBorderCss = "border: 1px solid #000;";
+    let tdBorderCss = "border-right: 1px solid #ccc; border-bottom: 1px solid #bbb;";
+    let secBannerBorderCss = `border-top: 2px solid #000; border-bottom: 1.5px solid #333; border-left: 5px solid ${isMono ? "#000" : "#1a4d3e"};`;
+
+    if (borderStyle === "minimal") {
+      tableBorderCss = "border-top: 2px solid #000; border-bottom: 2px solid #000; border-left: none; border-right: none;";
+      thBorderCss = "border-bottom: 1.5px solid #000; border-top: none; border-left: none; border-right: none;";
+      tdBorderCss = "border-bottom: 1px solid #ddd; border-top: none; border-left: none; border-right: none;";
+      secBannerBorderCss = `border-top: 1.5px solid #000; border-bottom: 1px solid #999; border-left: 3px solid ${isMono ? "#000" : "#1a4d3e"};`;
+    } else if (borderStyle === "none") {
+      tableBorderCss = "border: none;";
+      thBorderCss = "border-bottom: 1.5px solid #333; border-top: none; border-left: none; border-right: none;";
+      tdBorderCss = "border: none; border-bottom: 1px solid #f0f0f0;";
+      secBannerBorderCss = "border-top: 1px solid #ccc; border-bottom: none; border-left: none;";
+    }
+
     const tableRowsHtml = sectionGroups
-      .map((group) => {
+      .map((group, groupIdx) => {
         const sec = group.section;
         const talksList = group.talks;
         const roomName =
           talksList.find((t) => t.room?.name)?.room?.name || "Аудитория уточняется";
 
         const secBannerBg = isMono ? "#f3f4f6" : "#f1f5f9";
-        const secBorderLeft = isMono ? "#000000" : "#1a4d3e";
-        const secTagColor = isMono ? "#000000" : "#1a4d3e";
+        const pageBreakBefore =
+          sectionPageBreaks && (groupIdx > 0 || showCoverPage)
+            ? "page-break-before: always; break-before: page;"
+            : "";
 
         const sectionBannerRow = `
-          <tr class="section-row" style="background: ${secBannerBg}; page-break-inside: avoid; break-inside: avoid; page-break-after: avoid; break-after: avoid;">
-            <td colspan="4" style="border-top: 2px solid #000; border-bottom: 1.5px solid #333; border-left: 5px solid ${secBorderLeft}; padding: ${isCompact ? "5px 8px" : "8px 10px"};">
+          <tr class="section-row" style="${pageBreakBefore} background: ${secBannerBg}; page-break-inside: avoid; break-inside: avoid; page-break-after: avoid; break-after: avoid;">
+            <td colspan="${columnCount}" style="${secBannerBorderCss} padding: ${cellPad};">
               <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px;">
                 <div>
-                  <div style="font-size: 9.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; color: ${secTagColor};">
+                  <div style="font-size: ${smallFont}; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; color: ${isMono ? "#000" : "#1a4d3e"};">
                     СЕКЦИЯ №${sec.id}
                   </div>
-                  <div style="font-size: ${isCompact ? "12px" : "13px"}; font-weight: 900; color: #000; line-height: 1.25; margin-top: 1px;">
+                  <div style="font-size: ${titleFont}; font-weight: 900; color: #000; line-height: 1.25; margin-top: 1px;">
                     ${sec.title}
                   </div>
                   ${
-                    sec.supervisor
-                      ? `<div style="font-size: ${isCompact ? "9.5px" : "10.5px"}; color: #333; margin-top: 2px;">
+                    showSectionSupervisor && sec.supervisor
+                      ? `<div style="font-size: ${smallFont}; color: #333; margin-top: 2px;">
                           Ответственный за секцию: <strong>${sec.supervisor}</strong>
                         </div>`
                       : ""
                   }
                 </div>
-                <div style="font-size: ${isCompact ? "10px" : "11px"}; font-weight: bold; background: #fff; border: 1px solid #999; padding: 2px 7px; border-radius: 3px; white-space: nowrap; text-align: right; shrink-0;">
-                  Зал: <strong>${roomName}</strong> · ${talksList.length} докл.
-                </div>
+                ${
+                  showRoom
+                    ? `<div style="font-size: ${smallFont}; font-weight: bold; background: #fff; border: 1px solid #999; padding: 2px 7px; border-radius: 3px; white-space: nowrap; text-align: right; shrink-0;">
+                        Зал: <strong>${roomName}</strong> · ${talksList.length} докл.
+                      </div>`
+                    : ""
+                }
               </div>
             </td>
           </tr>
@@ -144,7 +270,7 @@ export function PrintProgramModal({
           return (
             sectionBannerRow +
             `<tr>
-              <td colspan="4" style="padding: 10px; text-align: center; color: #666; font-size: 11px; border-bottom: 1px solid #ccc;">
+              <td colspan="${columnCount}" style="padding: 10px; text-align: center; color: #666; font-size: ${smallFont}; border-bottom: 1px solid #ccc;">
                 В данной секции пока нет запланированных докладов.
               </td>
             </tr>`
@@ -168,26 +294,27 @@ export function PrintProgramModal({
                 ? `${fmt(talk.startTime)} – ${fmt(talk.endTime)}`
                 : "По графику";
 
-            const keynoteBadge = talk.isKeynote
-              ? isMono
-                ? `<div style="display: inline-block; margin-bottom: 2px; background: #eee; color: #000; border: 1px solid #000; padding: 1px 5px; font-size: 9px; font-weight: 800; border-radius: 2px;">
-                    ★ КЛЮЧЕВОЙ ДОКЛАД СЕКЦИИ (15 МИН, 1-я очередь)
-                  </div>`
-                : `<div style="display: inline-block; margin-bottom: 2px; background: #fef3c7; color: #92400e; border: 1px solid #fde68a; padding: 1px 5px; font-size: 9px; font-weight: 800; border-radius: 2px;">
-                    ★ КЛЮЧЕВОЙ ДОКЛАД СЕКЦИИ (15 МИН, 1-я очередь)
-                  </div>`
-              : "";
+            const keynoteBadge =
+              showKeynoteBadge && talk.isKeynote
+                ? isMono
+                  ? `<div style="display: inline-block; margin-bottom: 2px; background: #eee; color: #000; border: 1px solid #000; padding: 1px 5px; font-size: ${smallFont}; font-weight: 800; border-radius: 2px;">
+                      ★ КЛЮЧЕВОЙ ДОКЛАД СЕКЦИИ (15 МИН, 1-я очередь)
+                    </div>`
+                  : `<div style="display: inline-block; margin-bottom: 2px; background: #fef3c7; color: #92400e; border: 1px solid #fde68a; padding: 1px 5px; font-size: ${smallFont}; font-weight: 800; border-radius: 2px;">
+                      ★ КЛЮЧЕВОЙ ДОКЛАД СЕКЦИИ (15 МИН, 1-я очередь)
+                    </div>`
+                : "";
 
             const coAuthorsHtml =
               showCoAuthors && talk.coAuthors && talk.coAuthors.length > 0
-                ? `<div style="font-size: ${isCompact ? "9.5px" : "10px"}; color: #444; margin-top: 1.5px;">
+                ? `<div style="font-size: ${smallFont}; color: #444; margin-top: 1.5px;">
                     Соавторы: <i>${talk.coAuthors.join(", ")}</i>
                   </div>`
                 : "";
 
             const abstractBlock =
               includeAbstracts && talk.abstract
-                ? `<div style="font-size: ${isCompact ? "9px" : "10px"}; color: #333; margin-top: 3px; padding-top: 3px; border-top: 1px dashed #ccc; line-height: 1.35;">
+                ? `<div style="font-size: ${smallFont}; color: #333; margin-top: 3px; padding-top: 3px; border-top: 1px dashed #ccc; line-height: 1.35;">
                     <strong>Тезисы:</strong> ${talk.abstract}
                   </div>`
                 : "";
@@ -198,23 +325,25 @@ export function PrintProgramModal({
                 : "background-color: #fffdf5;"
               : "";
 
-            const paddingStyle = isCompact ? "padding: 4px 6px;" : "padding: 6px 8px;";
-
             return `
               <tr style="${rowBg} page-break-inside: avoid; break-inside: avoid;">
-                <td style="border-right: 1px solid #ccc; border-bottom: 1px solid #bbb; ${paddingStyle} text-align: center; font-weight: bold; width: 34px; font-size: 11px;">
+                <td style="${tdBorderCss} padding: ${cellPad}; text-align: center; font-weight: bold; width: 32px; font-size: ${baseFont};">
                   ${talk.isKeynote ? "★ 1" : idx + 1}
                 </td>
-                <td style="border-right: 1px solid #ccc; border-bottom: 1px solid #bbb; ${paddingStyle} text-align: center; width: 105px; font-family: monospace; font-size: 11px;">
-                  <strong style="color: #000;">${timeStr}</strong><br/>
-                  <span style="font-size: 9.5px; color: #555;">${durationMin} мин</span>
-                </td>
-                <td style="border-right: 1px solid #ccc; border-bottom: 1px solid #bbb; ${paddingStyle}">
+                ${
+                  showTime
+                    ? `<td style="${tdBorderCss} padding: ${cellPad}; text-align: center; width: 95px; font-family: monospace; font-size: ${baseFont};">
+                        <strong style="color: #000;">${timeStr}</strong><br/>
+                        <span style="font-size: ${smallFont}; color: #555;">${durationMin} мин</span>
+                      </td>`
+                    : ""
+                }
+                <td style="${tdBorderCss} padding: ${cellPad};">
                   ${keynoteBadge}
-                  <div style="font-size: ${isCompact ? "11px" : "11.5px"}; font-weight: bold; color: #000; line-height: 1.25;">
+                  <div style="font-size: ${baseFont}; font-weight: bold; color: #000; line-height: 1.25;">
                     ${talk.title}
                   </div>
-                  <div style="font-size: ${isCompact ? "10px" : "10.5px"}; color: #222; margin-top: 2px;">
+                  <div style="font-size: ${smallFont}; color: #222; margin-top: 2px;">
                     Докладчик: <strong>${talk.speakerName}</strong>
                     ${talk.gradeOrGroup ? ` (гр. ${talk.gradeOrGroup})` : ""}
                     ${talk.university ? ` · ${talk.university}` : ""}
@@ -222,9 +351,13 @@ export function PrintProgramModal({
                   ${coAuthorsHtml}
                   ${abstractBlock}
                 </td>
-                <td style="border-bottom: 1px solid #bbb; ${paddingStyle} width: 145px; font-size: 10.5px; color: #000;">
-                  ${talk.supervisor ? `<strong>${talk.supervisor}</strong>` : `<span style="color: #888;">—</span>`}
-                </td>
+                ${
+                  showSupervisor
+                    ? `<td style="${tdBorderCss} padding: ${cellPad}; width: 135px; font-size: ${baseFont}; color: #000;">
+                        ${talk.supervisor ? `<strong>${talk.supervisor}</strong>` : `<span style="color: #888;">—</span>`}
+                      </td>`
+                    : ""
+                }
               </tr>
             `;
           })
@@ -234,16 +367,55 @@ export function PrintProgramModal({
       })
       .join("");
 
+    const coverPageHtml = showCoverPage
+      ? `
+        <div class="cover-page" style="page-break-after: always; break-after: page; min-height: 85vh; display: flex; flex-direction: column; justify-content: space-between; text-align: center; padding: 30px 15px; border: ${borderStyle !== "none" ? "2px double #1a4d3e" : "none"}; margin-bottom: 20px;">
+          <div>
+            <p style="font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; color: ${isMono ? "#000" : "#1a4d3e"}; margin: 0 0 4px 0;">
+              Министерство науки, высшего образования и инноваций КР
+            </p>
+            <p style="font-size: 12px; font-weight: 900; color: #111; margin: 0;">
+              Международный университет инновационных технологий (МУИТ) · КГТУ
+            </p>
+          </div>
+
+          <div style="margin: 40px 0;">
+            <div style="display: inline-block; padding: 4px 12px; border: 1px solid #777; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; border-radius: 4px; margin-bottom: 16px;">
+              Посвящается Дню науки
+            </div>
+            <h1 style="font-size: 18px; font-weight: 900; line-height: 1.3; margin: 0 0 10px 0; color: #000;">
+              XVIII МЕЖДУНАРОДНАЯ НАУЧНО-ПРАКТИЧЕСКАЯ КОНФЕРЕНЦИЯ-КОНКУРС
+            </h1>
+            <h2 style="font-size: 22px; font-weight: 900; color: ${isMono ? "#000" : "#1a4d3e"}; margin: 0 0 16px 0;">
+              «ИННОВАЦИОННЫЕ ТЕХНОЛОГИИ И ПЕРЕДОВЫЕ РЕШЕНИЯ»
+            </h2>
+            <div style="font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: 2px; color: #333; border-top: 1px solid #bbb; border-bottom: 1px solid #bbb; padding: 6px 0; display: inline-block; min-width: 200px;">
+              ПРОГРАММА И РЕГЛАМЕНТ ЗАСЕДАНИЙ
+            </div>
+          </div>
+
+          <div>
+            <p style="font-size: 11px; font-weight: bold; margin: 0 0 4px 0;">
+              10 – 18 ноября 2026 года
+            </p>
+            <p style="font-size: 10px; color: #555; margin: 0;">
+              г. Бишкек, Кыргызская Республика
+            </p>
+          </div>
+        </div>
+      `
+      : "";
+
     const fullHtml = `
       <!DOCTYPE html>
       <html lang="ru">
       <head>
         <meta charset="utf-8" />
-        <title>Программа конференции — Официальный регламент</title>
+        <title>Программа конференции — Официальный регламент (${paperFormat})</title>
         <style>
           @page {
-            size: A4 ${isLandscape ? "landscape" : "portrait"};
-            margin: ${isCompact ? "8mm 8mm 8mm 8mm" : "10mm 10mm 10mm 10mm"};
+            size: ${paperFormat} ${isLandscape ? "landscape" : "portrait"};
+            margin: ${pageMargin};
           }
           * {
             box-sizing: border-box;
@@ -251,7 +423,7 @@ export function PrintProgramModal({
           body {
             font-family: Arial, Helvetica, sans-serif;
             margin: 0;
-            padding: 4px;
+            padding: 2px;
             color: #000000;
             background: #ffffff;
             -webkit-print-color-adjust: exact;
@@ -260,11 +432,11 @@ export function PrintProgramModal({
           .header-box {
             text-align: center;
             border-bottom: 2px solid #000000;
-            padding-bottom: ${isCompact ? "6px" : "9px"};
-            margin-bottom: ${isCompact ? "8px" : "12px"};
+            padding-bottom: 6px;
+            margin-bottom: 8px;
           }
           .header-inst {
-            font-size: ${isCompact ? "10px" : "11px"};
+            font-size: ${smallFont};
             font-weight: 800;
             text-transform: uppercase;
             letter-spacing: 0.5px;
@@ -272,38 +444,38 @@ export function PrintProgramModal({
             margin: 0 0 2px 0;
           }
           .header-title {
-            font-size: ${isCompact ? "14px" : "15.5px"};
+            font-size: ${titleFont};
             font-weight: 900;
             margin: 0 0 2px 0;
             line-height: 1.25;
             color: #000000;
           }
           .header-sub {
-            font-size: ${isCompact ? "11px" : "12px"};
+            font-size: ${baseFont};
             font-weight: bold;
             color: ${isMono ? "#222" : "#8a6d1c"};
             margin: 0 0 4px 0;
           }
           .header-meta {
-            font-size: ${isCompact ? "10px" : "10.5px"};
+            font-size: ${smallFont};
             color: #111111;
-            margin-top: 4px;
+            margin-top: 3px;
           }
           .summary-bar {
             display: inline-block;
             margin-top: 4px;
-            padding: 2px 10px;
+            padding: 2px 8px;
             background: #f4f4f4;
             border: 1px solid #999;
-            font-size: ${isCompact ? "9.5px" : "10px"};
+            font-size: ${smallFont};
             font-weight: bold;
             border-radius: 3px;
           }
           table.program-table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 11px;
-            border: 1.5px solid #000000;
+            font-size: ${baseFont};
+            ${tableBorderCss}
           }
           table.program-table thead {
             display: table-header-group;
@@ -312,10 +484,10 @@ export function PrintProgramModal({
             background-color: ${isMono ? "#000000" : "#0f172a"};
             color: #ffffff;
             font-weight: bold;
-            padding: ${isCompact ? "5px 6px" : "6px 8px"};
+            padding: ${cellPad};
             text-align: left;
-            border: 1px solid #000000;
-            font-size: ${isCompact ? "10px" : "11px"};
+            ${thBorderCss}
+            font-size: ${smallFont};
           }
           table.program-table th.center {
             text-align: center;
@@ -325,17 +497,19 @@ export function PrintProgramModal({
             break-inside: avoid;
           }
           .footer-note {
-            margin-top: ${isCompact ? "10px" : "14px"};
+            margin-top: 10px;
             padding-top: 6px;
             border-top: 1px solid #888;
             text-align: center;
-            font-size: 9.5px;
+            font-size: ${smallFont};
             color: #444;
             page-break-inside: avoid;
           }
         </style>
       </head>
       <body>
+        ${coverPageHtml}
+
         <div class="header-box">
           <p class="header-inst">
             Кыргызский Государственный Технический Университет им. И. Раззакова · МУИТ
@@ -348,23 +522,27 @@ export function PrintProgramModal({
           </p>
           <div class="header-meta">
             <strong>Дата:</strong> 10 ноября 2026 г. &nbsp;•&nbsp;
-            <strong>Место:</strong> Главный корпус КГТУ / МУИТ, г. Бишкек &nbsp;•&nbsp;
-            <strong>Регламент:</strong> Ключевой доклад — 15 мин, секционный доклад — 10 мин
+            <strong>Место:</strong> Главный корпус КГТУ / МУИТ, г. Бишкек
+            ${showTime ? "&nbsp;•&nbsp; <strong>Регламент:</strong> Ключевой доклад — 15 мин, секционный — 10 мин" : ""}
           </div>
-          <div class="summary-bar">
-            Всего докладов в программе: <strong>${totalFilteredTalks}</strong> &nbsp;•&nbsp;
-            Секций: <strong>${sectionGroups.length}</strong> &nbsp;•&nbsp;
-            Ключевых докладов (1-я очередь): <strong>${totalKeynotes}</strong>
-          </div>
+          ${
+            showStats
+              ? `<div class="summary-bar">
+                  Всего докладов в программе: <strong>${totalFilteredTalks}</strong> &nbsp;•&nbsp;
+                  Секций: <strong>${sectionGroups.length}</strong> &nbsp;•&nbsp;
+                  Ключевых докладов (1-я очередь): <strong>${totalKeynotes}</strong>
+                </div>`
+              : ""
+          }
         </div>
 
         <table class="program-table">
           <thead>
             <tr>
-              <th class="center" style="width: 34px;">№</th>
-              <th class="center" style="width: 105px;">Время</th>
+              <th class="center" style="width: 32px;">№</th>
+              ${showTime ? `<th class="center" style="width: 95px;">Время</th>` : ""}
               <th>Тема доклада и автор(ы)</th>
-              <th style="width: 145px;">Науч. руководитель</th>
+              ${showSupervisor ? `<th style="width: 135px;">Науч. руководитель</th>` : ""}
             </tr>
           </thead>
           <tbody>
@@ -373,7 +551,7 @@ export function PrintProgramModal({
         </table>
 
         <div class="footer-note">
-          Оргкомитет конференции: тел. +996 (312) 54-51-62, email: conf@kstu.kg · ConfHub 2026 · Дата формирования: ${new Date().toLocaleDateString("ru-RU")}
+          Оргкомитет конференции: тел. +996 (312) 54-51-62, email: conf@kstu.kg · ConfHub 2026 · Формат: ${paperFormat} (${orientation === "landscape" ? "Альбомный" : "Книжный"}) · Дата формирования: ${new Date().toLocaleDateString("ru-RU")}
         </div>
 
         <script>
@@ -392,14 +570,29 @@ export function PrintProgramModal({
     win.document.close();
   };
 
+  // Preview container max-width matching selected format
+  const previewMaxWidthClass = useMemo(() => {
+    if (paperFormat === "A5") {
+      return orientation === "landscape" ? "max-w-[210mm]" : "max-w-[148mm]";
+    }
+    if (paperFormat === "A3") {
+      return orientation === "landscape" ? "max-w-[420mm]" : "max-w-[297mm]";
+    }
+    if (paperFormat === "Letter") {
+      return orientation === "landscape" ? "max-w-[279mm]" : "max-w-[216mm]";
+    }
+    // A4
+    return orientation === "landscape" ? "max-w-[297mm]" : "max-w-[210mm]";
+  }, [paperFormat, orientation]);
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
-      {/* Strict Print CSS for Direct Browser Print without modal clipping */}
+      {/* Dynamic Print CSS for direct Ctrl+P */}
       <style>{`
         @media print {
           @page {
-            size: A4 ${orientation === "landscape" ? "landscape" : "portrait"};
-            margin: ${density === "compact" ? "8mm" : "10mm"};
+            size: ${paperFormat} ${orientation};
+            margin: ${density === "tiny" ? "5mm" : density === "compact" ? "7mm" : "10mm"};
           }
           body * {
             visibility: hidden !important;
@@ -422,32 +615,10 @@ export function PrintProgramModal({
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
           }
-          table.unified-program-table {
-            border: 1.5px solid #000 !important;
-            border-collapse: collapse !important;
-            width: 100% !important;
-          }
-          table.unified-program-table thead {
-            display: table-header-group !important;
-          }
-          table.unified-program-table th {
-            background-color: ${colorMode === "mono" ? "#000" : "#0f172a"} !important;
-            color: #fff !important;
-            border: 1px solid #000 !important;
-          }
-          tr.section-header-tr {
-            background-color: #f1f5f9 !important;
-            page-break-after: avoid !important;
-            break-after: avoid !important;
-          }
-          tr {
-            page-break-inside: avoid !important;
-            break-inside: avoid !important;
-          }
         }
       `}</style>
 
-      <div className="w-full max-w-5xl bg-white rounded-3xl shadow-2xl border border-[#1a4d3e]/20 max-h-[95vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200 print:border-none print:shadow-none print:max-h-none print:overflow-visible">
+      <div className="w-full max-w-6xl bg-white rounded-3xl shadow-2xl border border-[#1a4d3e]/20 max-h-[96vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200 print:border-none print:shadow-none print:max-h-none print:overflow-visible">
         {/* Modal Controls Toolbar */}
         <div className="print:hidden p-4 sm:p-5 border-b border-[#1a4d3e]/15 bg-[#fbfaf7] flex flex-col gap-3 shrink-0">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -456,35 +627,29 @@ export function PrintProgramModal({
                 <Printer className="size-5 text-[#d4a84b]" />
               </span>
               <div>
-                <h3 className="text-base sm:text-lg font-black text-[#1a4d3e]">
-                  Печать программы конференции (А4 / PDF)
+                <h3 className="text-base sm:text-lg font-black text-[#1a4d3e] flex items-center gap-2">
+                  <span>Печать программы и брошюры-книжки</span>
+                  {isBookletMode && (
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300 font-bold uppercase tracking-wider">
+                      Режим «Книжка»
+                    </span>
+                  )}
                 </h3>
                 <p className="text-xs text-muted-foreground">
-                  Официальный типографский регламент с тонкой настройкой для печати
+                  Форматы А4, А5, Letter, рамки, обложка и фильтры полей для полиграфии
                 </p>
               </div>
             </div>
 
             <div className="flex items-center gap-2">
-              {/* Standalone clean print button (Recommended for 100% perfection) */}
               <button
                 type="button"
                 onClick={handleOpenCleanPrint}
                 className="px-4 py-2 bg-[#1a4d3e] hover:bg-[#143d31] text-white font-bold rounded-xl text-xs sm:text-sm flex items-center gap-2 shadow-xs cursor-pointer transition-all"
-                title="Открыть идеальный документ А4 для печати или сохранения в PDF"
+                title="Открыть идеально сверстанный документ для печати или сохранения в PDF"
               >
                 <ExternalLink className="size-4 text-[#d4a84b]" />
-                <span>Печать / Сохранить в PDF (А4)</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={handleOpenCleanPrint}
-                className="px-3 py-2 bg-white hover:bg-gray-100 text-[#1a4d3e] border border-[#1a4d3e]/20 font-bold rounded-xl text-xs sm:text-sm flex items-center gap-1.5 shadow-2xs cursor-pointer transition-all"
-                title="Быстрая печать"
-              >
-                <Printer className="size-4" />
-                <span className="hidden sm:inline">Печать</span>
+                <span>Печать / Экспорт в PDF ({paperFormat})</span>
               </button>
 
               <button
@@ -498,170 +663,455 @@ export function PrintProgramModal({
             </div>
           </div>
 
-          {/* Granular Print Settings Bar */}
-          <div className="pt-2 border-t border-[#1a4d3e]/10 flex flex-wrap items-center gap-2.5 text-xs">
-            <span className="inline-flex items-center gap-1 font-bold text-slate-700">
-              <SlidersHorizontal className="size-3.5 text-[#1a4d3e]" />
-              <span>Параметры:</span>
-            </span>
+          {/* Quick Presets Bar */}
+          <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-[#1a4d3e]/10">
+            <div className="flex items-center gap-2 text-xs">
+              <span className="font-bold text-slate-700 flex items-center gap-1">
+                <BookOpen className="size-3.5 text-[#d4a84b]" />
+                <span>Шаблоны:</span>
+              </span>
+              <button
+                type="button"
+                onClick={applyBookletPreset}
+                className={`px-2.5 py-1 rounded-lg text-xs font-bold border transition-all cursor-pointer flex items-center gap-1.5 ${
+                  isBookletMode
+                    ? "bg-[#1a4d3e] text-white border-[#1a4d3e] shadow-xs"
+                    : "bg-white text-slate-700 border-slate-300 hover:bg-slate-50"
+                }`}
+              >
+                <BookOpen className="size-3" />
+                <span>Книжка / Брошюра (А5)</span>
+              </button>
+              <button
+                type="button"
+                onClick={applyA4StandardPreset}
+                className={`px-2.5 py-1 rounded-lg text-xs font-bold border transition-all cursor-pointer flex items-center gap-1.5 ${
+                  !isBookletMode && paperFormat === "A4"
+                    ? "bg-[#1a4d3e] text-white border-[#1a4d3e] shadow-xs"
+                    : "bg-white text-slate-700 border-slate-300 hover:bg-slate-50"
+                }`}
+              >
+                <FileSpreadsheet className="size-3" />
+                <span>Официальный А4</span>
+              </button>
+            </div>
 
             {/* Filter by section */}
-            <select
-              value={selectedSectionId}
-              onChange={(e) => setSelectedSectionId(e.target.value)}
-              className="px-2.5 py-1.5 rounded-lg border border-[#1a4d3e]/20 bg-white font-semibold text-[#1a4d3e] focus:outline-none cursor-pointer"
-            >
-              <option value="all">Все секции ({sections.length})</option>
-              {sections.map((s) => (
-                <option key={s.id} value={String(s.id)}>
-                  Секция №{s.id}: {s.title.slice(0, 30)}...
-                </option>
-              ))}
-            </select>
+            <div className="flex items-center gap-1.5 text-xs">
+              <span className="font-semibold text-slate-600">Секция:</span>
+              <select
+                value={selectedSectionId}
+                onChange={(e) => setSelectedSectionId(e.target.value)}
+                className="px-2.5 py-1 rounded-lg border border-[#1a4d3e]/20 bg-white font-semibold text-[#1a4d3e] focus:outline-none cursor-pointer max-w-[200px] truncate"
+              >
+                <option value="all">Все секции ({sections.length})</option>
+                {sections.map((s) => (
+                  <option key={s.id} value={String(s.id)}>
+                    №{s.id}: {s.title}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
 
-            {/* Density Toggle (Compact vs Normal) */}
-            <div className="inline-flex p-0.5 rounded-lg border border-[#1a4d3e]/20 bg-white text-xs font-semibold">
-              <button
-                type="button"
-                onClick={() => setDensity("normal")}
-                className={`px-2.5 py-1 rounded-md transition-colors cursor-pointer ${
-                  density === "normal"
-                    ? "bg-[#1a4d3e] text-white"
-                    : "text-slate-700 hover:bg-slate-100"
-                }`}
+          {/* Granular Controls: Format, Borders, Density, Color, Toggles */}
+          <div className="pt-2 border-t border-[#1a4d3e]/10 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5 text-xs">
+            {/* 1. Format & Orientation */}
+            <div className="flex flex-wrap items-center gap-1.5 p-2 bg-white rounded-xl border border-slate-200">
+              <span className="font-bold text-slate-700 w-full text-[11px] uppercase tracking-wider flex items-center gap-1">
+                <Layout className="size-3 text-[#1a4d3e]" />
+                <span>Формат и ориентация:</span>
+              </span>
+
+              {/* Paper Format */}
+              <select
+                value={paperFormat}
+                onChange={(e) => {
+                  setPaperFormat(e.target.value as PaperFormat);
+                  if (e.target.value === "A5") setIsBookletMode(true);
+                }}
+                className="px-2 py-1 rounded-md border border-slate-300 bg-slate-50 font-bold text-slate-800 cursor-pointer"
               >
-                Стандартная
-              </button>
-              <button
-                type="button"
-                onClick={() => setDensity("compact")}
-                className={`px-2.5 py-1 rounded-md transition-colors cursor-pointer ${
-                  density === "compact"
-                    ? "bg-[#1a4d3e] text-white"
-                    : "text-slate-700 hover:bg-slate-100"
-                }`}
-                title="Уменьшает отступы и шрифт, чтобы максимум докладов поместился на 1 лист"
+                <option value="A4">Формат А4 (210×297 мм)</option>
+                <option value="A5">Формат А5 (Книжка, 148×210 мм)</option>
+                <option value="Letter">Letter (US, 216×279 мм)</option>
+                <option value="A3">Формат А3 (Стенд, 297×420 мм)</option>
+              </select>
+
+              {/* Orientation */}
+              <div className="inline-flex p-0.5 rounded-md border border-slate-300 bg-slate-50 text-[11px]">
+                <button
+                  type="button"
+                  onClick={() => setOrientation("portrait")}
+                  className={`px-2 py-0.5 rounded font-bold cursor-pointer transition-colors ${
+                    orientation === "portrait"
+                      ? "bg-[#1a4d3e] text-white"
+                      : "text-slate-600 hover:text-black"
+                  }`}
+                >
+                  Книжная
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setOrientation("landscape")}
+                  className={`px-2 py-0.5 rounded font-bold cursor-pointer transition-colors ${
+                    orientation === "landscape"
+                      ? "bg-[#1a4d3e] text-white"
+                      : "text-slate-600 hover:text-black"
+                  }`}
+                >
+                  Альбомная
+                </button>
+              </div>
+
+              {/* Density */}
+              <select
+                value={density}
+                onChange={(e) => setDensity(e.target.value as PrintDensity)}
+                className="px-2 py-1 rounded-md border border-slate-300 bg-slate-50 text-slate-800 font-semibold cursor-pointer"
               >
-                Компактная (1 лист)
-              </button>
+                <option value="normal">Шрифт: Стандартный</option>
+                <option value="compact">Шрифт: Компактный</option>
+                <option value="tiny">Шрифт: Мелкий (для брошюр)</option>
+              </select>
             </div>
 
-            {/* Monochrome vs Color Toggle */}
-            <div className="inline-flex p-0.5 rounded-lg border border-[#1a4d3e]/20 bg-white text-xs font-semibold">
-              <button
-                type="button"
-                onClick={() => setColorMode("mono")}
-                className={`px-2 py-1 rounded-md transition-colors cursor-pointer ${
-                  colorMode === "mono"
-                    ? "bg-[#1a4d3e] text-white"
-                    : "text-slate-700 hover:bg-slate-100"
-                }`}
-                title="Высококонтрастный режим для чёрно-белых офисных принтеров (Canon, HP, Xerox)"
-              >
-                Ч/Б Принтер
-              </button>
-              <button
-                type="button"
-                onClick={() => setColorMode("color")}
-                className={`px-2 py-1 rounded-md transition-colors cursor-pointer ${
-                  colorMode === "color"
-                    ? "bg-[#1a4d3e] text-white"
-                    : "text-slate-700 hover:bg-slate-100"
-                }`}
-              >
-                Цветной
-              </button>
+            {/* 2. Borders & Visual Style */}
+            <div className="flex flex-wrap items-center gap-1.5 p-2 bg-white rounded-xl border border-slate-200">
+              <span className="font-bold text-slate-700 w-full text-[11px] uppercase tracking-wider flex items-center gap-1">
+                <SlidersHorizontal className="size-3 text-[#1a4d3e]" />
+                <span>Рамки и оформление:</span>
+              </span>
+
+              {/* Border Style Toggle */}
+              <div className="inline-flex p-0.5 rounded-md border border-slate-300 bg-slate-50 text-[11px]">
+                <button
+                  type="button"
+                  onClick={() => setBorderStyle("full")}
+                  className={`px-2 py-0.5 rounded font-bold cursor-pointer transition-colors ${
+                    borderStyle === "full"
+                      ? "bg-[#1a4d3e] text-white"
+                      : "text-slate-600 hover:text-black"
+                  }`}
+                  title="Классическая полная сетка со всеми рамками"
+                >
+                  Сетка
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setBorderStyle("minimal")}
+                  className={`px-2 py-0.5 rounded font-bold cursor-pointer transition-colors ${
+                    borderStyle === "minimal"
+                      ? "bg-[#1a4d3e] text-white"
+                      : "text-slate-600 hover:text-black"
+                  }`}
+                  title="Только горизонтальные линии (книжный стиль)"
+                >
+                  Легкие
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setBorderStyle("none")}
+                  className={`px-2 py-0.5 rounded font-bold cursor-pointer transition-colors ${
+                    borderStyle === "none"
+                      ? "bg-[#1a4d3e] text-white"
+                      : "text-slate-600 hover:text-black"
+                  }`}
+                  title="Без рамок — чистый журнальный стиль"
+                >
+                  Без рамок
+                </button>
+              </div>
+
+              {/* Color Mode */}
+              <div className="inline-flex p-0.5 rounded-md border border-slate-300 bg-slate-50 text-[11px]">
+                <button
+                  type="button"
+                  onClick={() => setColorMode("mono")}
+                  className={`px-2 py-0.5 rounded font-bold cursor-pointer transition-colors ${
+                    colorMode === "mono"
+                      ? "bg-[#1a4d3e] text-white"
+                      : "text-slate-600 hover:text-black"
+                  }`}
+                >
+                  Ч/Б
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setColorMode("color")}
+                  className={`px-2 py-0.5 rounded font-bold cursor-pointer transition-colors ${
+                    colorMode === "color"
+                      ? "bg-[#1a4d3e] text-white"
+                      : "text-slate-600 hover:text-black"
+                  }`}
+                >
+                  Цветной
+                </button>
+              </div>
+
+              {/* Booklet specifics */}
+              <label className="flex items-center gap-1.5 px-2 py-0.5 rounded border border-slate-300 bg-slate-50 font-semibold text-slate-800 cursor-pointer hover:bg-slate-100 text-[11px]">
+                <input
+                  type="checkbox"
+                  checked={showCoverPage}
+                  onChange={(e) => setShowCoverPage(e.target.checked)}
+                  className="size-3.5 rounded text-[#1a4d3e] accent-[#1a4d3e] cursor-pointer"
+                />
+                <span>Титульный лист (обложка)</span>
+              </label>
+
+              <label className="flex items-center gap-1.5 px-2 py-0.5 rounded border border-slate-300 bg-slate-50 font-semibold text-slate-800 cursor-pointer hover:bg-slate-100 text-[11px]">
+                <input
+                  type="checkbox"
+                  checked={sectionPageBreaks}
+                  onChange={(e) => setSectionPageBreaks(e.target.checked)}
+                  className="size-3.5 rounded text-[#1a4d3e] accent-[#1a4d3e] cursor-pointer"
+                />
+                <span>Секция с новой страницы</span>
+              </label>
             </div>
 
-            {/* Orientation Toggle */}
-            <div className="inline-flex p-0.5 rounded-lg border border-[#1a4d3e]/20 bg-white text-xs font-semibold">
-              <button
-                type="button"
-                onClick={() => setOrientation("portrait")}
-                className={`px-2 py-1 rounded-md transition-colors cursor-pointer ${
-                  orientation === "portrait"
-                    ? "bg-[#1a4d3e] text-white"
-                    : "text-slate-700 hover:bg-slate-100"
+            {/* 3. Content Visibility: What to show / hide */}
+            <div className="flex flex-wrap items-center gap-1.5 p-2 bg-white rounded-xl border border-slate-200">
+              <span className="font-bold text-slate-700 w-full text-[11px] uppercase tracking-wider flex items-center gap-1">
+                <Eye className="size-3 text-[#1a4d3e]" />
+                <span>Что включить в распечатку:</span>
+              </span>
+
+              {/* Time Toggle */}
+              <label
+                className={`flex items-center gap-1 px-2 py-0.5 rounded border font-semibold cursor-pointer text-[11px] transition-colors ${
+                  showTime
+                    ? "bg-emerald-50 text-emerald-950 border-emerald-300"
+                    : "bg-slate-50 text-slate-500 border-slate-300"
                 }`}
               >
-                Книжная
-              </button>
-              <button
-                type="button"
-                onClick={() => setOrientation("landscape")}
-                className={`px-2 py-1 rounded-md transition-colors cursor-pointer ${
-                  orientation === "landscape"
-                    ? "bg-[#1a4d3e] text-white"
-                    : "text-slate-700 hover:bg-slate-100"
+                <input
+                  type="checkbox"
+                  checked={showTime}
+                  onChange={(e) => setShowTime(e.target.checked)}
+                  className="size-3.5 rounded text-[#1a4d3e] accent-[#1a4d3e] cursor-pointer"
+                />
+                <span>Время докладов</span>
+              </label>
+
+              {/* Supervisor Toggle */}
+              <label
+                className={`flex items-center gap-1 px-2 py-0.5 rounded border font-semibold cursor-pointer text-[11px] transition-colors ${
+                  showSupervisor
+                    ? "bg-emerald-50 text-emerald-950 border-emerald-300"
+                    : "bg-slate-50 text-slate-500 border-slate-300"
                 }`}
               >
-                Альбомная
-              </button>
+                <input
+                  type="checkbox"
+                  checked={showSupervisor}
+                  onChange={(e) => setShowSupervisor(e.target.checked)}
+                  className="size-3.5 rounded text-[#1a4d3e] accent-[#1a4d3e] cursor-pointer"
+                />
+                <span>Науч. руководитель</span>
+              </label>
+
+              {/* Room Toggle */}
+              <label
+                className={`flex items-center gap-1 px-2 py-0.5 rounded border font-semibold cursor-pointer text-[11px] transition-colors ${
+                  showRoom
+                    ? "bg-emerald-50 text-emerald-950 border-emerald-300"
+                    : "bg-slate-50 text-slate-500 border-slate-300"
+                }`}
+              >
+                <input
+                  type="checkbox"
+                  checked={showRoom}
+                  onChange={(e) => setShowRoom(e.target.checked)}
+                  className="size-3.5 rounded text-[#1a4d3e] accent-[#1a4d3e] cursor-pointer"
+                />
+                <span>Аудитория / Зал</span>
+              </label>
+
+              {/* Section Supervisor */}
+              <label
+                className={`flex items-center gap-1 px-2 py-0.5 rounded border font-semibold cursor-pointer text-[11px] transition-colors ${
+                  showSectionSupervisor
+                    ? "bg-emerald-50 text-emerald-950 border-emerald-300"
+                    : "bg-slate-50 text-slate-500 border-slate-300"
+                }`}
+              >
+                <input
+                  type="checkbox"
+                  checked={showSectionSupervisor}
+                  onChange={(e) => setShowSectionSupervisor(e.target.checked)}
+                  className="size-3.5 rounded text-[#1a4d3e] accent-[#1a4d3e] cursor-pointer"
+                />
+                <span>Руководитель секции</span>
+              </label>
+
+              {/* Keynote Badge */}
+              <label
+                className={`flex items-center gap-1 px-2 py-0.5 rounded border font-semibold cursor-pointer text-[11px] transition-colors ${
+                  showKeynoteBadge
+                    ? "bg-emerald-50 text-emerald-950 border-emerald-300"
+                    : "bg-slate-50 text-slate-500 border-slate-300"
+                }`}
+              >
+                <input
+                  type="checkbox"
+                  checked={showKeynoteBadge}
+                  onChange={(e) => setShowKeynoteBadge(e.target.checked)}
+                  className="size-3.5 rounded text-[#1a4d3e] accent-[#1a4d3e] cursor-pointer"
+                />
+                <span>Метка «Ключевой»</span>
+              </label>
+
+              {/* Co-authors */}
+              <label
+                className={`flex items-center gap-1 px-2 py-0.5 rounded border font-semibold cursor-pointer text-[11px] transition-colors ${
+                  showCoAuthors
+                    ? "bg-emerald-50 text-emerald-950 border-emerald-300"
+                    : "bg-slate-50 text-slate-500 border-slate-300"
+                }`}
+              >
+                <input
+                  type="checkbox"
+                  checked={showCoAuthors}
+                  onChange={(e) => setShowCoAuthors(e.target.checked)}
+                  className="size-3.5 rounded text-[#1a4d3e] accent-[#1a4d3e] cursor-pointer"
+                />
+                <span>Соавторы</span>
+              </label>
+
+              {/* Abstracts */}
+              <label
+                className={`flex items-center gap-1 px-2 py-0.5 rounded border font-semibold cursor-pointer text-[11px] transition-colors ${
+                  includeAbstracts
+                    ? "bg-emerald-50 text-emerald-950 border-emerald-300"
+                    : "bg-slate-50 text-slate-500 border-slate-300"
+                }`}
+              >
+                <input
+                  type="checkbox"
+                  checked={includeAbstracts}
+                  onChange={(e) => setIncludeAbstracts(e.target.checked)}
+                  className="size-3.5 rounded text-[#1a4d3e] accent-[#1a4d3e] cursor-pointer"
+                />
+                <span>Тезисы (аннотация)</span>
+              </label>
+
+              {/* Summary Stats */}
+              <label
+                className={`flex items-center gap-1 px-2 py-0.5 rounded border font-semibold cursor-pointer text-[11px] transition-colors ${
+                  showStats
+                    ? "bg-emerald-50 text-emerald-950 border-emerald-300"
+                    : "bg-slate-50 text-slate-500 border-slate-300"
+                }`}
+              >
+                <input
+                  type="checkbox"
+                  checked={showStats}
+                  onChange={(e) => setShowStats(e.target.checked)}
+                  className="size-3.5 rounded text-[#1a4d3e] accent-[#1a4d3e] cursor-pointer"
+                />
+                <span>Блок статистики</span>
+              </label>
             </div>
-
-            {/* Include Abstracts Checkbox */}
-            <label className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-[#1a4d3e]/20 bg-white font-semibold text-slate-800 cursor-pointer hover:bg-[#1a4d3e]/5">
-              <input
-                type="checkbox"
-                checked={includeAbstracts}
-                onChange={(e) => setIncludeAbstracts(e.target.checked)}
-                className="size-3.5 rounded text-[#1a4d3e] accent-[#1a4d3e] cursor-pointer"
-              />
-              <span>Тезисы</span>
-            </label>
-
-            {/* Show Co-authors Checkbox */}
-            <label className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-[#1a4d3e]/20 bg-white font-semibold text-slate-800 cursor-pointer hover:bg-[#1a4d3e]/5">
-              <input
-                type="checkbox"
-                checked={showCoAuthors}
-                onChange={(e) => setShowCoAuthors(e.target.checked)}
-                className="size-3.5 rounded text-[#1a4d3e] accent-[#1a4d3e] cursor-pointer"
-              />
-              <span>Соавторы</span>
-            </label>
           </div>
         </div>
 
         {/* Printable Document Body / Interactive Live Preview */}
-        <div className="flex-1 overflow-y-auto bg-slate-100/70 p-4 sm:p-6">
+        <div className="flex-1 overflow-y-auto bg-slate-100/70 p-3 sm:p-6">
           <div
             id="conference-printable-program"
-            className={`mx-auto bg-white text-black font-sans shadow-md border border-slate-300 rounded-sm print:shadow-none print:border-none print:m-0 print:p-0 ${
-              density === "compact" ? "p-5 sm:p-6" : "p-6 sm:p-8"
-            } ${orientation === "landscape" ? "max-w-[297mm]" : "max-w-[210mm]"}`}
+            className={`mx-auto bg-white text-black font-sans shadow-md rounded-sm print:shadow-none print:border-none print:m-0 print:p-0 transition-all ${
+              previewMaxWidthClass
+            } ${
+              borderStyle === "full"
+                ? "border border-slate-400"
+                : borderStyle === "minimal"
+                ? "border-y-2 border-black"
+                : "border-none"
+            } ${
+              density === "tiny"
+                ? "p-3 sm:p-4 text-[10px]"
+                : density === "compact"
+                ? "p-4 sm:p-5 text-[11px]"
+                : "p-6 sm:p-8 text-xs"
+            }`}
           >
+            {/* Optional Cover Page for Booklet Mode */}
+            {showCoverPage && (
+              <div
+                className={`text-center flex flex-col justify-between items-center my-4 py-8 px-4 rounded-lg bg-neutral-50/50 print:bg-white ${
+                  borderStyle !== "none" ? "border-2 border-dashed border-[#1a4d3e]/40" : ""
+                }`}
+                style={{ minHeight: paperFormat === "A5" ? "120mm" : "180mm" }}
+              >
+                <div className="space-y-1">
+                  <p className="font-extrabold uppercase tracking-widest text-[10px] sm:text-xs text-[#1a4d3e]">
+                    Министерство науки, высшего образования и инноваций КР
+                  </p>
+                  <p className="font-bold text-xs sm:text-sm text-neutral-800">
+                    Международный университет инновационных технологий (МУИТ) · КГТУ
+                  </p>
+                </div>
+
+                <div className="my-8 space-y-3 max-w-lg">
+                  <span className="inline-block px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border border-amber-300 bg-amber-50 text-amber-900">
+                    Посвящается Дню науки
+                  </span>
+                  <h1 className="text-sm sm:text-base md:text-lg font-black text-black leading-snug">
+                    XVIII МЕЖДУНАРОДНАЯ НАУЧНО-ПРАКТИЧЕСКАЯ КОНФЕРЕНЦИЯ-КОНКУРС
+                  </h1>
+                  <h2 className="text-base sm:text-xl md:text-2xl font-black text-[#1a4d3e] leading-tight">
+                    «ИННОВАЦИОННЫЕ ТЕХНОЛОГИИ И ПЕРЕДОВЫЕ РЕШЕНИЯ»
+                  </h2>
+                  <div className="pt-2">
+                    <span className="inline-block px-4 py-1.5 border-y-2 border-black font-extrabold text-xs sm:text-sm uppercase tracking-widest text-neutral-800">
+                      ПРОГРАММА И РЕГЛАМЕНТ ЗАСЕДАНИЙ
+                    </span>
+                  </div>
+                </div>
+
+                <div className="space-y-1 text-xs text-neutral-600">
+                  <p className="font-bold text-black">10 – 18 ноября 2026 года</p>
+                  <p>МУИТ · Главный корпус КГТУ · г. Бишкек</p>
+                  <p className="text-[10px] text-neutral-400 italic pt-2">
+                    [Титульная страница брошюры • При печати начнётся со следующего листа]
+                  </p>
+                </div>
+              </div>
+            )}
+
             {/* Official Academic Letterhead */}
             <div
               className={`text-center border-b-2 border-black ${
-                density === "compact" ? "space-y-1 pb-3 mb-3" : "space-y-1.5 pb-4 mb-4"
+                density === "tiny" ? "space-y-0.5 pb-2 mb-2" : density === "compact" ? "space-y-1 pb-3 mb-3" : "space-y-1.5 pb-4 mb-4"
               }`}
             >
               <p
                 className={`font-extrabold uppercase tracking-widest ${
-                  density === "compact" ? "text-[10px]" : "text-xs"
+                  density === "tiny" ? "text-[9px]" : density === "compact" ? "text-[10px]" : "text-xs"
                 } ${colorMode === "mono" ? "text-black" : "text-[#1a4d3e]"}`}
               >
                 Кыргызский Государственный Технический Университет им. И. Раззакова · МУИТ
               </p>
               <h1
                 className={`font-black text-black leading-snug ${
-                  density === "compact" ? "text-base sm:text-lg" : "text-lg sm:text-xl"
+                  density === "tiny" ? "text-sm sm:text-base" : density === "compact" ? "text-base sm:text-lg" : "text-lg sm:text-xl"
                 }`}
               >
                 XVIII МЕЖДУНАРОДНАЯ НАУЧНО-ПРАКТИЧЕСКАЯ КОНФЕРЕНЦИЯ-КОНКУРС
               </h1>
               <p
                 className={`font-bold uppercase tracking-wider ${
-                  density === "compact" ? "text-xs" : "text-xs sm:text-sm"
+                  density === "tiny" ? "text-[10px]" : density === "compact" ? "text-xs" : "text-xs sm:text-sm"
                 } ${colorMode === "mono" ? "text-neutral-800" : "text-[#8a6d1c]"}`}
               >
                 «Инновационные технологии и устойчивое развитие в XXI веке»
               </p>
 
               <div
-                className={`pt-1 flex flex-wrap items-center justify-center gap-3 font-semibold text-black ${
-                  density === "compact" ? "text-[10px]" : "text-xs"
+                className={`pt-1 flex flex-wrap items-center justify-center gap-2.5 font-semibold text-black ${
+                  density === "tiny" ? "text-[9px]" : density === "compact" ? "text-[10px]" : "text-xs"
                 }`}
               >
                 <span className="inline-flex items-center gap-1">
@@ -673,25 +1123,31 @@ export function PrintProgramModal({
                   <MapPin className="size-3 text-black shrink-0" />
                   <span>Место: Главный корпус КГТУ / МУИТ, г. Бишкек</span>
                 </span>
-                <span>•</span>
-                <span className="inline-flex items-center gap-1">
-                  <Clock className="size-3 text-black shrink-0" />
-                  <span>Регламент: Ключевой доклад — <strong>15 мин</strong>, секционный — <strong>10 мин</strong></span>
-                </span>
+                {showTime && (
+                  <>
+                    <span>•</span>
+                    <span className="inline-flex items-center gap-1">
+                      <Clock className="size-3 text-black shrink-0" />
+                      <span>Регламент: Ключевой — <strong>15 мин</strong>, секционный — <strong>10 мин</strong></span>
+                    </span>
+                  </>
+                )}
               </div>
 
               {/* Summary Stats Pill */}
-              <div
-                className={`mt-2 inline-flex items-center justify-center gap-2.5 bg-neutral-50 border border-neutral-300 rounded-md font-medium text-black ${
-                  density === "compact" ? "px-2.5 py-1 text-[10px]" : "px-3 py-1 text-xs"
-                }`}
-              >
-                <span>Всего докладов в программе: <strong>{totalFilteredTalks}</strong></span>
-                <span>•</span>
-                <span>Секций: <strong>{sectionGroups.length}</strong></span>
-                <span>•</span>
-                <span>Ключевых докладов (1-я очередь): <strong>{totalKeynotes}</strong></span>
-              </div>
+              {showStats && (
+                <div
+                  className={`mt-2 inline-flex items-center justify-center gap-2 bg-neutral-50 border border-neutral-300 rounded-md font-medium text-black ${
+                    density === "tiny" ? "px-2 py-0.5 text-[9px]" : density === "compact" ? "px-2.5 py-1 text-[10px]" : "px-3 py-1 text-xs"
+                  }`}
+                >
+                  <span>Всего докладов: <strong>{totalFilteredTalks}</strong></span>
+                  <span>•</span>
+                  <span>Секций: <strong>{sectionGroups.length}</strong></span>
+                  <span>•</span>
+                  <span>Ключевых (1-я очередь): <strong>{totalKeynotes}</strong></span>
+                </div>
+              )}
             </div>
 
             {/* Unified Program Table */}
@@ -700,21 +1156,51 @@ export function PrintProgramModal({
                 Нет одобренных докладов для выбранного направления.
               </div>
             ) : (
-              <table className="unified-program-table w-full text-left border-collapse border border-black font-sans">
+              <table
+                className={`w-full text-left border-collapse font-sans ${
+                  borderStyle === "full"
+                    ? "border border-black"
+                    : borderStyle === "minimal"
+                    ? "border-y border-black"
+                    : "border-none"
+                }`}
+              >
                 <thead>
                   <tr
                     className={`text-white font-extrabold ${
                       colorMode === "mono" ? "bg-black" : "bg-[#0f172a]"
-                    } ${density === "compact" ? "text-[10.5px]" : "text-[11.5px]"}`}
+                    } ${density === "tiny" ? "text-[9.5px]" : density === "compact" ? "text-[10.5px]" : "text-[11.5px]"}`}
                   >
-                    <th className="p-2 w-10 text-center border-r border-slate-700">№</th>
-                    <th className="p-2 w-28 text-center border-r border-slate-700">Время</th>
-                    <th className="p-2 border-r border-slate-700">Тема доклада и автор(ы)</th>
-                    <th className="p-2 w-36 text-left">Научный руководитель</th>
+                    <th
+                      className={`p-1.5 w-9 text-center ${
+                        borderStyle === "full" ? "border-r border-slate-700" : ""
+                      }`}
+                    >
+                      №
+                    </th>
+                    {showTime && (
+                      <th
+                        className={`p-1.5 w-24 text-center ${
+                          borderStyle === "full" ? "border-r border-slate-700" : ""
+                        }`}
+                      >
+                        Время
+                      </th>
+                    )}
+                    <th
+                      className={`p-1.5 ${
+                        borderStyle === "full" ? "border-r border-slate-700" : ""
+                      }`}
+                    >
+                      Тема доклада и автор(ы)
+                    </th>
+                    {showSupervisor && (
+                      <th className="p-1.5 w-32 sm:w-36 text-left">Научный руководитель</th>
+                    )}
                   </tr>
                 </thead>
                 <tbody>
-                  {sectionGroups.map((group) => {
+                  {sectionGroups.map((group, gIdx) => {
                     const sec = group.section;
                     const talksList = group.talks;
                     const roomName =
@@ -722,9 +1208,11 @@ export function PrintProgramModal({
 
                     return (
                       <Fragment key={sec.id}>
-                        {/* Section Divider Bar spanning all 4 columns */}
+                        {/* Section Divider Bar */}
                         <tr
-                          className="section-header-tr break-inside-avoid print:break-inside-avoid bg-neutral-100"
+                          className={`section-header-tr break-inside-avoid print:break-inside-avoid bg-neutral-100 ${
+                            sectionPageBreaks && gIdx > 0 ? "print:break-before-page" : ""
+                          }`}
                           style={{
                             pageBreakInside: "avoid",
                             pageBreakAfter: "avoid",
@@ -732,47 +1220,56 @@ export function PrintProgramModal({
                           }}
                         >
                           <td
-                            colSpan={4}
-                            className={`border-t-2 border-black border-b border-neutral-400 ${
+                            colSpan={columnCount}
+                            className={`${
+                              borderStyle === "full"
+                                ? "border-t-2 border-black border-b border-neutral-400"
+                                : borderStyle === "minimal"
+                                ? "border-t border-black border-b border-neutral-300"
+                                : "border-t border-neutral-300"
+                            } ${
                               colorMode === "mono"
                                 ? "border-l-4 border-l-black"
                                 : "border-l-4 border-l-[#1a4d3e]"
-                            } ${density === "compact" ? "p-2 sm:p-2.5" : "p-2.5 sm:p-3"}`}
+                            } ${density === "tiny" ? "p-1.5" : density === "compact" ? "p-2" : "p-2.5 sm:p-3"}`}
                           >
                             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
                               <div>
                                 <span
                                   className={`font-black uppercase tracking-wider block ${
-                                    density === "compact" ? "text-[9.5px]" : "text-[10px]"
+                                    density === "tiny" ? "text-[8.5px]" : density === "compact" ? "text-[9px]" : "text-[10px]"
                                   } ${colorMode === "mono" ? "text-black" : "text-[#1a4d3e]"}`}
                                 >
-                                  Секция №${sec.id}
+                                  Секция №{sec.id}
                                 </span>
                                 <h2
                                   className={`font-black text-black leading-snug ${
-                                    density === "compact" ? "text-xs sm:text-sm" : "text-sm sm:text-base"
+                                    density === "tiny" ? "text-[11px]" : density === "compact" ? "text-xs sm:text-sm" : "text-sm sm:text-base"
                                   }`}
                                 >
                                   {sec.title}
                                 </h2>
-                                {sec.supervisor && (
+                                {showSectionSupervisor && sec.supervisor && (
                                   <p
-                                    className={`text-neutral-700 mt-0.5 ${
-                                      density === "compact" ? "text-[10px]" : "text-xs"
+                                    className={`text-neutral-700 mt-0.5 flex items-center gap-1 ${
+                                      density === "tiny" ? "text-[9px]" : density === "compact" ? "text-[10px]" : "text-xs"
                                     }`}
                                   >
-                                    Ответственный за секцию: <strong>{sec.supervisor}</strong>
+                                    <UserCheck className="size-3 text-[#1a4d3e] shrink-0 inline" />
+                                    <span>Ответственный за секцию: <strong>{sec.supervisor}</strong></span>
                                   </p>
                                 )}
                               </div>
-                              <div
-                                className={`font-bold text-black bg-white px-2 py-0.5 rounded border border-neutral-400 shrink-0 self-start sm:self-auto inline-flex items-center gap-1.5 whitespace-nowrap ${
-                                  density === "compact" ? "text-[10px]" : "text-xs"
-                                }`}
-                              >
-                                <MapPin className="size-3 text-black shrink-0" />
-                                <span>Зал: <strong>{roomName}</strong> · {talksList.length} докл.</span>
-                              </div>
+                              {showRoom && (
+                                <div
+                                  className={`font-bold text-black bg-white px-2 py-0.5 rounded border border-neutral-400 shrink-0 self-start sm:self-auto inline-flex items-center gap-1 whitespace-nowrap ${
+                                    density === "tiny" ? "text-[9px]" : density === "compact" ? "text-[10px]" : "text-xs"
+                                  }`}
+                                >
+                                  <MapPin className="size-3 text-black shrink-0" />
+                                  <span>Зал: <strong>{roomName}</strong> · {talksList.length} докл.</span>
+                                </div>
+                              )}
                             </div>
                           </td>
                         </tr>
@@ -781,7 +1278,7 @@ export function PrintProgramModal({
                         {talksList.length === 0 ? (
                           <tr>
                             <td
-                              colSpan={4}
+                              colSpan={columnCount}
                               className="p-3 text-center text-neutral-500 italic text-xs border-b border-neutral-300"
                             >
                               В данной секции пока нет запланированных выступлений.
@@ -820,9 +1317,13 @@ export function PrintProgramModal({
                                 style={{ pageBreakInside: "avoid" }}
                               >
                                 <td
-                                  className={`border-r border-b border-neutral-300 font-bold text-center text-black ${
-                                    density === "compact" ? "p-1.5 text-xs" : "p-2 text-xs"
-                                  }`}
+                                  className={`font-bold text-center text-black ${
+                                    borderStyle === "full"
+                                      ? "border-r border-b border-neutral-300"
+                                      : borderStyle === "minimal"
+                                      ? "border-b border-neutral-200"
+                                      : ""
+                                  } ${density === "tiny" ? "p-1 text-[10px]" : density === "compact" ? "p-1.5 text-xs" : "p-2 text-xs"}`}
                                 >
                                   {isKeynoteTalk ? (
                                     <span className="inline-flex items-center justify-center gap-0.5 text-black font-extrabold">
@@ -833,27 +1334,39 @@ export function PrintProgramModal({
                                     tIdx + 1
                                   )}
                                 </td>
+
+                                {showTime && (
+                                  <td
+                                    className={`font-mono text-center whitespace-nowrap ${
+                                      borderStyle === "full"
+                                        ? "border-r border-b border-neutral-300"
+                                        : borderStyle === "minimal"
+                                        ? "border-b border-neutral-200"
+                                        : ""
+                                    } ${density === "tiny" ? "p-1 text-[9.5px]" : density === "compact" ? "p-1.5 text-[10.5px]" : "p-2 text-[11px]"}`}
+                                  >
+                                    <span className="font-bold block text-black">
+                                      {timeFormatted}
+                                    </span>
+                                    <span className="text-[9.5px] text-neutral-600 block">
+                                      {durationMin} мин
+                                    </span>
+                                  </td>
+                                )}
+
                                 <td
-                                  className={`border-r border-b border-neutral-300 font-mono text-center whitespace-nowrap ${
-                                    density === "compact" ? "p-1.5 text-[10.5px]" : "p-2 text-[11px]"
-                                  }`}
+                                  className={`space-y-0.5 ${
+                                    borderStyle === "full"
+                                      ? "border-r border-b border-neutral-300"
+                                      : borderStyle === "minimal"
+                                      ? "border-b border-neutral-200"
+                                      : ""
+                                  } ${density === "tiny" ? "p-1" : density === "compact" ? "p-1.5" : "p-2"}`}
                                 >
-                                  <span className="font-bold block text-black">
-                                    {timeFormatted}
-                                  </span>
-                                  <span className="text-[10px] text-neutral-600 block">
-                                    {durationMin} мин
-                                  </span>
-                                </td>
-                                <td
-                                  className={`border-r border-b border-neutral-300 space-y-1 ${
-                                    density === "compact" ? "p-1.5" : "p-2"
-                                  }`}
-                                >
-                                  {isKeynoteTalk && (
+                                  {showKeynoteBadge && isKeynoteTalk && (
                                     <div
                                       className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded font-black mb-0.5 ${
-                                        density === "compact" ? "text-[9px]" : "text-[9.5px]"
+                                        density === "tiny" ? "text-[8.5px]" : density === "compact" ? "text-[9px]" : "text-[9.5px]"
                                       } ${
                                         colorMode === "mono"
                                           ? "bg-neutral-200 text-black border border-black"
@@ -861,19 +1374,19 @@ export function PrintProgramModal({
                                       }`}
                                     >
                                       <Star className="size-2.5 fill-current shrink-0" />
-                                      <span>КЛЮЧЕВОЙ ДОКЛАД СЕКЦИИ (15 МИН, 1-я очередь)</span>
+                                      <span>КЛЮЧЕВОЙ ДОКЛАД (15 МИН)</span>
                                     </div>
                                   )}
                                   <div
                                     className={`font-bold text-black leading-snug ${
-                                      density === "compact" ? "text-[11px]" : "text-xs"
+                                      density === "tiny" ? "text-[10px]" : density === "compact" ? "text-[11px]" : "text-xs"
                                     }`}
                                   >
                                     {talk.title}
                                   </div>
                                   <div
                                     className={`text-neutral-800 font-medium ${
-                                      density === "compact" ? "text-[10px]" : "text-[11px]"
+                                      density === "tiny" ? "text-[9px]" : density === "compact" ? "text-[10px]" : "text-[11px]"
                                     }`}
                                   >
                                     <span>Докладчик: <strong>{talk.speakerName}</strong></span>
@@ -883,7 +1396,7 @@ export function PrintProgramModal({
                                   {showCoAuthors && talk.coAuthors && talk.coAuthors.length > 0 && (
                                     <div
                                       className={`text-neutral-600 ${
-                                        density === "compact" ? "text-[9.5px]" : "text-[10px]"
+                                        density === "tiny" ? "text-[8.5px]" : density === "compact" ? "text-[9.5px]" : "text-[10px]"
                                       }`}
                                     >
                                       Соавторы: <span className="italic">{talk.coAuthors.join(", ")}</span>
@@ -892,7 +1405,7 @@ export function PrintProgramModal({
                                   {includeAbstracts && talk.abstract && (
                                     <div
                                       className={`pt-1 text-neutral-700 leading-relaxed font-sans border-t border-dashed border-neutral-300 mt-1 ${
-                                        density === "compact" ? "text-[9px]" : "text-[10px]"
+                                        density === "tiny" ? "text-[8.5px]" : density === "compact" ? "text-[9px]" : "text-[10px]"
                                       }`}
                                     >
                                       <strong>Тезисы: </strong>
@@ -900,17 +1413,24 @@ export function PrintProgramModal({
                                     </div>
                                   )}
                                 </td>
-                                <td
-                                  className={`border-b border-neutral-300 text-black ${
-                                    density === "compact" ? "p-1.5 text-[10px]" : "p-2 text-[11px]"
-                                  }`}
-                                >
-                                  {talk.supervisor ? (
-                                    <strong>{talk.supervisor}</strong>
-                                  ) : (
-                                    <span className="text-neutral-400">—</span>
-                                  )}
-                                </td>
+
+                                {showSupervisor && (
+                                  <td
+                                    className={`text-black ${
+                                      borderStyle === "full"
+                                        ? "border-b border-neutral-300"
+                                        : borderStyle === "minimal"
+                                        ? "border-b border-neutral-200"
+                                        : ""
+                                    } ${density === "tiny" ? "p-1 text-[9.5px]" : density === "compact" ? "p-1.5 text-[10px]" : "p-2 text-[11px]"}`}
+                                  >
+                                    {talk.supervisor ? (
+                                      <strong>{talk.supervisor}</strong>
+                                    ) : (
+                                      <span className="text-neutral-400">—</span>
+                                    )}
+                                  </td>
+                                )}
                               </tr>
                             );
                           })
@@ -925,14 +1445,14 @@ export function PrintProgramModal({
             {/* Official Footer Note */}
             <div
               className={`border-t-2 border-black text-center text-neutral-700 space-y-0.5 break-inside-avoid print:break-inside-avoid ${
-                density === "compact" ? "pt-2.5 mt-3 text-[10px]" : "pt-4 mt-4 text-xs"
+                density === "tiny" ? "pt-2 mt-2 text-[9px]" : density === "compact" ? "pt-2.5 mt-3 text-[10px]" : "pt-4 mt-4 text-xs"
               }`}
             >
               <p>
                 Оргкомитет конференции: тел. +996 (312) 54-51-62, email: conf@kstu.kg
               </p>
               <p className="italic text-[9.5px] text-neutral-500">
-                Программа сформирована платформой ConfHub · Дата печати: {new Date().toLocaleDateString("ru-RU")}
+                Формат: {paperFormat} ({orientation === "landscape" ? "Альбомный" : "Книжный"}) · ConfHub 2026 · Дата печати: {new Date().toLocaleDateString("ru-RU")}
               </p>
             </div>
           </div>
