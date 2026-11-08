@@ -152,6 +152,21 @@ export function PrintProgramModal({
     return count;
   }, [showTime, showSupervisor]);
 
+  // Preview container max-width matching selected format
+  const previewMaxWidthClass = useMemo(() => {
+    if (paperFormat === "A5") {
+      return orientation === "landscape" ? "max-w-[210mm]" : "max-w-[148mm]";
+    }
+    if (paperFormat === "A3") {
+      return orientation === "landscape" ? "max-w-[420mm]" : "max-w-[297mm]";
+    }
+    if (paperFormat === "Letter") {
+      return orientation === "landscape" ? "max-w-[279mm]" : "max-w-[216mm]";
+    }
+    // A4
+    return orientation === "landscape" ? "max-w-[297mm]" : "max-w-[210mm]";
+  }, [paperFormat, orientation]);
+
   if (!isOpen) return null;
 
   // ── Clean Window Printing ───────────────────
@@ -569,21 +584,6 @@ export function PrintProgramModal({
     win.document.write(fullHtml);
     win.document.close();
   };
-
-  // Preview container max-width matching selected format
-  const previewMaxWidthClass = useMemo(() => {
-    if (paperFormat === "A5") {
-      return orientation === "landscape" ? "max-w-[210mm]" : "max-w-[148mm]";
-    }
-    if (paperFormat === "A3") {
-      return orientation === "landscape" ? "max-w-[420mm]" : "max-w-[297mm]";
-    }
-    if (paperFormat === "Letter") {
-      return orientation === "landscape" ? "max-w-[279mm]" : "max-w-[216mm]";
-    }
-    // A4
-    return orientation === "landscape" ? "max-w-[297mm]" : "max-w-[210mm]";
-  }, [paperFormat, orientation]);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
