@@ -23,7 +23,7 @@ import {
   Star,
   Trash2,
 } from "lucide-react";
-import { Card, Button } from "@heroui/react";
+import { Card } from "@heroui/react";
 import { useAIResultQuery, useAdminDeleteTalkMutation } from "~entities/talk/api/queries";
 import { apiClient } from "~shared/lib/api/client";
 import { ConfirmDeleteTalkModal } from "~shared/ui";
@@ -145,25 +145,23 @@ export function JuryCard({
   };
 
   return (
-    <Card className="border border-[#1a4d3e]/15 bg-white shadow-sm hover:shadow-md transition-all duration-200 rounded-2xl overflow-hidden flex flex-col justify-between">
-      <div className="p-4 sm:p-6 space-y-3 sm:space-y-4">
+    <Card className="p-0! gap-0! border border-[#1a4d3e]/15 bg-white shadow-sm hover:shadow-md transition-all duration-200 rounded-2xl overflow-hidden flex flex-col">
+      <div className="p-4 sm:p-5 space-y-3 sm:space-y-4">
         {/* Header: Section + ID + Status */}
         <div className="space-y-2 pb-3 border-b border-[#1a4d3e]/10">
-          <div className="flex flex-wrap items-center justify-between gap-2.5">
-            <div className="flex items-center gap-2">
-              <span
-                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold text-white shadow-xs"
-                style={{ backgroundColor: talk.section?.color || "#1a4d3e" }}
-              >
-                <SectionIcon className="size-3.5" />
-                {sectionTitle}
-              </span>
-              <span className="text-xs font-mono text-muted-foreground bg-[#1a4d3e]/5 px-2 py-0.5 rounded-md border border-[#1a4d3e]/10">
-                №{talk.id}
-              </span>
-            </div>
-            {renderStatusBadge()}
+          <div className="flex items-start gap-2">
+            <span
+              className="flex-1 min-w-0 inline-flex items-start gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold leading-snug text-white shadow-xs"
+              style={{ backgroundColor: talk.section?.color || "#1a4d3e" }}
+            >
+              <SectionIcon className="size-3.5 shrink-0 mt-px" />
+              <span className="min-w-0">{sectionTitle}</span>
+            </span>
+            <span className="shrink-0 text-xs font-mono text-muted-foreground bg-[#1a4d3e]/5 px-2 py-1 rounded-md border border-[#1a4d3e]/10">
+              №{talk.id}
+            </span>
           </div>
+          <div>{renderStatusBadge()}</div>
 
           {talk.isKeynote && (
             <div className="bg-amber-100 border border-amber-300 rounded-xl px-2.5 py-1 text-xs font-extrabold text-amber-900 flex items-center justify-between shadow-2xs">
@@ -178,8 +176,8 @@ export function JuryCard({
           )}
 
           {talk.section?.supervisor && (
-            <div className="text-[11px] text-muted-foreground flex items-center gap-1 pt-0.5">
-              <UserCheck className="size-3 text-[#d4a84b] shrink-0" />
+            <div className="text-[11px] text-muted-foreground flex items-start gap-1.5 pt-0.5">
+              <UserCheck className="size-3 text-[#d4a84b] shrink-0 mt-0.5" />
               <span>Ответств. за секцию: <strong className="text-[#1a4d3e]">{talk.section.supervisor}</strong></span>
             </div>
           )}
@@ -194,21 +192,28 @@ export function JuryCard({
           >
             {talk.title}
           </h3>
-          <div className="flex flex-wrap items-center gap-y-1.5 gap-x-4 mt-2 text-xs text-muted-foreground">
-            <span className="flex items-center gap-1 text-[#1a4d3e] font-semibold">
-              <GraduationCap className="size-3.5 text-[#d4a84b]" />
-              {talk.speakerName} {talk.gradeOrGroup ? `(${talk.gradeOrGroup})` : ""}
+          <div className="flex flex-col gap-1.5 mt-2.5 text-xs text-muted-foreground">
+            <span className="flex items-start gap-1.5 text-[#1a4d3e] font-semibold">
+              <GraduationCap className="size-3.5 text-[#d4a84b] shrink-0 mt-px" />
+              <span>
+                {talk.speakerName}
+                {talk.gradeOrGroup && (
+                  <span className="whitespace-nowrap font-medium text-muted-foreground"> · {talk.gradeOrGroup}</span>
+                )}
+              </span>
             </span>
             {talk.supervisor && (
-              <span className="flex items-center gap-1">
-                <UserCheck className="size-3.5 text-muted-foreground" />
-                Науч. рук.: <span className="font-medium text-[#1a4d3e]">{talk.supervisor}</span>
+              <span className="flex items-start gap-1.5">
+                <UserCheck className="size-3.5 text-muted-foreground shrink-0 mt-px" />
+                <span>
+                  Науч. рук.: <span className="font-medium text-[#1a4d3e]">{talk.supervisor}</span>
+                </span>
               </span>
             )}
             {talk.university && (
-              <span className="flex items-center gap-1">
-                <School className="size-3.5 text-muted-foreground" />
-                {talk.university}
+              <span className="flex items-start gap-1.5">
+                <School className="size-3.5 text-muted-foreground shrink-0 mt-px" />
+                <span>{talk.university}</span>
               </span>
             )}
           </div>
@@ -333,38 +338,20 @@ export function JuryCard({
       </div>
 
       {/* Card Actions Footer */}
-      <div className="p-4 sm:p-6 pt-0 space-y-2">
-        <Button
-          size="sm"
-          className="w-full py-2 sm:py-2.5 bg-[#1a4d3e]/10 hover:bg-[#1a4d3e]/20 text-[#1a4d3e] font-bold rounded-xl flex items-center justify-center gap-1.5 sm:gap-2 cursor-pointer transition-all border border-[#1a4d3e]/20 text-xs sm:text-sm"
-          onClick={() => onInspectClick(talk)}
-        >
-          <Eye className="size-3.5 sm:size-4 text-[#d4a84b]" />
-          <span>Детальный просмотр и экспертиза</span>
-        </Button>
-
-        <div className="flex gap-1.5 sm:gap-2">
-          <Button
-            size="sm"
-            className="flex-1 py-2 px-2 bg-[#1a4d3e] hover:bg-[#143d31] text-white font-bold rounded-xl shadow-xs transition-all cursor-pointer text-xs sm:text-sm"
-            onClick={() => onApproveClick(talk)}
+      <div className="mt-auto p-4 sm:p-5 pt-0 sm:pt-0 space-y-2">
+        <div className="flex gap-2">
+          <button
+            type="button"
+            className="flex-1 min-w-0 h-10 px-3 bg-[#1a4d3e]/10 hover:bg-[#1a4d3e]/20 text-[#1a4d3e] font-bold rounded-xl flex items-center justify-center gap-2 cursor-pointer transition-all border border-[#1a4d3e]/20 text-xs sm:text-sm"
+            onClick={() => onInspectClick(talk)}
           >
-            <Check className="size-3.5 sm:size-4 text-[#d4a84b] mr-1" />
-            Одобрить
-          </Button>
-
-          <Button
-            size="sm"
-            className="flex-1 py-2 px-2 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 font-bold rounded-xl transition-all cursor-pointer text-xs sm:text-sm"
-            onClick={() => onRevisionClick(talk)}
-          >
-            <AlertCircle className="size-3.5 sm:size-4 text-amber-600 mr-1" />
-            На доработку
-          </Button>
+            <Eye className="size-4 text-[#d4a84b] shrink-0" />
+            <span className="truncate">Детальный просмотр</span>
+          </button>
 
           <button
             type="button"
-            className="py-2 px-2.5 sm:px-3 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-bold rounded-xl transition-all cursor-pointer text-xs"
+            className="shrink-0 size-10 flex items-center justify-center bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-xl transition-all cursor-pointer"
             onClick={() => onRejectClick(talk)}
             aria-label="Отклонить заявку"
             title="Отклонить заявку"
@@ -374,7 +361,7 @@ export function JuryCard({
 
           <button
             type="button"
-            className="py-2 px-2.5 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 font-bold rounded-xl transition-all cursor-pointer text-xs disabled:opacity-40"
+            className="shrink-0 size-10 flex items-center justify-center bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 rounded-xl transition-all cursor-pointer disabled:opacity-40"
             onClick={(e) => {
               e.stopPropagation();
               setIsConfirmDeleteOpen(true);
@@ -383,7 +370,27 @@ export function JuryCard({
             aria-label="Удалить доклад"
             title="Удалить доклад из базы"
           >
-            <Trash2 className="size-3.5" />
+            <Trash2 className="size-4" />
+          </button>
+        </div>
+
+        <div className="grid grid-cols-2 gap-2">
+          <button
+            type="button"
+            className="min-w-0 h-10 px-2 flex items-center justify-center gap-1.5 bg-[#1a4d3e] hover:bg-[#143d31] text-white font-bold rounded-xl shadow-xs transition-all cursor-pointer text-xs sm:text-sm"
+            onClick={() => onApproveClick(talk)}
+          >
+            <Check className="size-4 text-[#d4a84b] shrink-0" />
+            <span className="truncate">Одобрить</span>
+          </button>
+
+          <button
+            type="button"
+            className="min-w-0 h-10 px-2 flex items-center justify-center gap-1.5 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 font-bold rounded-xl transition-all cursor-pointer text-xs sm:text-sm"
+            onClick={() => onRevisionClick(talk)}
+          >
+            <AlertCircle className="size-4 text-amber-600 shrink-0" />
+            <span className="truncate">На доработку</span>
           </button>
         </div>
       </div>
