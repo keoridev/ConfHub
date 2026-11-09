@@ -99,20 +99,20 @@ export function AppNavigation() {
                   МУИТ • 2026
                 </span>
               </div>
-              <p className="text-[9px] text-muted-foreground font-semibold tracking-wider hidden xs:block sm:block">
+              <p className="text-[9px] text-muted-foreground font-semibold tracking-wider hidden sm:block md:hidden lg:block">
                 XVIII Международная конференция
               </p>
             </div>
           </NavLink>
 
-          <nav aria-label="Основная навигация" className="hidden md:flex items-center gap-1 lg:gap-1.5 shrink-0">
+          <nav aria-label="Основная навигация" className="hidden md:flex items-center gap-0.5 lg:gap-1 xl:gap-1.5 min-w-0">
             {links.map((l) => (
               <NavLink
                 key={l.to}
                 to={l.to}
                 className={({ isActive }) =>
                   cn(
-                    "relative flex items-center gap-1.5 px-2.5 lg:px-3.5 py-1.5 lg:py-2 rounded-xl text-xs lg:text-sm font-semibold transition-all duration-200 outline-none select-none",
+                    "relative flex items-center gap-1.5 px-2 lg:px-2.5 xl:px-3.5 py-1.5 lg:py-2 rounded-xl text-xs lg:text-sm font-semibold whitespace-nowrap transition-all duration-200 outline-none select-none",
                     isActive
                       ? "text-[#1a4d3e] bg-[#1a4d3e]/8 shadow-2xs font-bold"
                       : "text-muted-foreground hover:text-[#1a4d3e] hover:bg-[#1a4d3e]/5"
@@ -122,7 +122,8 @@ export function AppNavigation() {
                 {({ isActive }) => (
                   <>
                     <l.icon className={cn("size-3.5 lg:size-4 shrink-0 transition-colors", isActive ? "text-[#d4a84b]" : "text-muted-foreground")} />
-                    <span>{l.label}</span>
+                    <span className="hidden xl:inline">{l.label}</span>
+                    <span className="xl:hidden">{l.shortLabel}</span>
                     {isActive && (
                       <span className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-[#d4a84b]" />
                     )}
@@ -134,11 +135,15 @@ export function AppNavigation() {
 
           <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
             {user ? (
-              <div className="flex items-center gap-1.5 sm:gap-2 bg-white/90 backdrop-blur-sm border border-[#1a4d3e]/15 p-1 sm:px-2.5 sm:py-1 rounded-xl sm:rounded-2xl shadow-2xs">
+              <div
+                className="flex items-center gap-1.5 sm:gap-2 bg-white/90 backdrop-blur-sm border border-[#1a4d3e]/15 p-1 xl:px-2.5 xl:py-1 rounded-xl sm:rounded-2xl shadow-2xs"
+                title={`${user.fullName || user.login} · ${getRoleLabel(user.role)}`}
+              >
                 <div className="size-7 sm:size-8 rounded-lg bg-[#1a4d3e] text-[#f5f3ed] flex items-center justify-center text-xs font-bold shrink-0 shadow-2xs">
                   {user.fullName ? user.fullName[0].toUpperCase() : <UserIcon className="size-3.5 sm:size-4" />}
                 </div>
-                <div className="text-left hidden sm:block">
+                {/* Name only where it fits: phones (no desktop nav) and wide screens */}
+                <div className="text-left hidden sm:block md:hidden xl:block">
                   <div className="flex items-center gap-1.5">
                     <span className="text-xs font-bold text-[#1a4d3e] max-w-[70px] md:max-w-[95px] lg:max-w-[130px] truncate block" title={user.fullName}>
                       {user.fullName || user.login}
