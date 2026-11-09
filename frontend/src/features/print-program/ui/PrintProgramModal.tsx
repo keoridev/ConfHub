@@ -16,6 +16,7 @@ import {
   Check,
 } from "lucide-react";
 import type { Section, Talk } from "~entities/talk/model/types";
+import { coAuthorLabels } from "~entities/talk/lib/coAuthors";
 import { fmt } from "~pages/admin-page/lib/formatters";
 
 interface PrintProgramModalProps {
@@ -343,7 +344,7 @@ export function PrintProgramModal({
             const coAuthorsHtml =
               showCoAuthors && talk.coAuthors && talk.coAuthors.length > 0
                 ? `<div style="font-size: ${smallFont}; color: #444; margin-top: 1.5px;">
-                    Соавторы: <i>${talk.coAuthors.join(", ")}</i>
+                    Соавторы: <i>${coAuthorLabels(talk.coAuthors).join(", ")}</i>
                   </div>`
                 : "";
 
@@ -464,7 +465,7 @@ export function PrintProgramModal({
             const coAuthorsHtml =
               showCoAuthors && talk.coAuthors && talk.coAuthors.length > 0
                 ? `<div style="font-size: ${smallFont}; color: #555; margin-top: 1px;">
-                    Соавторы: <i>${talk.coAuthors.join(", ")}</i>
+                    Соавторы: <i>${coAuthorLabels(talk.coAuthors).join(", ")}</i>
                   </div>`
                 : "";
 
@@ -1477,7 +1478,7 @@ export function PrintProgramModal({
                                     <div className="text-neutral-600 text-[10px]">
                                       Соавторы:{" "}
                                       <span className="italic">
-                                        {talk.coAuthors.join(", ")}
+                                        {coAuthorLabels(talk.coAuthors).join(", ")}
                                       </span>
                                     </div>
                                   )}
@@ -1746,7 +1747,7 @@ export function PrintProgramModal({
                                         density === "tiny" ? "text-[8.5px]" : density === "compact" ? "text-[9.5px]" : "text-[10px]"
                                       }`}
                                     >
-                                      Соавторы: <span className="italic">{talk.coAuthors.join(", ")}</span>
+                                      Соавторы: <span className="italic">{coAuthorLabels(talk.coAuthors).join(", ")}</span>
                                     </div>
                                   )}
                                   {includeAbstracts && talk.abstract && (

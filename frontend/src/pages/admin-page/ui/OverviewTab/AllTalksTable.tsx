@@ -26,6 +26,7 @@ import {
   useSectionsQuery,
 } from "~entities/talk/api/queries";
 import type { Talk, Section } from "~entities/talk/model/types";
+import { coAuthorLabels } from "~entities/talk/lib/coAuthors";
 import { PrintProgramModal } from "~features/print-program";
 import { statusLabel, statusClass } from "../../model/constants";
 import { fmt } from "../../lib/formatters";
@@ -182,7 +183,7 @@ export function AllTalksTable({ talks, loading, sections: propSections }: AllTal
         const matchGroup = (t.gradeOrGroup || "").toLowerCase().includes(q);
         const matchUniv = (t.university || "").toLowerCase().includes(q);
         const matchEmail = (t.authorEmail || "").toLowerCase().includes(q);
-        const matchCo = (t.coAuthors || []).some((ca) => ca.toLowerCase().includes(q));
+        const matchCo = coAuthorLabels(t.coAuthors).some((ca) => ca.toLowerCase().includes(q));
         if (
           !matchTitle &&
           !matchSpeaker &&
@@ -769,7 +770,7 @@ export function AllTalksTable({ talks, loading, sections: propSections }: AllTal
                 {previewTalk.coAuthors && previewTalk.coAuthors.length > 0 && (
                   <div className="mt-2 pt-2 border-t border-[#1a4d3e]/10">
                     <span className="text-muted-foreground block text-[11px] uppercase font-bold tracking-wider">Соавторы:</span>
-                    <span className="font-medium text-[#1a4d3e] text-[11px]">{previewTalk.coAuthors.join(", ")}</span>
+                    <span className="font-medium text-[#1a4d3e] text-[11px]">{coAuthorLabels(previewTalk.coAuthors).join(", ")}</span>
                   </div>
                 )}
               </div>

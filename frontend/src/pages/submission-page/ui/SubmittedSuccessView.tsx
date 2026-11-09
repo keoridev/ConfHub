@@ -15,6 +15,7 @@ import {
 import { Card, Button, Chip } from "@heroui/react";
 import { pathKeys } from "~shared/lib";
 import type { Talk, Section, User } from "~entities/talk/model/types";
+import { coAuthorLabels } from "~entities/talk/lib/coAuthors";
 
 interface SubmittedSuccessViewProps {
   createdTalkId: number;
@@ -112,7 +113,7 @@ export function SubmittedSuccessView({
                   <Users className="size-3.5 text-muted-foreground" />
                   Соавторы:
                 </span>
-                <span>{talk.coAuthors.join(", ")}</span>
+                <span>{coAuthorLabels(talk.coAuthors).join(", ")}</span>
               </div>
             )}
 

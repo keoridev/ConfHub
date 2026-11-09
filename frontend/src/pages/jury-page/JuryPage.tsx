@@ -14,6 +14,7 @@ import {
   useLogout,
 } from "~entities/talk/api/queries";
 import type { Talk } from "~entities/talk/model/types";
+import { coAuthorLabels } from "~entities/talk/lib/coAuthors";
 
 import { JuryCard } from "./ui/JuryCard";
 import { JuryTalkDetailModal } from "./ui/JuryTalkDetailModal";
@@ -170,7 +171,7 @@ export function JuryPage() {
         const matchSupervisor = (t.supervisor || "").toLowerCase().includes(q);
         const matchGroup = (t.gradeOrGroup || "").toLowerCase().includes(q);
         const matchUniv = (t.university || "").toLowerCase().includes(q);
-        const matchCo = (t.coAuthors || []).some((ca) =>
+        const matchCo = coAuthorLabels(t.coAuthors).some((ca) =>
           ca.toLowerCase().includes(q)
         );
         if (

@@ -32,6 +32,7 @@ import {
 import { apiClient } from "~shared/lib/api/client";
 import { ConfirmDeleteTalkModal } from "~shared/ui";
 import type { Talk } from "~entities/talk/model/types";
+import { coAuthorLabels } from "~entities/talk/lib/coAuthors";
 import type { AIResultResponse } from "../model/types";
 
 interface JuryTalkDetailModalProps {
@@ -236,7 +237,7 @@ export function JuryTalkDetailModal({
                   Соавторы доклада:
                 </span>
                 <p className="font-medium text-[#1a4d3e] bg-white p-2.5 rounded-xl border border-[#1a4d3e]/10">
-                  {talk.coAuthors.join(", ")}
+                  {coAuthorLabels(talk.coAuthors).join(", ")}
                 </p>
               </div>
             )}

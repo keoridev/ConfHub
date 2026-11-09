@@ -17,6 +17,7 @@ import {
   queryKeys,
 } from "~entities/talk/api/queries";
 import type { Talk } from "~entities/talk/model/types";
+import { coAuthorLabels } from "~entities/talk/lib/coAuthors";
 import { ConfirmLogoutModal } from "~shared/ui";
 
 import {
@@ -321,7 +322,7 @@ export function SubmissionPage() {
         setValue("keywords", talk.keywords.join(", "));
       }
       if (talk.coAuthors && talk.coAuthors.length > 0) {
-        const parsed: CoAuthorItem[] = talk.coAuthors.map((ca) => {
+        const parsed: CoAuthorItem[] = coAuthorLabels(talk.coAuthors).map((ca) => {
           const match = ca.match(/^(.*?)\s*\((.*?)\)$/);
           if (match) {
             const name = match[1].trim();

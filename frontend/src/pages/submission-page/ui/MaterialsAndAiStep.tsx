@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { Card, Button, Chip } from "@heroui/react";
 import type { Talk, User } from "~entities/talk/model/types";
+import { coAuthorLabels } from "~entities/talk/lib/coAuthors";
 
 interface MaterialsAndAiStepProps {
   createdTalkId: number;
@@ -127,7 +128,7 @@ export function MaterialsAndAiStep({
               <div className="flex items-center gap-1.5 text-xs text-muted-foreground pt-1">
                 <Users className="size-3.5 text-muted-foreground shrink-0" />
                 <span>
-                  Соавторы: <strong className="text-[#1a4d3e]">{talk.coAuthors.join(", ")}</strong>
+                  Соавторы: <strong className="text-[#1a4d3e]">{coAuthorLabels(talk.coAuthors).join(", ")}</strong>
                 </span>
               </div>
             )}

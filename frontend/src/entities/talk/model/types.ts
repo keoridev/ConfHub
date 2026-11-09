@@ -68,6 +68,17 @@ export interface Room {
   capacity?: number;
 }
 
+export type CoAuthor =
+  | string
+  | {
+      name?: string;
+      fullName?: string;
+      university?: string;
+      group?: string;
+      gradeOrGroup?: string;
+      email?: string;
+    };
+
 export interface Talk {
   id: number;
   conferenceId: number;
@@ -79,7 +90,7 @@ export interface Talk {
   supervisor?: string;
   abstract: string;
   tags: string[];
-  coAuthors?: string[];
+  coAuthors?: CoAuthor[];
   keywords?: string[];
   authorEmail?: string;
   university?: string;

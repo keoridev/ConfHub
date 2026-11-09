@@ -32,7 +32,7 @@ import {
 } from "~entities/talk/api/queries";
 import { pathKeys } from "~shared/lib";
 import { ConfirmDeleteTalkModal } from "~shared/ui";
-import { fmtTime } from "~entities/talk";
+import { coAuthorLabels, fmtTime } from "~entities/talk";
 
 export function TalkPage() {
   const { talkId = "" } = useParams();
@@ -339,7 +339,7 @@ export function TalkPage() {
                 <p className="text-xs text-muted-foreground flex items-center gap-1.5 pt-1">
                   <Users className="size-3.5 text-muted-foreground shrink-0" />
                   <span>
-                    Соавторы: <strong className="text-[#1a4d3e] font-semibold">{talk.coAuthors.join(", ")}</strong>
+                    Соавторы: <strong className="text-[#1a4d3e] font-semibold">{coAuthorLabels(talk.coAuthors).join(", ")}</strong>
                   </span>
                 </p>
               )}
