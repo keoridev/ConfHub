@@ -34,6 +34,7 @@ import { ConfirmDeleteTalkModal } from "~shared/ui";
 import type { Talk } from "~entities/talk/model/types";
 import { coAuthorLabels } from "~entities/talk/lib/coAuthors";
 import type { AIResultResponse } from "../model/types";
+import { useScheduleSettingsQuery } from "~entities/conference";
 
 interface JuryTalkDetailModalProps {
   talk: Talk | null;
@@ -52,6 +53,7 @@ export function JuryTalkDetailModal({
   onRejectClick,
   onRevisionClick,
 }: JuryTalkDetailModalProps) {
+  const { settings: { keynoteMinutes: keynoteMin } } = useScheduleSettingsQuery();
   const [isDownloading, setIsDownloading] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false);
@@ -75,7 +77,7 @@ export function JuryTalkDetailModal({
     try {
       const next = !talk.isKeynote;
       await keynoteMutation.mutateAsync({ talkId: talk.id, isKeynote: next });
-      toast.success(next ? "Доклад назначен ключевым секции (15 мин)!" : "Снят статус ключевого");
+      toast.success(next ? `Доклад назначен ключевым секции (${keynoteMin} мин)!` : "Снят статус ключевого");
     } catch (err: any) {
       toast.error(err?.response?.data?.error?.message || "Ошибка изменения статуса");
     }
@@ -148,7 +150,7 @@ export function JuryTalkDetailModal({
               {talk.isKeynote && (
                 <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-900 border border-amber-300 shadow-2xs">
                   <Star className="size-3.5 fill-amber-500 text-amber-500" />
-                  Ключевой доклад секции (15 мин)
+                  Ключевой доклад секции ({keynoteMin} мин)
                 </span>
               )}
               {talk.status === "approved" && (
@@ -492,10 +494,10 @@ export function JuryTalkDetailModal({
                   ? "bg-amber-100 border-amber-300 text-amber-900 hover:bg-amber-200 shadow-2xs"
                   : "border-[#1a4d3e]/20 text-[#1a4d3e] hover:bg-[#1a4d3e]/10"
               }`}
-              title={talk.isKeynote ? "Снять статус ключевого" : "Назначить ключевым докладом (15 мин, 1-я очередь)"}
+              title={talk.isKeynote ? "Снять статус ключевого" : `Назначить ключевым докладом (${keynoteMin} мин, 1-я очередь)`}
             >
               <Star className={`size-3.5 ${talk.isKeynote ? "fill-amber-500 text-amber-500" : ""}`} />
-              <span>{talk.isKeynote ? "Снять статус ключевого" : "Главный (15 мин)"}</span>
+              <span>{talk.isKeynote ? "Снять статус ключевого" : `Главный (${keynoteMin} мин)`}</span>
             </button>
 
             <button

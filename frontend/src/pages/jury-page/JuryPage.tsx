@@ -14,6 +14,7 @@ import {
   useLogout,
 } from "~entities/talk/api/queries";
 import type { Talk } from "~entities/talk/model/types";
+import { buildSlots, useScheduleSettingsQuery } from "~entities/conference";
 import { coAuthorLabels } from "~entities/talk/lib/coAuthors";
 
 import { JuryCard } from "./ui/JuryCard";
@@ -51,8 +52,9 @@ export function JuryPage() {
   );
 
   const [approveRoomId, setApproveRoomId] = useState("");
-  const [selectedDate, setSelectedDate] = useState("2026-11-10");
-  const [selectedSlot, setSelectedSlot] = useState("10:00 - 10:10");
+  const { settings: schedule } = useScheduleSettingsQuery();
+  const [selectedDate, setSelectedDate] = useState("");
+  const [selectedSlot, setSelectedSlot] = useState("");
   const [isKeynoteOption, setIsKeynoteOption] = useState(false);
   const [customStartTime, setCustomStartTime] = useState("");
   const [customEndTime, setCustomEndTime] = useState("");
@@ -68,9 +70,11 @@ export function JuryPage() {
         ? String(rooms[0].id)
         : "1"
     );
-    setSelectedDate("2026-11-10");
+    setSelectedDate(schedule.days[0] ?? "");
     setIsKeynoteOption(Boolean(talk.isKeynote));
-    setSelectedSlot(talk.isKeynote ? "10:00 - 10:15" : "10:00 - 10:10");
+    setSelectedSlot(
+      buildSlots(schedule, talk.isKeynote ? schedule.keynoteMinutes : schedule.talkMinutes)[0] ?? ""
+    );
     setIsApproveModalOpen(true);
   };
 
@@ -90,6 +94,10 @@ export function JuryPage() {
       startIso = new Date(customStartTime).toISOString();
       endIso = new Date(customEndTime).toISOString();
     } else {
+      if (!selectedDate || !selectedSlot) {
+        toast.error("Выберите день и время выступления");
+        return;
+      }
       const [startH, endH] = selectedSlot.split(" - ");
       startIso = new Date(`${selectedDate}T${startH}:00+06:00`).toISOString();
       endIso = new Date(`${selectedDate}T${endH}:00+06:00`).toISOString();
@@ -280,6 +288,7 @@ export function JuryPage() {
         onClose={() => setIsApproveModalOpen(false)}
         targetTalk={targetTalk}
         rooms={rooms}
+        schedule={schedule}
         approveRoomId={approveRoomId}
         setApproveRoomId={setApproveRoomId}
         selectedDate={selectedDate}

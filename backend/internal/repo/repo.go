@@ -220,9 +220,9 @@ func (db *DB) CreateConference(ctx context.Context, c *models.Conference) error 
 func (db *DB) GetCurrentConference(ctx context.Context) (*models.Conference, error) {
 	c := &models.Conference{}
 	err := db.Pool.QueryRow(ctx,
-		`SELECT id, title, starts_at, ends_at, is_current, created_at
+		`SELECT id, title, starts_at, ends_at, is_current, schedule, created_at
 		 FROM conferences WHERE is_current = true`,
-	).Scan(&c.ID, &c.Title, &c.StartsAt, &c.EndsAt, &c.IsCurrent, &c.CreatedAt)
+	).Scan(&c.ID, &c.Title, &c.StartsAt, &c.EndsAt, &c.IsCurrent, &c.Schedule, &c.CreatedAt)
 	if err == pgx.ErrNoRows {
 		return nil, nil
 	}
@@ -232,9 +232,9 @@ func (db *DB) GetCurrentConference(ctx context.Context) (*models.Conference, err
 func (db *DB) GetConference(ctx context.Context, id int64) (*models.Conference, error) {
 	c := &models.Conference{}
 	err := db.Pool.QueryRow(ctx,
-		`SELECT id, title, starts_at, ends_at, is_current, created_at
+		`SELECT id, title, starts_at, ends_at, is_current, schedule, created_at
 		 FROM conferences WHERE id = $1`, id,
-	).Scan(&c.ID, &c.Title, &c.StartsAt, &c.EndsAt, &c.IsCurrent, &c.CreatedAt)
+	).Scan(&c.ID, &c.Title, &c.StartsAt, &c.EndsAt, &c.IsCurrent, &c.Schedule, &c.CreatedAt)
 	if err == pgx.ErrNoRows {
 		return nil, nil
 	}
@@ -243,7 +243,7 @@ func (db *DB) GetConference(ctx context.Context, id int64) (*models.Conference, 
 
 func (db *DB) ListConferences(ctx context.Context) ([]models.Conference, error) {
 	rows, err := db.Pool.Query(ctx,
-		`SELECT id, title, starts_at, ends_at, is_current, created_at FROM conferences ORDER BY id DESC`)
+		`SELECT id, title, starts_at, ends_at, is_current, schedule, created_at FROM conferences ORDER BY id DESC`)
 	if err != nil {
 		return nil, err
 	}
@@ -251,7 +251,7 @@ func (db *DB) ListConferences(ctx context.Context) ([]models.Conference, error) 
 	var list []models.Conference
 	for rows.Next() {
 		var c models.Conference
-		if err := rows.Scan(&c.ID, &c.Title, &c.StartsAt, &c.EndsAt, &c.IsCurrent, &c.CreatedAt); err != nil {
+		if err := rows.Scan(&c.ID, &c.Title, &c.StartsAt, &c.EndsAt, &c.IsCurrent, &c.Schedule, &c.CreatedAt); err != nil {
 			return nil, err
 		}
 		list = append(list, c)
@@ -264,6 +264,15 @@ func (db *DB) UpdateConference(ctx context.Context, c *models.Conference) error 
 		`UPDATE conferences SET title=$2, starts_at=$3, ends_at=$4, is_current=$5 WHERE id=$1`,
 		c.ID, c.Title, c.StartsAt, c.EndsAt, c.IsCurrent)
 	return err
+}
+
+// UpdateConferenceSchedule saves the timetable settings; it reports false when the conference does not exist.
+func (db *DB) UpdateConferenceSchedule(ctx context.Context, id int64, s *models.ScheduleSettings) (bool, error) {
+	tag, err := db.Pool.Exec(ctx, `UPDATE conferences SET schedule=$2 WHERE id=$1`, id, s)
+	if err != nil {
+		return false, err
+	}
+	return tag.RowsAffected() > 0, nil
 }
 
 func (db *DB) SetCurrentConference(ctx context.Context, id int64) error {

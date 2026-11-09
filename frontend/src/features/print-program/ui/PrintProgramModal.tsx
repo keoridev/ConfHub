@@ -18,6 +18,7 @@ import {
 import type { Section, Talk } from "~entities/talk/model/types";
 import { coAuthorLabels } from "~entities/talk/lib/coAuthors";
 import { fmt } from "~pages/admin-page/lib/formatters";
+import { useScheduleSettingsQuery } from "~entities/conference";
 
 interface PrintProgramModalProps {
   isOpen: boolean;
@@ -37,6 +38,7 @@ export function PrintProgramModal({
   talks,
   sections,
 }: PrintProgramModalProps) {
+  const { settings: { talkMinutes: talkMin, keynoteMinutes: keynoteMin } } = useScheduleSettingsQuery();
   // ── Paper & Print Setup ─────────────────────
   const [layoutMode, setLayoutMode] = useState<LayoutMode>("text");
   const [paperFormat, setPaperFormat] = useState<PaperFormat>("A5");
@@ -660,7 +662,7 @@ export function PrintProgramModal({
           <div class="header-meta">
             <strong>Дата:</strong> 10 – 18 ноября 2026 г. &nbsp;•&nbsp;
             <strong>Место:</strong> МУИТ, г. Бишкек (очно и онлайн)
-            ${showTime ? "&nbsp;•&nbsp; <strong>Регламент:</strong> Ключевой доклад — 15 мин, секционный — 10 мин" : ""}
+            ${showTime ? `&nbsp;•&nbsp; <strong>Регламент:</strong> Ключевой доклад — ${keynoteMin} мин, секционный — ${talkMin} мин` : ""}
           </div>
           ${
             showStats
@@ -1300,7 +1302,7 @@ export function PrintProgramModal({
                     <span>•</span>
                     <span className="inline-flex items-center gap-1">
                       <Clock className="size-3 text-black shrink-0" />
-                      <span>Регламент: Ключевой — <strong>15 мин</strong>, секционный — <strong>10 мин</strong></span>
+                      <span>Регламент: Ключевой — <strong>{keynoteMin} мин</strong>, секционный — <strong>{talkMin} мин</strong></span>
                     </span>
                   </>
                 )}

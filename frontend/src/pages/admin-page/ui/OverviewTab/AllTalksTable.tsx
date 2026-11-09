@@ -30,6 +30,7 @@ import { coAuthorLabels } from "~entities/talk/lib/coAuthors";
 import { PrintProgramModal } from "~features/print-program";
 import { statusLabel, statusClass } from "../../model/constants";
 import { fmt } from "../../lib/formatters";
+import { useScheduleSettingsQuery } from "~entities/conference";
 
 interface AllTalksTableProps {
   talks: Talk[];
@@ -38,6 +39,7 @@ interface AllTalksTableProps {
 }
 
 export function AllTalksTable({ talks, loading, sections: propSections }: AllTalksTableProps) {
+  const { settings: { keynoteMinutes: keynoteMin } } = useScheduleSettingsQuery();
   const [search, setSearch] = useState("");
   const [sectionFilter, setSectionFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -124,7 +126,7 @@ export function AllTalksTable({ talks, loading, sections: propSections }: AllTal
         isKeynote: nextState,
       });
       if (nextState) {
-        toast.success(`Доклад «${talk.title}» назначен ключевым в секции (15 мин, 1-я очередь)!`);
+        toast.success(`Доклад «${talk.title}» назначен ключевым в секции (${keynoteMin} мин, 1-я очередь)!`);
       } else {
         toast.info(`С доклада «${talk.title}» снят статус ключевого.`);
       }
@@ -440,7 +442,7 @@ export function AllTalksTable({ talks, loading, sections: propSections }: AllTal
                     >
                       <td className="admin-td-num text-center">
                         {talk.isKeynote ? (
-                          <span title="Ключевой доклад секции (15 мин, 1-я очередь)" className="text-amber-500 font-bold inline-flex items-center justify-center">
+                          <span title={`Ключевой доклад секции (${keynoteMin} мин, 1-я очередь)`} className="text-amber-500 font-bold inline-flex items-center justify-center">
                             <Star className="size-3.5 fill-amber-500 text-amber-500" />
                           </span>
                         ) : (
@@ -563,7 +565,7 @@ export function AllTalksTable({ talks, loading, sections: propSections }: AllTal
                                 ? "bg-amber-100 hover:bg-amber-200 border-amber-300 text-amber-900 shadow-2xs font-bold"
                                 : "border-[#1a4d3e]/20 text-[#1a4d3e]/70 hover:text-[#1a4d3e] hover:bg-[#1a4d3e]/10"
                             }`}
-                            title={talk.isKeynote ? "Снять статус главного доклада" : "Сделать главным докладом секции (15 мин)"}
+                            title={talk.isKeynote ? "Снять статус главного доклада" : `Сделать главным докладом секции (${keynoteMin} мин)`}
                           >
                             <Star className={`size-3 ${talk.isKeynote ? "fill-amber-500 text-amber-500" : ""}`} />
                             <span>{talk.isKeynote ? "Главный" : "Сделать гл."}</span>
@@ -737,7 +739,7 @@ export function AllTalksTable({ talks, loading, sections: propSections }: AllTal
                   {previewTalk.isKeynote && (
                     <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-900 border border-amber-300 shadow-2xs">
                       <Star className="size-3 fill-amber-500 text-amber-500" />
-                      <span>Главный доклад секции (15 мин)</span>
+                      <span>Главный доклад секции ({keynoteMin} мин)</span>
                     </span>
                   )}
                   <span className="text-xs font-mono text-muted-foreground">#{previewTalk.id}</span>

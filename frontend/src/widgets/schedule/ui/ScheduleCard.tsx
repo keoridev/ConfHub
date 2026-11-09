@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { pathKeys } from "~shared/lib";
 import type { Section, Talk } from "~entities/talk/model/types";
 import { fmtTime } from "~entities/talk";
+import { useScheduleSettingsQuery } from "~entities/conference";
 
 interface ScheduleCardProps {
   talk: Talk;
@@ -16,6 +17,7 @@ export function ScheduleCard({
   section,
   isCompact = false,
 }: ScheduleCardProps) {
+  const { settings: { keynoteMinutes: keynoteMin } } = useScheduleSettingsQuery();
   const durationMinutes =
     talk.startTime && talk.endTime
       ? Math.round(
@@ -120,7 +122,7 @@ export function ScheduleCard({
             {talk.isKeynote && (
               <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-extrabold bg-amber-100 text-amber-900 border border-amber-300 shadow-2xs">
                 <Star className="size-3 fill-amber-500 text-amber-500" />
-                <span>Ключевой доклад секции (15 мин)</span>
+                <span>Ключевой доклад секции ({keynoteMin} мин)</span>
               </span>
             )}
 

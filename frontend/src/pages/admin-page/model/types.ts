@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-export type Tab = "overview" | "sections" | "rooms" | "schedule";
+export type Tab = "overview" | "sections" | "rooms" | "schedule" | "regulations";
 
 export interface TabConfig {
   key: Tab;

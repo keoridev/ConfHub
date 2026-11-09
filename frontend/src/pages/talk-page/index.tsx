@@ -33,8 +33,10 @@ import {
 import { pathKeys } from "~shared/lib";
 import { ConfirmDeleteTalkModal } from "~shared/ui";
 import { coAuthorLabels, fmtTime } from "~entities/talk";
+import { useScheduleSettingsQuery } from "~entities/conference";
 
 export function TalkPage() {
+  const { settings: { talkMinutes: talkMin, keynoteMinutes: keynoteMin } } = useScheduleSettingsQuery();
   const { talkId = "" } = useParams();
   const navigate = useNavigate();
   const { data: talk, isLoading, isError } = useTalkQuery(Number(talkId));
@@ -207,7 +209,7 @@ export function TalkPage() {
           ) : (
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#f5f3ed] text-muted-foreground text-xs font-medium">
               <Clock className="size-3.5 text-[#d4a84b]" />
-              <span>{talk.isKeynote ? "15 мин / ключевой доклад (время уточняется)" : "10 мин / доклад (время уточняется)"}</span>
+              <span>{talk.isKeynote ? `${keynoteMin} мин / ключевой доклад (время уточняется)` : `${talkMin} мин / доклад (время уточняется)`}</span>
             </span>
           )}
 

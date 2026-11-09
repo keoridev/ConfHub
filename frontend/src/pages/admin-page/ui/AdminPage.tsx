@@ -22,6 +22,7 @@ import { OverviewTab } from "./OverviewTab/OverviewTab";
 import { SectionsTab } from "./SectionsTab/SectionsTab";
 import { RoomsTab } from "./RoomsTab/RoomsTab";
 import { ScheduleTab } from "./ScheduleTab/ScheduleTab";
+import { ScheduleSettingsTab } from "./ScheduleSettingsTab/ScheduleSettingsTab";
 
 export function AdminPage() {
   const navigate = useNavigate();
@@ -158,6 +159,8 @@ export function AdminPage() {
             dayEndHour={scheduleManager.dayEndHour}
           />
         )}
+
+        {activeTab === "regulations" && <ScheduleSettingsTab />}
       </main>
 
       <footer className="admin-footer">

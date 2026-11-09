@@ -2,6 +2,7 @@ import { Pencil, Trash2, UserCheck } from "lucide-react";
 import type { Section } from "~entities/talk/model/types";
 import { ROOM_COLORS } from "../../model/constants";
 import { formatTalkWord } from "../../lib/formatters";
+import { useScheduleSettingsQuery } from "~entities/conference";
 
 interface SectionCardProps {
   section: Section;
@@ -18,6 +19,7 @@ export function SectionCard({
   onEdit,
   onDelete,
 }: SectionCardProps) {
+  const { settings: { talkMinutes: talkMin, keynoteMinutes: keynoteMin } } = useScheduleSettingsQuery();
   const isBusy = talkCount > 0;
   const badgeColor = ROOM_COLORS[index % ROOM_COLORS.length];
 
@@ -49,7 +51,7 @@ export function SectionCard({
             </span>
             <span className="text-muted-foreground">•</span>
             <span className="text-xs text-[#d4a84b] font-bold font-mono">
-              Регламент: 10 мин (ключевой: 15 мин)
+              Регламент: {talkMin} мин (ключевой: {keynoteMin} мин)
             </span>
           </div>
         </div>

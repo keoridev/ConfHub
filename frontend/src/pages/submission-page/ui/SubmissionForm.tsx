@@ -26,6 +26,7 @@ import type { SubmissionFormValues, CoAuthorItem } from "../model/types";
 import { CoAuthorsEditor } from "./CoAuthorsEditor";
 import { KeywordsInput } from "./KeywordsInput";
 import { AbstractInput } from "./AbstractInput";
+import { useScheduleSettingsQuery } from "~entities/conference";
 
 interface SubmissionFormProps {
   register: UseFormRegister<SubmissionFormValues>;
@@ -56,6 +57,7 @@ export function SubmissionForm({
   onSubmit,
   isPending,
 }: SubmissionFormProps) {
+  const { settings: { talkMinutes: talkMin, keynoteMinutes: keynoteMin } } = useScheduleSettingsQuery();
   const [sectionSearch, setSectionSearch] = useState("");
   const sectionId = watch("sectionId");
   const titleValue = watch("title") || "";
@@ -142,7 +144,7 @@ export function SubmissionForm({
                 <span className="text-danger font-bold">*</span>
               </label>
               <p className="text-[11px] sm:text-xs text-muted-foreground mt-0.5">
-                Регламент: 10 мин (15 мин для ключевых) · ключевые в 1-ю очередь
+                Регламент: {talkMin} мин ({keynoteMin} мин для ключевых) · ключевые в 1-ю очередь
               </p>
             </div>
 
@@ -224,7 +226,7 @@ export function SubmissionForm({
                       </span>
                       <span className="flex items-center gap-1 text-[#1a4d3e]/70 font-medium">
                         <Clock className="size-2.5 text-[#d4a84b]" />
-                        <span>10 мин (кл: 15 мин)</span>
+                        <span>{talkMin} мин (кл: {keynoteMin} мин)</span>
                       </span>
                     </div>
                   </div>
@@ -259,7 +261,7 @@ export function SubmissionForm({
                   </span>
                   <span className="px-2 py-0.5 rounded-md bg-[#d4a84b]/20 text-[#1a4d3e] font-bold inline-flex items-center gap-1">
                     <Clock className="size-3 text-[#1a4d3e]" />
-                    <span>10 мин (ключевой: 15 мин)</span>
+                    <span>{talkMin} мин (ключевой: {keynoteMin} мин)</span>
                   </span>
                 </div>
               </div>

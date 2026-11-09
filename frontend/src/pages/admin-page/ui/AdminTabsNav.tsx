@@ -1,4 +1,4 @@
-import { RefreshCw, LayoutDashboard, BookOpen, DoorOpen, CalendarDays } from "lucide-react";
+import { RefreshCw, LayoutDashboard, BookOpen, DoorOpen, CalendarDays, Clock } from "lucide-react";
 import type { Tab, TabConfig } from "../model/types";
 
 export const ADMIN_TABS: TabConfig[] = [
@@ -6,6 +6,7 @@ export const ADMIN_TABS: TabConfig[] = [
   { key: "sections", label: "Секции", icon: <BookOpen className="size-4" /> },
   { key: "rooms", label: "Аудитории", icon: <DoorOpen className="size-4" /> },
   { key: "schedule", label: "Расписание", icon: <CalendarDays className="size-4" /> },
+  { key: "regulations", label: "Регламент", icon: <Clock className="size-4" /> },
 ];
 
 interface AdminTabsNavProps {

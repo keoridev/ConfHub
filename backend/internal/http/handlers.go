@@ -1148,6 +1148,33 @@ func (h *Handler) AdminUpdateConference(c *gin.Context) {
 	mw.WriteJSON(c, http.StatusOK, conf)
 }
 
+func (h *Handler) AdminUpdateConferenceSchedule(c *gin.Context) {
+	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		mw.WriteError(c, http.StatusBadRequest, "INVALID_PARAM", "неверный id")
+		return
+	}
+	var settings models.ScheduleSettings
+	if err := c.ShouldBindJSON(&settings); err != nil {
+		mw.WriteError(c, http.StatusBadRequest, "INVALID_JSON", "неверный формат")
+		return
+	}
+	if err := settings.Validate(); err != nil {
+		mw.WriteError(c, http.StatusBadRequest, "VALIDATION_ERROR", err.Error())
+		return
+	}
+	found, err := h.db.UpdateConferenceSchedule(c.Request.Context(), id, &settings)
+	if err != nil {
+		mw.WriteError(c, http.StatusInternalServerError, "INTERNAL", "ошибка сохранения регламента")
+		return
+	}
+	if !found {
+		mw.WriteError(c, http.StatusNotFound, "NOT_FOUND", "конференция не найдена")
+		return
+	}
+	mw.WriteJSON(c, http.StatusOK, settings)
+}
+
 func (h *Handler) AdminDeleteConference(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {

@@ -29,6 +29,7 @@ import { apiClient } from "~shared/lib/api/client";
 import { ConfirmDeleteTalkModal } from "~shared/ui";
 import type { Talk } from "~entities/talk/model/types";
 import type { AIResultResponse } from "../model/types";
+import { useScheduleSettingsQuery } from "~entities/conference";
 
 interface JuryCardProps {
   talk: Talk;
@@ -45,6 +46,7 @@ export function JuryCard({
   onRevisionClick,
   onInspectClick,
 }: JuryCardProps) {
+  const { settings: { keynoteMinutes: keynoteMin } } = useScheduleSettingsQuery();
   const [isDownloading, setIsDownloading] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false);
@@ -167,7 +169,7 @@ export function JuryCard({
             <div className="bg-amber-100 border border-amber-300 rounded-xl px-2.5 py-1 text-xs font-extrabold text-amber-900 flex items-center justify-between shadow-2xs">
               <span className="flex items-center gap-1.5">
                 <Star className="size-3.5 fill-amber-500 text-amber-500" />
-                <span>Ключевой доклад секции (15 мин)</span>
+                <span>Ключевой доклад секции ({keynoteMin} мин)</span>
               </span>
               <span className="text-[10px] uppercase tracking-wider font-mono bg-white/70 px-1.5 py-0.2 rounded font-bold">
                 1-я очередь

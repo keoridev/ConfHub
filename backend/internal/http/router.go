@@ -97,6 +97,7 @@ func NewRouter(h *Handler, jwtSecret string, db *repo.DB, corsOrigins []string) 
 				// Conferences
 				admin.POST("/api/admin/conferences", h.AdminCreateConference)
 				admin.PATCH("/api/admin/conferences/:id", h.AdminUpdateConference)
+				admin.PUT("/api/admin/conferences/:id/schedule", h.AdminUpdateConferenceSchedule)
 				admin.DELETE("/api/admin/conferences/:id", h.AdminDeleteConference)
 
 				// Sections

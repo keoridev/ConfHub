@@ -2,6 +2,8 @@ package models
 
 import (
 	"encoding/json"
+	"fmt"
+	"sort"
 	"time"
 )
 
@@ -52,12 +54,86 @@ func (u *User) ToPublic() UserPublic {
 // ── Conference ───────────────────────────────
 
 type Conference struct {
-	ID        int64      `json:"id"`
-	Title     string     `json:"title"`
-	StartsAt  *time.Time `json:"startsAt,omitempty"`
-	EndsAt    *time.Time `json:"endsAt,omitempty"`
-	IsCurrent bool       `json:"isCurrent"`
-	CreatedAt time.Time  `json:"createdAt"`
+	ID        int64             `json:"id"`
+	Title     string            `json:"title"`
+	StartsAt  *time.Time        `json:"startsAt,omitempty"`
+	EndsAt    *time.Time        `json:"endsAt,omitempty"`
+	IsCurrent bool              `json:"isCurrent"`
+	Schedule  *ScheduleSettings `json:"schedule,omitempty"`
+	CreatedAt time.Time         `json:"createdAt"`
+}
+
+// ScheduleSettings is the conference timetable the admin configures; jury slots are built from it.
+// Times are local (Asia/Bishkek) "HH:MM"; an empty lunch means no break.
+type ScheduleSettings struct {
+	Days           []string `json:"days"`
+	DayStart       string   `json:"dayStart"`
+	DayEnd         string   `json:"dayEnd"`
+	TalkMinutes    int      `json:"talkMinutes"`
+	KeynoteMinutes int      `json:"keynoteMinutes"`
+	LunchStart     string   `json:"lunchStart"`
+	LunchEnd       string   `json:"lunchEnd"`
+}
+
+func parseClock(s string) (int, error) {
+	t, err := time.Parse("15:04", s)
+	if err != nil {
+		return 0, fmt.Errorf("неверное время %q, нужен формат ЧЧ:ММ", s)
+	}
+	return t.Hour()*60 + t.Minute(), nil
+}
+
+// Validate checks the settings and normalises the day list (sorted, unique).
+func (s *ScheduleSettings) Validate() error {
+	if len(s.Days) == 0 || len(s.Days) > 14 {
+		return fmt.Errorf("укажите от 1 до 14 дней конференции")
+	}
+	seen := map[string]bool{}
+	days := make([]string, 0, len(s.Days))
+	for _, d := range s.Days {
+		if _, err := time.Parse("2006-01-02", d); err != nil {
+			return fmt.Errorf("неверная дата %q", d)
+		}
+		if !seen[d] {
+			seen[d] = true
+			days = append(days, d)
+		}
+	}
+	sort.Strings(days)
+	s.Days = days
+
+	start, err := parseClock(s.DayStart)
+	if err != nil {
+		return err
+	}
+	end, err := parseClock(s.DayEnd)
+	if err != nil {
+		return err
+	}
+	if start >= end {
+		return fmt.Errorf("начало дня должно быть раньше конца")
+	}
+	if s.TalkMinutes < 5 || s.TalkMinutes > 60 {
+		return fmt.Errorf("длительность доклада: от 5 до 60 минут")
+	}
+	if s.KeynoteMinutes < 5 || s.KeynoteMinutes > 90 {
+		return fmt.Errorf("длительность ключевого доклада: от 5 до 90 минут")
+	}
+	if s.LunchStart == "" && s.LunchEnd == "" {
+		return nil
+	}
+	lunchStart, err := parseClock(s.LunchStart)
+	if err != nil {
+		return err
+	}
+	lunchEnd, err := parseClock(s.LunchEnd)
+	if err != nil {
+		return err
+	}
+	if lunchStart >= lunchEnd || lunchStart < start || lunchEnd > end {
+		return fmt.Errorf("обед должен быть внутри рабочего дня и начинаться раньше, чем заканчивается")
+	}
+	return nil
 }
 
 // ── Section ──────────────────────────────────

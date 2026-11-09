@@ -8,6 +8,7 @@ import type { Room, Talk } from "~entities/talk/model/types";
 import { useAdminDeleteTalkMutation } from "~entities/talk/api/queries";
 import { ROOM_COLORS } from "../../model/constants";
 import { fmt } from "../../lib/formatters";
+import { useScheduleSettingsQuery } from "~entities/conference";
 
 interface ScheduleTimelineProps {
   rooms: Room[];
@@ -22,6 +23,7 @@ export function ScheduleTimeline({
   rooms,
   talksByRoom,
 }: ScheduleTimelineProps) {
+  const { settings: { talkMinutes: talkMin, keynoteMinutes: keynoteMin } } = useScheduleSettingsQuery();
   const scrollRef = useRef<HTMLDivElement>(null);
   const [talkToDelete, setTalkToDelete] = useState<Talk | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -71,7 +73,7 @@ export function ScheduleTimeline({
           </span>
           <span>Всего докладов: <strong className="text-[#1a4d3e]">{totalScheduled}</strong></span>
           <span className="text-[#1a4d3e]/30 hidden sm:inline">•</span>
-          <span className="hidden sm:inline">Ключевые доклады идут в 1-ю очередь (15 мин), обычные — по 10 мин</span>
+          <span className="hidden sm:inline">Ключевые доклады идут в 1-ю очередь ({keynoteMin} мин), обычные — по {talkMin} мин</span>
         </div>
 
         <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">

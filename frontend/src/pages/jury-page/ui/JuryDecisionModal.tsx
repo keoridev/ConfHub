@@ -2,13 +2,15 @@ import React from "react";
 import { Check, X, AlertCircle, Zap, Star } from "lucide-react";
 import { Button } from "@heroui/react";
 import type { Room, Talk } from "~entities/talk/model/types";
-import { COMMENT_PRESETS, TIME_SLOTS, KEYNOTE_SLOTS } from "../model/types";
+import { buildSlots, formatDayLabel, type ScheduleSettings } from "~entities/conference";
+import { COMMENT_PRESETS } from "../model/types";
 
 interface JuryApproveModalProps {
   isOpen: boolean;
   onClose: () => void;
   targetTalk: Talk | null;
   rooms: Room[];
+  schedule: ScheduleSettings;
   approveRoomId: string;
   setApproveRoomId: (id: string) => void;
   selectedDate: string;
@@ -29,6 +31,7 @@ export function JuryApproveModal({
   onClose,
   targetTalk,
   rooms,
+  schedule,
   approveRoomId,
   setApproveRoomId,
   selectedDate,
@@ -46,6 +49,11 @@ export function JuryApproveModal({
   if (!isOpen || !targetTalk) return null;
 
   const isKeynote = isKeynoteOption ?? targetTalk.isKeynote;
+  const talkMin = schedule.talkMinutes;
+  const keynoteMin = schedule.keynoteMinutes;
+  const talkSlots = buildSlots(schedule, talkMin);
+  const keynoteSlots = buildSlots(schedule, keynoteMin);
+  const [slotStart, slotEnd] = selectedSlot ? selectedSlot.split(" - ") : ["", ""];
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#1a4d3e]/40 backdrop-blur-xs p-3 sm:p-4">
@@ -59,7 +67,7 @@ export function JuryApproveModal({
               {isKeynote && (
                 <span className="text-xs font-bold uppercase tracking-wider text-amber-900 bg-amber-100 px-2.5 py-0.5 rounded-full border border-amber-300 flex items-center gap-1 shadow-2xs">
                   <Star className="size-3 fill-amber-500 text-amber-500" />
-                  <span>Ключевой доклад · 15 мин</span>
+                  <span>Ключевой доклад · {keynoteMin} мин</span>
                 </span>
               )}
             </div>
@@ -89,7 +97,7 @@ export function JuryApproveModal({
                   Главный (ключевой) доклад секции
                 </span>
                 <span className="text-[11px] text-amber-800/80">
-                  Регламент 15 мин · открывает секцию в 1-ю очередь
+                  Регламент {keynoteMin} мин · открывает секцию в 1-ю очередь
                 </span>
               </div>
             </div>
@@ -100,11 +108,7 @@ export function JuryApproveModal({
                 onChange={(e) => {
                   const checked = e.target.checked;
                   setIsKeynoteOption?.(checked);
-                  if (checked) {
-                    setSelectedSlot("10:00 - 10:15");
-                  } else {
-                    setSelectedSlot("10:00 - 10:10");
-                  }
+                  setSelectedSlot((checked ? keynoteSlots : talkSlots)[0] ?? "");
                 }}
                 className="size-5 rounded text-amber-600 focus:ring-amber-500 border-amber-300 cursor-pointer accent-amber-600"
               />
@@ -133,40 +137,41 @@ export function JuryApproveModal({
             <label className="block text-xs font-bold uppercase tracking-wider text-[#1a4d3e] mb-1.5">
               Дата выступления
             </label>
-            <div className="grid grid-cols-2 gap-2">
-              {[
-                { date: "2026-11-10", label: "День 1 (10 нояб)" },
-                { date: "2026-11-11", label: "День 2 (11 нояб)" },
-              ].map((d) => (
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              {schedule.days.map((date, i) => (
                 <button
-                  key={d.date}
+                  key={date}
                   type="button"
-                  onClick={() => setSelectedDate(d.date)}
+                  onClick={() => setSelectedDate(date)}
                   className={`p-2 sm:p-2.5 rounded-xl border text-xs font-bold transition-all text-center cursor-pointer ${
-                    selectedDate === d.date
+                    selectedDate === date
                       ? "border-[#1a4d3e] bg-[#1a4d3e] text-white"
                       : "border-[#1a4d3e]/20 bg-[#f5f3ed]/60 text-[#1a4d3e] hover:bg-[#1a4d3e]/10"
                   }`}
                 >
-                  {d.label}
+                  День {i + 1} ({formatDayLabel(date)})
                 </button>
               ))}
             </div>
+            <p className="text-[11px] text-muted-foreground mt-1.5">
+              Секции работают {schedule.dayStart}–{schedule.dayEnd}
+              {schedule.lunchStart && schedule.lunchEnd && <> · обед {schedule.lunchStart}–{schedule.lunchEnd}</>}
+            </p>
           </div>
 
           <div>
             <div className="flex items-center justify-between gap-1 mb-2">
               <label className="block text-xs font-bold uppercase tracking-wider text-[#1a4d3e]">
-                {isKeynote ? "Временной слот ключевого доклада (15 минут)" : "Временной слот (регламент: 10 минут на статью)"}
+                {isKeynote ? `Временной слот ключевого доклада (${keynoteMin} минут)` : `Временной слот (регламент: ${talkMin} минут на статью)`}
               </label>
               <span className="text-[11px] text-[#d4a84b] font-bold font-mono inline-flex items-center gap-1">
                 {isKeynote ? (
                   <>
                     <Star className="size-3 fill-amber-500 text-amber-500 shrink-0" />
-                    <span>1-я очередь (15 мин)</span>
+                    <span>1-я очередь ({keynoteMin} мин)</span>
                   </>
                 ) : (
-                  "10 мин / доклад"
+                  `${talkMin} мин / доклад`
                 )}
               </span>
             </div>
@@ -175,7 +180,7 @@ export function JuryApproveModal({
               <div className="mb-3 p-2.5 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-900 flex items-center gap-2">
                 <Star className="size-4 fill-amber-500 text-amber-500 shrink-0" />
                 <span>
-                  Это <strong>главный доклад</strong> — он открывает секцию и идёт в 1-ю очередь. Регламент выступления: <strong>15 минут</strong>.
+                  Это <strong>главный доклад</strong> — он открывает секцию и идёт в 1-ю очередь. Регламент выступления: <strong>{keynoteMin} минут</strong>.
                 </span>
               </div>
             )}
@@ -183,10 +188,10 @@ export function JuryApproveModal({
             {isKeynote && (
               <div className="mb-3">
                 <span className="text-[11px] font-bold text-[#1a4d3e] block mb-1">
-                  Слоты ключевого выступления (по 15 мин):
+                  Слоты ключевого выступления (по {keynoteMin} мин):
                 </span>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 sm:gap-2 max-h-36 overflow-y-auto p-1.5 border border-amber-200 rounded-2xl bg-amber-50/40">
-                  {KEYNOTE_SLOTS.map((slot) => {
+                  {keynoteSlots.map((slot) => {
                     const isSelected = selectedSlot === slot && !customStartTime;
                     return (
                       <button
@@ -216,10 +221,10 @@ export function JuryApproveModal({
 
             <div>
               <span className="text-[11px] font-bold text-[#1a4d3e] block mb-1">
-                {isKeynote ? "Или выберите стандартный 10-минутный слот:" : "Слоты по 10 минут:"}
+                {isKeynote ? `Или выберите стандартный ${talkMin}-минутный слот:` : `Слоты по ${talkMin} минут:`}
               </span>
-              <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5 max-h-40 overflow-y-auto p-1.5 border border-[#1a4d3e]/10 rounded-2xl bg-[#f5f3ed]/30">
-                {TIME_SLOTS.map((slot) => {
+              <div className="grid grid-cols-3 sm:grid-cols-4 gap-1.5 max-h-40 overflow-y-auto p-1.5 border border-[#1a4d3e]/10 rounded-2xl bg-[#f5f3ed]/30">
+                {talkSlots.map((slot) => {
                   const isSelected = selectedSlot === slot && !customStartTime;
                   return (
                     <button
@@ -258,7 +263,7 @@ export function JuryApproveModal({
               isPending={isPending}
             >
               <Check className="size-4 text-[#d4a84b] mr-1.5" />
-              Подтвердить ({selectedSlot.split(" - ")[0]}–{selectedSlot.split(" - ")[1]})
+              {selectedSlot ? `Подтвердить (${slotStart}–${slotEnd})` : "Подтвердить"}
             </Button>
           </div>
         </form>
