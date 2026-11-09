@@ -480,6 +480,7 @@ type CreateTalkRequest struct {
 	ConferenceID *int64            `json:"conferenceId"`
 	SectionID    *int64            `json:"sectionId"` // необязательно
 	Title        string            `json:"title"`
+	SpeakerName  *string           `json:"speakerName"` // ФИО из формы; иначе имя аккаунта
 	Supervisor   *string           `json:"supervisor"`
 	Abstract     string            `json:"abstract"`
 	Tags         []string          `json:"tags"`
@@ -578,12 +579,17 @@ func (s *Service) CreateTalk(ctx context.Context, user *models.User, req CreateT
 		gradeOrGroup = user.GroupName
 	}
 
+	speakerName := user.FullName
+	if req.SpeakerName != nil && strings.TrimSpace(*req.SpeakerName) != "" {
+		speakerName = strings.TrimSpace(*req.SpeakerName)
+	}
+
 	talk := &models.Talk{
 		ConferenceID: conferenceID,
 		SectionID:    req.SectionID,
 		AuthorID:     user.ID,
 		Title:        req.Title,
-		SpeakerName:  user.FullName,
+		SpeakerName:  speakerName,
 		GradeOrGroup: gradeOrGroup,
 		Supervisor:   req.Supervisor,
 		Abstract:     req.Abstract,
@@ -616,6 +622,7 @@ func (s *Service) validateTalkFields(title, abstract string, supervisor *string,
 type UpdateTalkRequest struct {
 	SectionID    *int64            `json:"sectionId"`
 	Title        *string           `json:"title"`
+	SpeakerName  *string           `json:"speakerName"`
 	Supervisor   *string           `json:"supervisor"`
 	Abstract     *string           `json:"abstract"`
 	Tags         []string          `json:"tags"`
@@ -655,6 +662,9 @@ func (s *Service) UpdateTalk(ctx context.Context, talk *models.Talk, req UpdateT
 
 	if req.Title != nil {
 		talk.Title = *req.Title
+	}
+	if req.SpeakerName != nil && strings.TrimSpace(*req.SpeakerName) != "" {
+		talk.SpeakerName = strings.TrimSpace(*req.SpeakerName)
 	}
 	if req.Abstract != nil {
 		talk.Abstract = *req.Abstract

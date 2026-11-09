@@ -556,12 +556,12 @@ func (db *DB) UpdateTalk(ctx context.Context, t *models.Talk) error {
 		`UPDATE talks SET section_id=$2, title=$3, supervisor=$4, abstract=$5, tags=$6,
 		        co_authors=$7, keywords=$8, author_email=$9, university=$10, grade_or_group=$11,
 		        status=$12, jury_comment=$13, reviewed_by=$14, reviewed_at=$15,
-		        room_id=$16, start_time=$17, end_time=$18, updated_at=NOW()
+		        room_id=$16, start_time=$17, end_time=$18, speaker_name=$19, updated_at=NOW()
 		 WHERE id=$1`,
 		t.ID, t.SectionID, t.Title, t.Supervisor, t.Abstract, t.Tags,
 		t.CoAuthors, t.Keywords, t.AuthorEmail, t.University, t.GradeOrGroup,
 		t.Status, t.JuryComment, t.ReviewedBy, t.ReviewedAt,
-		t.RoomID, t.StartTime, t.EndTime)
+		t.RoomID, t.StartTime, t.EndTime, t.SpeakerName)
 	return err
 }
 
