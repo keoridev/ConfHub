@@ -339,25 +339,8 @@ export function useDeleteMyTalkMutation() {
 export function useAdminDeleteTalkMutation() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (id: number) => {
-      let lastErr: any = null;
-      try {
-        return (await apiClient.delete(`/admin/talks/${id}`)).data;
-      } catch (e: any) {
-        lastErr = e;
-      }
-      try {
-        return (await apiClient.delete(`/jury/talks/${id}`)).data;
-      } catch (e: any) {
-        lastErr = e;
-      }
-      try {
-        return (await apiClient.delete(`/talks/${id}`)).data;
-      } catch (e: any) {
-        lastErr = e;
-      }
-      throw lastErr;
-    },
+    // Available to both jury and admin
+    mutationFn: async (id: number) => (await apiClient.delete(`/jury/talks/${id}`)).data,
     onSuccess: (_, id) => {
       qc.removeQueries({ queryKey: queryKeys.talks.detail(id) });
       qc.setQueriesData({ queryKey: ["talks"] }, (old: any) => {

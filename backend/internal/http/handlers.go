@@ -234,6 +234,12 @@ func (h *Handler) ListConferenceTalks(c *gin.Context) {
 		return
 	}
 
+	// Jury and admin cards show the attached files straight from this list
+	for i := range talks {
+		talks[i].Document, _ = h.db.GetDocument(c.Request.Context(), talks[i].ID)
+		talks[i].Presentation, _ = h.db.GetPresentation(c.Request.Context(), talks[i].ID)
+	}
+
 	mw.WriteJSON(c, http.StatusOK, talks)
 }
 
