@@ -9,6 +9,7 @@ import {
   Search,
 } from "lucide-react";
 import type { User, Section } from "~entities/talk/model/types";
+import { JurySectionFilter } from "./JurySectionFilter";
 
 interface JuryHeaderProps {
   user?: User | null;
@@ -21,6 +22,8 @@ interface JuryHeaderProps {
   setSelectedSectionId: (id: string) => void;
   searchQuery: string;
   setSearchQuery: (query: string) => void;
+  sectionCounts: Record<string, number>;
+  filteredCount: number;
 }
 
 export function JuryHeader({
@@ -34,6 +37,8 @@ export function JuryHeader({
   setSelectedSectionId,
   searchQuery,
   setSearchQuery,
+  sectionCounts,
+  filteredCount,
 }: JuryHeaderProps) {
   return (
     <>
@@ -188,47 +193,55 @@ export function JuryHeader({
             </button>
           </div>
 
-          {/* Section filters and Search */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
-            <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-1">
-              <button
-                type="button"
-                onClick={() => setSelectedSectionId("all")}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
-                  selectedSectionId === "all"
-                    ? "bg-[#1a4d3e] text-white"
-                    : "bg-[#1a4d3e]/5 hover:bg-[#1a4d3e]/10 text-[#1a4d3e]"
-                }`}
-              >
-                Все секции
-              </button>
-              {sections.map((sec) => (
-                <button
-                  key={sec.id}
-                  type="button"
-                  onClick={() => setSelectedSectionId(String(sec.id))}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
-                    selectedSectionId === String(sec.id)
-                      ? "bg-[#1a4d3e] text-white"
-                      : "bg-[#1a4d3e]/5 hover:bg-[#1a4d3e]/10 text-[#1a4d3e]"
-                  }`}
-                >
-                  {sec.title}
-                </button>
-              ))}
-            </div>
+          {/* Section filter and Search */}
+          <div className="flex flex-col lg:flex-row lg:items-center gap-3 pt-1">
+            <JurySectionFilter
+              sections={sections}
+              selectedSectionId={selectedSectionId}
+              setSelectedSectionId={setSelectedSectionId}
+              sectionCounts={sectionCounts}
+              totalCount={tabCount}
+            />
 
-            <div className="relative w-full sm:w-64">
-              <Search className="size-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+            <div className="relative flex-1 min-w-0">
+              <Search className="size-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-[#1a4d3e]/40 pointer-events-none" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Поиск по названию, автору..."
-                className="w-full pl-9 pr-3 py-1.5 text-xs rounded-xl border border-[#1a4d3e]/20 bg-white text-[#1a4d3e] focus:outline-none focus:ring-2 focus:ring-[#1a4d3e]/20"
+                placeholder="Поиск по названию, докладчику, руководителю, группе, ВУЗу..."
+                className="w-full pl-10 pr-10 py-[15px] text-sm rounded-xl border border-[#1a4d3e]/20 bg-white text-[#1a4d3e] placeholder:text-[#1a4d3e]/40 focus:outline-none focus:border-[#1a4d3e] focus:ring-2 focus:ring-[#1a4d3e]/10 transition-all"
               />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery("")}
+                  title="Очистить поиск"
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 rounded-lg text-[#1a4d3e]/50 hover:text-[#1a4d3e] hover:bg-[#1a4d3e]/5 cursor-pointer"
+                >
+                  <X className="size-4" />
+                </button>
+              )}
             </div>
           </div>
+
+          {(selectedSectionId !== "all" || searchQuery.trim()) && (
+            <div className="flex items-center justify-between gap-3 text-xs text-[#1a4d3e]/70">
+              <span>
+                Найдено: <span className="font-bold text-[#1a4d3e]">{filteredCount}</span> из {tabCount}
+              </span>
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedSectionId("all");
+                  setSearchQuery("");
+                }}
+                className="font-bold text-[#1a4d3e] underline underline-offset-2 hover:text-[#143d31] cursor-pointer"
+              >
+                Сбросить фильтры
+              </button>
+            </div>
+          )}
         </div>
       )}
     </>

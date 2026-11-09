@@ -189,6 +189,15 @@ export function JuryPage() {
     });
   }, [safeTalks, selectedSectionId, searchQuery]);
 
+  const sectionCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const t of safeTalks) {
+      const secId = String(t.sectionId ?? t.section?.id);
+      counts[secId] = (counts[secId] ?? 0) + 1;
+    }
+    return counts;
+  }, [safeTalks]);
+
   return (
     <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10 space-y-8">
       <JuryHeader
@@ -202,6 +211,8 @@ export function JuryPage() {
         setSelectedSectionId={setSelectedSectionId}
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
+        sectionCounts={sectionCounts}
+        filteredCount={filteredTalks.length}
       />
 
       <div className="space-y-8">
