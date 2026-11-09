@@ -1,13 +1,15 @@
 <!doctype html>
-<html lang="en">
+<html lang="ru" translate="no">
   <head>
     <meta charset="UTF-8" />
+    <!-- Browser page translation rewrites React-managed DOM and crashes the app -->
+    <meta name="google" content="notranslate" />
     <link rel="icon" type="image/jpeg" href="/logo.jpg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Conf-Hub — Научно-практическая конференция 2026</title>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root" class="notranslate"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
