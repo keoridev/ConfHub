@@ -14,7 +14,7 @@ import {
   Eye,
   Layout,
   FileSpreadsheet,
-  Check,
+  ChevronDown,
 } from "lucide-react";
 import type { Section, SectionPrintCover, Talk } from "~entities/talk/model/types";
 import { useSaveSectionPrintCoverMutation } from "~entities/talk/api/queries";
@@ -177,6 +177,7 @@ export function PrintProgramModal({
   // Custom cover wording for the chosen section (e.g. a partner round table).
   // The draft drives the preview and print; "Сохранить" stores it for next time.
   const [coverDraft, setCoverDraft] = useState<SectionPrintCover>(EMPTY_COVER);
+  const [isCoverEditorOpen, setIsCoverEditorOpen] = useState(false);
   const savedCover = coverSection?.printCover;
   useEffect(() => {
     setCoverDraft(savedCover ? { ...EMPTY_COVER, ...savedCover } : EMPTY_COVER);
@@ -979,15 +980,43 @@ export function PrintProgramModal({
 
           {/* Section cover wording (saved per section) */}
           {coverSection && (
-            <details className="pt-2 border-t border-[#1a4d3e]/10 group" open={Boolean(savedCover)}>
-              <summary className="cursor-pointer select-none text-xs font-bold text-[#1a4d3e] flex items-center gap-1.5">
-                <BookOpen className="size-3.5 text-[#d4a84b]" />
-                Титульный лист секции №{coverSectionNo}
-                <span className="font-normal text-slate-500">
-                  {savedCover ? "· свой текст сохранён" : "· по умолчанию текст конференции"}
+            <div className="pt-2 border-t border-[#1a4d3e]/10">
+              <button
+                type="button"
+                onClick={() => setIsCoverEditorOpen((v) => !v)}
+                aria-expanded={isCoverEditorOpen}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 border-2 text-left cursor-pointer transition-colors ${
+                  isCoverEditorOpen
+                    ? "rounded-t-xl border-[#d4a84b] bg-[#d4a84b]/20"
+                    : "rounded-xl border-[#d4a84b]/60 bg-[#d4a84b]/10 hover:bg-[#d4a84b]/20"
+                }`}
+              >
+                <span className="size-8 rounded-lg bg-[#d4a84b] text-white flex items-center justify-center shrink-0 shadow-2xs">
+                  <BookOpen className="size-4" />
                 </span>
-              </summary>
-              <div className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-2.5 text-xs">
+                <span className="flex-1 min-w-0">
+                  <span className="flex items-center gap-2 text-xs sm:text-sm font-extrabold text-[#1a4d3e]">
+                    Титульный лист секции №{coverSectionNo}
+                    {savedCover && (
+                      <span className="px-1.5 py-0.5 rounded-md bg-emerald-100 text-emerald-800 border border-emerald-300 text-[10px] font-bold">
+                        свой текст
+                      </span>
+                    )}
+                  </span>
+                  <span className="block text-[11px] text-[#1a4d3e]/70 truncate">
+                    {savedCover
+                      ? "Шапка, заголовок и дата этой секции — нажмите, чтобы изменить"
+                      : "Сейчас общий титульник конференции — нажмите, чтобы задать свой"}
+                  </span>
+                </span>
+                <span className="shrink-0 inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[#1a4d3e] text-white text-xs font-bold">
+                  <span className="hidden sm:inline">{isCoverEditorOpen ? "Свернуть" : "Настроить"}</span>
+                  <ChevronDown className={`size-4 transition-transform ${isCoverEditorOpen ? "rotate-180" : ""}`} />
+                </span>
+              </button>
+              {isCoverEditorOpen && (
+              <div className="p-3 rounded-b-xl border-2 border-t-0 border-[#d4a84b] bg-[#d4a84b]/5">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 text-xs">
                 <label className="flex flex-col gap-1">
                   <span className="font-semibold text-slate-600">Шапка вместо «Министерство… / МУИТ» (каждая строка отдельно)</span>
                   <textarea
@@ -1051,7 +1080,9 @@ export function PrintProgramModal({
                   {saveCoverMutation.isPending ? "Сохранение..." : "Сохранить для секции"}
                 </button>
               </div>
-            </details>
+              </div>
+              )}
+            </div>
           )}
 
           {/* Granular Controls: Format, Borders, Density, Color, Toggles */}
