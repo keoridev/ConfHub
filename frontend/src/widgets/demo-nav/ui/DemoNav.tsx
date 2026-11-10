@@ -43,7 +43,7 @@ export function AppNavigation() {
   const getRoleLabel = (role?: string) => {
     if (role === "admin") return "Оргкомитет";
     if (role === "jury") return "Жюри";
-    return "Студент";
+    return user?.position ? "Участник" : "Студент";
   };
 
   // Separation of roles:
@@ -153,7 +153,7 @@ export function AppNavigation() {
                     </span>
                   </div>
                   <p className="text-[10px] text-muted-foreground leading-none truncate max-w-[95px]">
-                    {user.groupName ? `Гр. ${user.groupName}` : `@${user.login}`}
+                    {user.groupName ? `Гр. ${user.groupName}` : user.position || `@${user.login}`}
                   </p>
                 </div>
                 <button
@@ -211,7 +211,7 @@ export function AppNavigation() {
                         </span>
                       </div>
                       <p className="text-xs text-muted-foreground truncate">
-                        {user.groupName ? `Группа ${user.groupName}` : `@${user.login}`}
+                        {user.groupName ? `Группа ${user.groupName}` : user.position || `@${user.login}`}
                       </p>
                     </div>
                   </div>

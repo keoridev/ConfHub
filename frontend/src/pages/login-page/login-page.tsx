@@ -15,6 +15,7 @@ import {
   Mail,
   UserCheck,
   School,
+  Briefcase,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -35,7 +36,9 @@ export function LoginPage() {
   // Registration state
   const [regFullName, setRegFullName] = useState("");
   const [regUniversity, setRegUniversity] = useState("");
+  const [regType, setRegType] = useState<"student" | "participant">("student");
   const [regGroup, setRegGroup] = useState("");
+  const [regPosition, setRegPosition] = useState("");
   const [regLogin, setRegLogin] = useState("");
   const [regEmail, setRegEmail] = useState("");
   const [regPassword, setRegPassword] = useState("");
@@ -115,6 +118,18 @@ export function LoginPage() {
       toast.error(msg);
       return;
     }
+    if (regType === "student" && !regGroup.trim()) {
+      const msg = "Укажите вашу учебную группу";
+      setErrorMessage(msg);
+      toast.error(msg);
+      return;
+    }
+    if (regType === "participant" && !regPosition.trim()) {
+      const msg = "Укажите вашу должность или учёную степень";
+      setErrorMessage(msg);
+      toast.error(msg);
+      return;
+    }
     if (regPassword.length < 6) {
       const msg = "Пароль должен содержать не менее 6 символов";
       setErrorMessage(msg);
@@ -134,7 +149,9 @@ export function LoginPage() {
         login: regLogin.trim(),
         password: regPassword,
         university: regUniversity.trim() || undefined,
-        groupName: regGroup.trim() || undefined,
+        participantType: regType,
+        groupName: regType === "student" ? regGroup.trim() || undefined : undefined,
+        position: regType === "participant" ? regPosition.trim() || undefined : undefined,
         email: regEmail.trim() || undefined,
       });
 
@@ -231,7 +248,7 @@ export function LoginPage() {
             <p className="text-sm sm:text-base text-[#1a4d3e]/80 leading-relaxed">
               {authTab === "login"
                 ? "Введите логин и пароль вашей учётной записи для доступа к системе."
-                : "Создайте студенческий аккаунт для подачи тезисов, загрузки докладов и AI-экспресс-проверки."}
+                : "Студенты и участники (преподаватели, доценты и др.) — создайте аккаунт для подачи тезисов, загрузки докладов и AI-экспресс-проверки."}
             </p>
           </div>
 
@@ -246,6 +263,43 @@ export function LoginPage() {
             /* REGISTRATION CARD */
             <div className="max-w-xl mx-auto bg-white rounded-3xl border-2 border-[#1a4d3e]/15 p-6 sm:p-8 shadow-lg shadow-[#1a4d3e]/5 animate-in fade-in duration-200">
               <form onSubmit={handleRegisterSubmit} className="space-y-4 sm:space-y-5">
+                <div>
+                  <span className="block text-xs font-bold uppercase tracking-wider text-[#1a4d3e] mb-1.5">
+                    Я регистрируюсь как <span className="text-danger">*</span>
+                  </span>
+                  <div className="grid grid-cols-2 gap-1 p-1 rounded-xl bg-[#f5f3ed]/60 border border-[#1a4d3e]/20">
+                    {(
+                      [
+                        { value: "student", label: "Студент", hint: "укажете группу", icon: GraduationCap },
+                        { value: "participant", label: "Участник", hint: "преподаватель, доцент и др.", icon: Briefcase },
+                      ] as const
+                    ).map((opt) => (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() => {
+                          setRegType(opt.value);
+                          setErrorMessage(null);
+                        }}
+                        aria-pressed={regType === opt.value}
+                        className={`flex flex-col items-center justify-center gap-0.5 px-2 py-2 rounded-lg text-xs sm:text-sm font-bold transition-all cursor-pointer ${
+                          regType === opt.value
+                            ? "bg-[#1a4d3e] text-white shadow-xs"
+                            : "text-[#1a4d3e]/70 hover:text-[#1a4d3e] hover:bg-[#1a4d3e]/5"
+                        }`}
+                      >
+                        <span className="flex items-center gap-1.5">
+                          <opt.icon className="size-4 shrink-0" />
+                          {opt.label}
+                        </span>
+                        <span className={`text-[10px] font-medium ${regType === opt.value ? "text-white/75" : "text-[#1a4d3e]/50"}`}>
+                          {opt.hint}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-bold uppercase tracking-wider text-[#1a4d3e] mb-1.5">
@@ -286,23 +340,45 @@ export function LoginPage() {
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-bold uppercase tracking-wider text-[#1a4d3e] mb-1.5">
-                      Учебная группа<span className="text-[10px] lowercase text-muted-foreground font-normal">(опционально)</span>
-                    </label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#1a4d3e]/40">
-                        <GraduationCap className="size-4" />
+                  {regType === "student" ? (
+                    <div>
+                      <label className="block text-xs font-bold uppercase tracking-wider text-[#1a4d3e] mb-1.5">
+                        Учебная группа <span className="text-danger">*</span>
+                      </label>
+                      <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#1a4d3e]/40">
+                          <GraduationCap className="size-4" />
+                        </div>
+                        <input
+                          type="text"
+                          required
+                          value={regGroup}
+                          onChange={(e) => setRegGroup(e.target.value)}
+                          placeholder="Например: ИС-22 или 2 курс"
+                          className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-[#f5f3ed]/60 border border-[#1a4d3e]/20 text-sm text-[#1a4d3e] focus:outline-none focus:ring-2 focus:ring-[#1a4d3e] focus:bg-white transition-all font-medium"
+                        />
                       </div>
-                      <input
-                        type="text"
-                        value={regGroup}
-                        onChange={(e) => setRegGroup(e.target.value)}
-                        placeholder="Например: ИС-22 или 2 курс"
-                        className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-[#f5f3ed]/60 border border-[#1a4d3e]/20 text-sm text-[#1a4d3e] focus:outline-none focus:ring-2 focus:ring-[#1a4d3e] focus:bg-white transition-all font-medium"
-                      />
                     </div>
-                  </div>
+                  ) : (
+                    <div>
+                      <label className="block text-xs font-bold uppercase tracking-wider text-[#1a4d3e] mb-1.5">
+                        Должность / учёная степень <span className="text-danger">*</span>
+                      </label>
+                      <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#1a4d3e]/40">
+                          <Briefcase className="size-4" />
+                        </div>
+                        <input
+                          type="text"
+                          required
+                          value={regPosition}
+                          onChange={(e) => setRegPosition(e.target.value)}
+                          placeholder="Например: доцент кафедры, ст. преподаватель, к.э.н."
+                          className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-[#f5f3ed]/60 border border-[#1a4d3e]/20 text-sm text-[#1a4d3e] focus:outline-none focus:ring-2 focus:ring-[#1a4d3e] focus:bg-white transition-all font-medium"
+                        />
+                      </div>
+                    </div>
+                  )}
 
                   <div>
                     <label className="block text-xs font-bold uppercase tracking-wider text-[#1a4d3e] mb-1.5">

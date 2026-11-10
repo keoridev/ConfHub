@@ -31,7 +31,9 @@ export function UserBar({
                 {user.fullName || user.login}
               </span>
               <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-[#d4a84b]/20 text-[#1a4d3e] border border-[#d4a84b]/40">
-                {user.university
+                {user.position
+                  ? `Участник • ${user.position}`
+                  : user.university
                   ? `${user.university}${user.groupName ? ` • ${user.groupName}` : ""}`
                   : user.groupName
                   ? `Группа ${user.groupName}`

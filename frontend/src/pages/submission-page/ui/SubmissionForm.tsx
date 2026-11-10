@@ -368,9 +368,9 @@ export function SubmissionForm({
             <div>
               <div className="flex items-center justify-between mb-1.5">
                 <label className="block text-xs font-bold uppercase tracking-wider text-[#1a4d3e]">
-                  Группа или курс{" "}
+                  Группа / должность{" "}
                   <span className="text-[10px] lowercase text-muted-foreground font-normal">
-                    (номер группы, не фамилия)
+                    (студентам — номер группы, участникам — должность)
                   </span>
                 </label>
                 {gradeOrGroupValue && (

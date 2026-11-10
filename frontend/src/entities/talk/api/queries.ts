@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "~shared/lib/api/client";
-import type { Talk, Section, Room, User } from "../model/types";
+import type { Talk, Section, SectionPrintCover, Room, User } from "../model/types";
 
 export const queryKeys = {
   talks: {
@@ -41,6 +41,8 @@ export function useRegisterMutation() {
       login: string;
       password: string;
       groupName?: string;
+      participantType?: "student" | "participant";
+      position?: string;
       university?: string;
       email?: string;
     }) =>
@@ -376,6 +378,17 @@ export function useSectionsQuery() {
     queryKey: queryKeys.sections.all,
     queryFn: () =>
       apiClient.get<Section[]>("/sections").then((res) => res.data),
+  });
+}
+
+export function useSaveSectionPrintCoverMutation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ sectionId, cover }: { sectionId: number; cover: SectionPrintCover }) =>
+      apiClient
+        .put<Section>(`/admin/sections/${sectionId}/print-cover`, cover)
+        .then((res) => res.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.sections.all }),
   });
 }
 

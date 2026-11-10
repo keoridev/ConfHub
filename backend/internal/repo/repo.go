@@ -43,10 +43,10 @@ func (db *DB) Ping(ctx context.Context) error {
 
 func (db *DB) CreateUser(ctx context.Context, u *models.User) error {
 	return db.Pool.QueryRow(ctx,
-		`INSERT INTO users (login, password_hash, full_name, group_name, email, role, is_active, must_change_password, consent_given_at)
-		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+		`INSERT INTO users (login, password_hash, full_name, group_name, email, role, is_active, must_change_password, consent_given_at, position)
+		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 		 RETURNING id, created_at`,
-		u.Login, u.PasswordHash, u.FullName, u.GroupName, u.Email, u.Role, u.IsActive, u.MustChangePassword, u.ConsentGivenAt,
+		u.Login, u.PasswordHash, u.FullName, u.GroupName, u.Email, u.Role, u.IsActive, u.MustChangePassword, u.ConsentGivenAt, u.Position,
 	).Scan(&u.ID, &u.CreatedAt)
 }
 
@@ -54,11 +54,11 @@ func (db *DB) GetUserByLogin(ctx context.Context, login string) (*models.User, e
 	u := &models.User{}
 	err := db.Pool.QueryRow(ctx,
 		`SELECT id, login, password_hash, full_name, group_name, email, role, is_active,
-		        must_change_password, token_version, consent_given_at, failed_logins, locked_until, created_at
+		        must_change_password, token_version, consent_given_at, failed_logins, locked_until, created_at, position
 		 FROM users WHERE login = $1`, login,
 	).Scan(&u.ID, &u.Login, &u.PasswordHash, &u.FullName, &u.GroupName, &u.Email,
 		&u.Role, &u.IsActive, &u.MustChangePassword, &u.TokenVersion,
-		&u.ConsentGivenAt, &u.FailedLogins, &u.LockedUntil, &u.CreatedAt)
+		&u.ConsentGivenAt, &u.FailedLogins, &u.LockedUntil, &u.CreatedAt, &u.Position)
 	if err == pgx.ErrNoRows {
 		return nil, nil
 	}
@@ -69,11 +69,11 @@ func (db *DB) GetUserByID(ctx context.Context, id int64) (*models.User, error) {
 	u := &models.User{}
 	err := db.Pool.QueryRow(ctx,
 		`SELECT id, login, password_hash, full_name, group_name, email, role, is_active,
-		        must_change_password, token_version, consent_given_at, failed_logins, locked_until, created_at
+		        must_change_password, token_version, consent_given_at, failed_logins, locked_until, created_at, position
 		 FROM users WHERE id = $1`, id,
 	).Scan(&u.ID, &u.Login, &u.PasswordHash, &u.FullName, &u.GroupName, &u.Email,
 		&u.Role, &u.IsActive, &u.MustChangePassword, &u.TokenVersion,
-		&u.ConsentGivenAt, &u.FailedLogins, &u.LockedUntil, &u.CreatedAt)
+		&u.ConsentGivenAt, &u.FailedLogins, &u.LockedUntil, &u.CreatedAt, &u.Position)
 	if err == pgx.ErrNoRows {
 		return nil, nil
 	}
@@ -158,7 +158,7 @@ func (db *DB) ResetUserPassword(ctx context.Context, userID int64, hash string) 
 }
 
 func (db *DB) ListUsers(ctx context.Context, role, q *string, isActive *bool) ([]models.User, error) {
-	query := `SELECT id, login, full_name, group_name, email, role, is_active, must_change_password, consent_given_at, created_at
+	query := `SELECT id, login, full_name, group_name, email, role, is_active, must_change_password, consent_given_at, created_at, position
 	          FROM users WHERE 1=1`
 	args := []interface{}{}
 	argIdx := 1
@@ -190,7 +190,7 @@ func (db *DB) ListUsers(ctx context.Context, role, q *string, isActive *bool) ([
 	for rows.Next() {
 		var u models.User
 		if err := rows.Scan(&u.ID, &u.Login, &u.FullName, &u.GroupName, &u.Email,
-			&u.Role, &u.IsActive, &u.MustChangePassword, &u.ConsentGivenAt, &u.CreatedAt); err != nil {
+			&u.Role, &u.IsActive, &u.MustChangePassword, &u.ConsentGivenAt, &u.CreatedAt, &u.Position); err != nil {
 			return nil, err
 		}
 		users = append(users, u)
@@ -308,7 +308,7 @@ func (db *DB) CreateSection(ctx context.Context, s *models.Section) error {
 
 func (db *DB) ListSections(ctx context.Context, conferenceID int64) ([]models.Section, error) {
 	rows, err := db.Pool.Query(ctx,
-		`SELECT id, conference_id, title, sort_order, supervisor FROM sections WHERE conference_id = $1 ORDER BY sort_order, id`,
+		`SELECT id, conference_id, title, sort_order, supervisor, print_cover FROM sections WHERE conference_id = $1 ORDER BY sort_order, id`,
 		conferenceID)
 	if err != nil {
 		return nil, err
@@ -317,7 +317,7 @@ func (db *DB) ListSections(ctx context.Context, conferenceID int64) ([]models.Se
 	var list []models.Section
 	for rows.Next() {
 		var s models.Section
-		if err := rows.Scan(&s.ID, &s.ConferenceID, &s.Title, &s.SortOrder, &s.Supervisor); err != nil {
+		if err := rows.Scan(&s.ID, &s.ConferenceID, &s.Title, &s.SortOrder, &s.Supervisor, &s.PrintCover); err != nil {
 			return nil, err
 		}
 		list = append(list, s)
@@ -328,8 +328,8 @@ func (db *DB) ListSections(ctx context.Context, conferenceID int64) ([]models.Se
 func (db *DB) GetSection(ctx context.Context, id int64) (*models.Section, error) {
 	s := &models.Section{}
 	err := db.Pool.QueryRow(ctx,
-		`SELECT id, conference_id, title, sort_order, supervisor FROM sections WHERE id = $1`, id,
-	).Scan(&s.ID, &s.ConferenceID, &s.Title, &s.SortOrder, &s.Supervisor)
+		`SELECT id, conference_id, title, sort_order, supervisor, print_cover FROM sections WHERE id = $1`, id,
+	).Scan(&s.ID, &s.ConferenceID, &s.Title, &s.SortOrder, &s.Supervisor, &s.PrintCover)
 	if err == pgx.ErrNoRows {
 		return nil, nil
 	}
@@ -340,6 +340,16 @@ func (db *DB) UpdateSection(ctx context.Context, s *models.Section) error {
 	_, err := db.Pool.Exec(ctx,
 		`UPDATE sections SET title=$2, sort_order=$3, supervisor=$4 WHERE id=$1`, s.ID, s.Title, s.SortOrder, s.Supervisor)
 	return err
+}
+
+// UpdateSectionPrintCover stores the printed cover wording; nil restores the default cover.
+// It reports false when the section does not exist.
+func (db *DB) UpdateSectionPrintCover(ctx context.Context, id int64, cover *models.SectionPrintCover) (bool, error) {
+	tag, err := db.Pool.Exec(ctx, `UPDATE sections SET print_cover=$2 WHERE id=$1`, id, cover)
+	if err != nil {
+		return false, err
+	}
+	return tag.RowsAffected() > 0, nil
 }
 
 func (db *DB) DeleteSection(ctx context.Context, id int64) error {

@@ -3,6 +3,8 @@ export interface User {
   login: string;
   fullName: string;
   groupName?: string;
+  /** Set for non-student participants (teachers etc.) instead of a group */
+  position?: string;
   university?: string;
   email?: string;
   role: 'student' | 'jury' | 'admin';
@@ -16,7 +18,16 @@ export interface SectionRoomInfo {
   talksCount: number;
 }
 
+/** Printed cover wording for one section; empty fields keep the conference defaults */
+export interface SectionPrintCover {
+  organization: string;
+  heading: string;
+  dedication: string;
+  details: string;
+}
+
 export interface Section {
+  printCover?: SectionPrintCover | null;
   id: number;
   conferenceId: number;
   title: string;

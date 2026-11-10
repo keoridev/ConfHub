@@ -1231,6 +1231,43 @@ func (h *Handler) AdminUpdateSection(c *gin.Context) {
 	mw.WriteJSON(c, http.StatusOK, s)
 }
 
+func (h *Handler) AdminUpdateSectionPrintCover(c *gin.Context) {
+	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		mw.WriteError(c, http.StatusBadRequest, "INVALID_PARAM", "неверный id")
+		return
+	}
+	var cover models.SectionPrintCover
+	if err := c.ShouldBindJSON(&cover); err != nil {
+		mw.WriteError(c, http.StatusBadRequest, "INVALID_JSON", "неверный формат")
+		return
+	}
+	hasContent, err := cover.Normalize()
+	if err != nil {
+		mw.WriteError(c, http.StatusBadRequest, "VALIDATION_ERROR", err.Error())
+		return
+	}
+	stored := &cover
+	if !hasContent {
+		stored = nil // all fields empty: back to the default cover
+	}
+	found, err := h.db.UpdateSectionPrintCover(c.Request.Context(), id, stored)
+	if err != nil {
+		mw.WriteError(c, http.StatusInternalServerError, "INTERNAL", "ошибка сохранения титульника")
+		return
+	}
+	if !found {
+		mw.WriteError(c, http.StatusNotFound, "NOT_FOUND", "секция не найдена")
+		return
+	}
+	section, err := h.db.GetSection(c.Request.Context(), id)
+	if err != nil || section == nil {
+		mw.WriteError(c, http.StatusInternalServerError, "INTERNAL", "ошибка загрузки секции")
+		return
+	}
+	mw.WriteJSON(c, http.StatusOK, section)
+}
+
 func (h *Handler) AdminDeleteSection(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {

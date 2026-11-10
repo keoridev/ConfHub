@@ -4,7 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"sort"
+	"strings"
 	"time"
+	"unicode/utf8"
 )
 
 // ── User ─────────────────────────────────────
@@ -15,6 +17,7 @@ type User struct {
 	PasswordHash       string     `json:"-"`
 	FullName           string     `json:"fullName"`
 	GroupName          *string    `json:"groupName,omitempty"`
+	Position           *string    `json:"position,omitempty"`
 	Email              *string    `json:"email,omitempty"`
 	Role               string     `json:"role"`
 	IsActive           bool       `json:"isActive"`
@@ -32,6 +35,7 @@ type UserPublic struct {
 	Login              string  `json:"login"`
 	FullName           string  `json:"fullName"`
 	GroupName          *string `json:"groupName,omitempty"`
+	Position           *string `json:"position,omitempty"`
 	Role               string  `json:"role"`
 	MustChangePassword bool    `json:"mustChangePassword"`
 	ConsentRequired    bool    `json:"consentRequired,omitempty"`
@@ -45,6 +49,7 @@ func (u *User) ToPublic() UserPublic {
 		Login:              u.Login,
 		FullName:           u.FullName,
 		GroupName:          u.GroupName,
+		Position:           u.Position,
 		Role:               u.Role,
 		MustChangePassword: u.MustChangePassword,
 		ConsentRequired:    consentRequired,
@@ -139,11 +144,46 @@ func (s *ScheduleSettings) Validate() error {
 // ── Section ──────────────────────────────────
 
 type Section struct {
-	ID           int64   `json:"id"`
-	ConferenceID int64   `json:"conferenceId"`
-	Title        string  `json:"title"`
-	SortOrder    int     `json:"sortOrder"`
-	Supervisor   *string `json:"supervisor,omitempty"`
+	ID           int64              `json:"id"`
+	ConferenceID int64              `json:"conferenceId"`
+	Title        string             `json:"title"`
+	SortOrder    int                `json:"sortOrder"`
+	Supervisor   *string            `json:"supervisor,omitempty"`
+	PrintCover   *SectionPrintCover `json:"printCover,omitempty"`
+}
+
+// SectionPrintCover overrides the conference wording on a printed section program,
+// e.g. for a round table held by a partner institute. Empty fields keep the default text.
+type SectionPrintCover struct {
+	Organization string `json:"organization"` // extra line under МУИТ
+	Heading      string `json:"heading"`      // replaces the conference name; one line per row
+	Dedication   string `json:"dedication"`   // replaces "Посвящается Дню науки"
+	Details      string `json:"details"`      // replaces the date/place lines; one line per row
+}
+
+// Normalize trims the fields, checks their length and reports whether anything is left.
+func (c *SectionPrintCover) Normalize() (bool, error) {
+	fields := []struct {
+		value *string
+		max   int
+		name  string
+	}{
+		{&c.Organization, 300, "организация"},
+		{&c.Heading, 1000, "заголовок"},
+		{&c.Dedication, 300, "посвящение"},
+		{&c.Details, 1000, "дата и место"},
+	}
+	empty := true
+	for _, f := range fields {
+		*f.value = strings.TrimSpace(*f.value)
+		if utf8.RuneCountInString(*f.value) > f.max {
+			return false, fmt.Errorf("поле «%s» длиннее %d символов", f.name, f.max)
+		}
+		if *f.value != "" {
+			empty = false
+		}
+	}
+	return !empty, nil
 }
 
 // ── Room ─────────────────────────────────────

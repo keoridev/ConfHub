@@ -103,6 +103,7 @@ func NewRouter(h *Handler, jwtSecret string, db *repo.DB, corsOrigins []string) 
 				// Sections
 				admin.POST("/api/admin/sections", h.AdminCreateSection)
 				admin.PATCH("/api/admin/sections/:id", h.AdminUpdateSection)
+				admin.PUT("/api/admin/sections/:id/print-cover", h.AdminUpdateSectionPrintCover)
 				admin.DELETE("/api/admin/sections/:id", h.AdminDeleteSection)
 
 				// Rooms

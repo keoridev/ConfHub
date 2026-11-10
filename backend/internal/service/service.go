@@ -95,6 +95,9 @@ type RegisterRequest struct {
 	Login     string  `json:"login"`
 	Password  string  `json:"password"`
 	GroupName *string `json:"groupName,omitempty"`
+	// "student" (asks for a group) or "participant" (teacher etc., asks for a position)
+	ParticipantType string  `json:"participantType,omitempty"`
+	Position        *string `json:"position,omitempty"`
 }
 
 func (s *Service) Register(ctx context.Context, req RegisterRequest) (*LoginResult, error) {
@@ -137,12 +140,34 @@ func (s *Service) Register(ctx context.Context, req RegisterRequest) (*LoginResu
 		return nil, fmt.Errorf("ошибка хеширования пароля")
 	}
 
-	var groupName *string
-	if req.GroupName != nil {
-		gn := strings.TrimSpace(*req.GroupName)
-		if gn != "" {
-			groupName = &gn
+	trimmed := func(p *string) *string {
+		if p == nil {
+			return nil
 		}
+		v := strings.TrimSpace(*p)
+		if v == "" {
+			return nil
+		}
+		return &v
+	}
+	groupName := trimmed(req.GroupName)
+	var position *string
+	switch req.ParticipantType {
+	case "participant":
+		// Teachers, associate professors etc.: a position instead of a student group
+		position = trimmed(req.Position)
+		if position == nil {
+			return nil, fmt.Errorf("укажите должность или учёную степень")
+		}
+		groupName = nil
+	case "student":
+		if groupName == nil {
+			return nil, fmt.Errorf("укажите учебную группу")
+		}
+	case "":
+		// Older clients send no type: keep the previous behaviour (optional group)
+	default:
+		return nil, fmt.Errorf("неизвестный тип участника")
 	}
 
 	now := time.Now()
@@ -151,6 +176,7 @@ func (s *Service) Register(ctx context.Context, req RegisterRequest) (*LoginResu
 		PasswordHash:       hash,
 		FullName:           fullName,
 		GroupName:          groupName,
+		Position:           position,
 		Role:               "student",
 		IsActive:           true,
 		MustChangePassword: false,
@@ -575,8 +601,12 @@ func (s *Service) CreateTalk(ctx context.Context, user *models.User, req CreateT
 	}
 
 	gradeOrGroup := req.GradeOrGroup
-	if (gradeOrGroup == nil || *gradeOrGroup == "") && user.GroupName != nil {
-		gradeOrGroup = user.GroupName
+	if gradeOrGroup == nil || *gradeOrGroup == "" {
+		if user.GroupName != nil {
+			gradeOrGroup = user.GroupName
+		} else if user.Position != nil {
+			gradeOrGroup = user.Position
+		}
 	}
 
 	speakerName := user.FullName

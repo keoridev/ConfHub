@@ -114,7 +114,7 @@ export function SubmissionPage() {
     defaultValues: {
       speakerName: user?.fullName || "",
       university: user?.university || "",
-      gradeOrGroup: user?.groupName || "",
+      gradeOrGroup: user?.groupName || user?.position || "",
       authorEmail: "",
       keywords: "",
       supervisor: "",
@@ -168,8 +168,9 @@ export function SubmissionPage() {
       if (user.university && !watch("university")) {
         setValue("university", user.university);
       }
-      if (user.groupName && !watch("gradeOrGroup")) {
-        setValue("gradeOrGroup", user.groupName);
+      const groupOrPosition = user.groupName || user.position;
+      if (groupOrPosition && !watch("gradeOrGroup")) {
+        setValue("gradeOrGroup", groupOrPosition);
       }
     }
   }, [user, setValue, watch]);
@@ -230,7 +231,7 @@ export function SubmissionPage() {
       sectionId: "",
       speakerName: user?.fullName || "",
       university: "",
-      gradeOrGroup: user?.groupName || "",
+      gradeOrGroup: user?.groupName || user?.position || "",
       authorEmail: "",
       keywords: "",
       supervisor: "",
@@ -461,7 +462,7 @@ export function SubmissionPage() {
       title: "",
       sectionId: "",
       university: "",
-      gradeOrGroup: user?.groupName || "",
+      gradeOrGroup: user?.groupName || user?.position || "",
       authorEmail: "",
       keywords: "",
       supervisor: "",
