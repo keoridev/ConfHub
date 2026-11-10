@@ -155,7 +155,7 @@ type Section struct {
 // SectionPrintCover overrides the conference wording on a printed section program,
 // e.g. for a round table held by a partner institute. Empty fields keep the default text.
 type SectionPrintCover struct {
-	Organization string `json:"organization"` // extra line under МУИТ
+	Organization string `json:"organization"` // replaces the ministry/МУИТ header; one line per row
 	Heading      string `json:"heading"`      // replaces the conference name; one line per row
 	Dedication   string `json:"dedication"`   // replaces "Посвящается Дню науки"
 	Details      string `json:"details"`      // replaces the date/place lines; one line per row
@@ -168,7 +168,7 @@ func (c *SectionPrintCover) Normalize() (bool, error) {
 		max   int
 		name  string
 	}{
-		{&c.Organization, 300, "организация"},
+		{&c.Organization, 600, "шапка"},
 		{&c.Heading, 1000, "заголовок"},
 		{&c.Dedication, 300, "посвящение"},
 		{&c.Details, 1000, "дата и место"},

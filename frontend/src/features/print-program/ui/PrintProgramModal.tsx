@@ -185,10 +185,13 @@ export function PrintProgramModal({
   const isCoverDirty = JSON.stringify(coverDraft) !== JSON.stringify(savedCover ? { ...EMPTY_COVER, ...savedCover } : EMPTY_COVER);
 
   const cover = coverSection ? coverDraft : EMPTY_COVER;
-  const coverOrganization = cover.organization.trim();
+  // A section with its own heading gets a cover like its own document:
+  // no ministry/МУИТ block, no conference title, dedication as a line under the heading.
+  const coverOrgLines = splitLines(cover.organization);
   const coverHeadingLines = splitLines(cover.heading);
   const coverDetailLines = splitLines(cover.details);
-  const coverDedication = cover.dedication.trim() || "Посвящается Дню науки";
+  const coverDedicationText = cover.dedication.trim();
+  const isCustomCover = coverHeadingLines.length > 0;
 
   const handleSaveCover = async (next: SectionPrintCover) => {
     if (!coverSection) return;
@@ -554,64 +557,73 @@ export function PrintProgramModal({
       ? `
         <div class="cover-page" style="page-break-after: always; break-after: page; min-height: 85vh; display: flex; flex-direction: column; justify-content: space-between; text-align: center; padding: 30px 15px; border: ${borderStyle !== "none" ? "2px double #1a4d3e" : "none"}; margin-bottom: 20px;">
           <div>
-            <p style="font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; color: ${isMono ? "#000" : "#1a4d3e"}; margin: 0 0 4px 0;">
-              Министерство науки, высшего образования и инноваций КР
-            </p>
-            <p style="font-size: 12px; font-weight: 900; color: #111; margin: 0;">
-              Международный университет инновационных технологий (МУИТ)
-            </p>
             ${
-              coverOrganization
-                ? `<p style="font-size: 12px; font-weight: 900; color: #111; margin: 4px 0 0 0;">${escapeHtml(coverOrganization)}</p>`
-                : ""
+              coverOrgLines.length > 0
+                ? coverOrgLines
+                    .map(
+                      (line) =>
+                        `<p style="font-size: 13px; font-weight: 900; text-transform: uppercase; color: #000; margin: 0 0 3px 0;">${escapeHtml(line)}</p>`
+                    )
+                    .join("")
+                : `<p style="font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; color: ${isMono ? "#000" : "#1a4d3e"}; margin: 0 0 4px 0;">
+                    Министерство науки, высшего образования и инноваций КР
+                  </p>
+                  <p style="font-size: 12px; font-weight: 900; color: #111; margin: 0;">
+                    Международный университет инновационных технологий (МУИТ)
+                  </p>`
             }
           </div>
 
-          <div style="margin: 40px 0;">
-            <div style="display: inline-block; padding: 4px 12px; border: 1px solid #777; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; border-radius: 4px; margin-bottom: 16px;">
-              ${escapeHtml(coverDedication)}
-            </div>
-            ${
-              coverHeadingLines.length > 0
-                ? coverHeadingLines
-                    .map((line, i) =>
-                      i === 0
-                        ? `<h1 style="font-size: 18px; font-weight: 900; line-height: 1.3; margin: 0 0 10px 0; color: #000;">${escapeHtml(line)}</h1>`
-                        : `<h2 style="font-size: 17px; font-weight: 900; line-height: 1.3; color: ${isMono ? "#000" : "#1a4d3e"}; margin: 0 0 12px 0;">${escapeHtml(line)}</h2>`
+          ${
+            isCustomCover
+              ? `<div style="margin: 40px 0;">
+                  ${coverHeadingLines
+                    .map(
+                      (line, i) =>
+                        `<p style="font-size: ${i === 0 ? 16 : 15}px; font-weight: 900; line-height: 1.35; text-transform: uppercase; color: #000; margin: 0 0 ${i === 0 ? 18 : 4}px 0;">${escapeHtml(line)}</p>`
                     )
-                    .join("")
-                : `<h1 style="font-size: 18px; font-weight: 900; line-height: 1.3; margin: 0 0 10px 0; color: #000;">
+                    .join("")}
+                  ${
+                    coverDedicationText
+                      ? `<p style="font-size: 15px; font-weight: 900; text-transform: uppercase; color: #000; margin: 0;">${escapeHtml(coverDedicationText)}</p>`
+                      : ""
+                  }
+                  <div style="margin-top: 28px; font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: 2px; color: #333; border-top: 1px solid #bbb; border-bottom: 1px solid #bbb; padding: 6px 0; display: inline-block; min-width: 200px;">
+                    ПРОГРАММА
+                  </div>
+                </div>`
+              : `<div style="margin: 40px 0;">
+                  <div style="display: inline-block; padding: 4px 12px; border: 1px solid #777; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; border-radius: 4px; margin-bottom: 16px;">
+                    ${escapeHtml(coverDedicationText || "Посвящается Дню науки")}
+                  </div>
+                  <h1 style="font-size: 18px; font-weight: 900; line-height: 1.3; margin: 0 0 10px 0; color: #000;">
                     XVIII МЕЖДУНАРОДНАЯ НАУЧНО-ПРАКТИЧЕСКАЯ КОНФЕРЕНЦИЯ-КОНКУРС
                   </h1>
                   <h2 style="font-size: 22px; font-weight: 900; color: ${isMono ? "#000" : "#1a4d3e"}; margin: 0 0 16px 0;">
                     «ИННОВАЦИОННЫЕ ТЕХНОЛОГИИ И ПЕРЕДОВЫЕ РЕШЕНИЯ»
-                  </h2>`
-            }
-            <div style="font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: 2px; color: #333; border-top: 1px solid #bbb; border-bottom: 1px solid #bbb; padding: 6px 0; display: inline-block; min-width: 200px;">
-              ${coverSection ? "ПРОГРАММА ЗАСЕДАНИЯ СЕКЦИИ" : "ПРОГРАММА И РЕГЛАМЕНТ ЗАСЕДАНИЙ"}
-            </div>
-            ${
-              coverSection
-                ? `<div style="margin: 20px auto 0 auto; max-width: 92%; padding: 14px 16px; border: 2px solid ${isMono ? "#000" : "#1a4d3e"}; border-radius: 8px;">
-                    <p style="font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 2px; color: #555; margin: 0 0 6px 0;">
-                      Секция № ${coverSectionNo}
-                    </p>
-                    ${
-                      coverHeadingLines.length > 0
-                        ? "" // the custom heading already names the event
-                        : `<p style="font-size: 17px; font-weight: 900; line-height: 1.3; color: ${isMono ? "#000" : "#1a4d3e"}; margin: 0;">
+                  </h2>
+                  <div style="font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: 2px; color: #333; border-top: 1px solid #bbb; border-bottom: 1px solid #bbb; padding: 6px 0; display: inline-block; min-width: 200px;">
+                    ${coverSection ? "ПРОГРАММА ЗАСЕДАНИЯ СЕКЦИИ" : "ПРОГРАММА И РЕГЛАМЕНТ ЗАСЕДАНИЙ"}
+                  </div>
+                  ${
+                    coverSection
+                      ? `<div style="margin: 20px auto 0 auto; max-width: 92%; padding: 14px 16px; border: 2px solid ${isMono ? "#000" : "#1a4d3e"}; border-radius: 8px;">
+                          <p style="font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 2px; color: #555; margin: 0 0 6px 0;">
+                            Секция № ${coverSectionNo}
+                          </p>
+                          <p style="font-size: 17px; font-weight: 900; line-height: 1.3; color: ${isMono ? "#000" : "#1a4d3e"}; margin: 0;">
                             ${escapeHtml(coverSection.title)}
-                          </p>`
-                    }
-                    ${
-                      coverSection.supervisor
-                        ? `<p style="font-size: 11px; color: #333; margin: 8px 0 0 0;">Руководитель секции: <strong>${escapeHtml(coverSection.supervisor)}</strong></p>`
-                        : ""
-                    }
-                  </div>`
-                : ""
-            }
-          </div>
+                          </p>
+                          ${
+                            coverSection.supervisor
+                              ? `<p style="font-size: 11px; color: #333; margin: 8px 0 0 0;">Руководитель секции: <strong>${escapeHtml(coverSection.supervisor)}</strong></p>`
+                              : ""
+                          }
+                        </div>`
+                      : ""
+                  }
+                </div>`
+          }
 
           <div>
             ${
@@ -737,7 +749,11 @@ export function PrintProgramModal({
 
         <div class="header-box">
           <p class="header-inst">
-            Министерство науки, высшего образования и инноваций КР &nbsp;•&nbsp; МУИТ${coverOrganization ? ` &nbsp;•&nbsp; ${escapeHtml(coverOrganization)}` : ""}
+            ${
+              coverOrgLines.length > 0
+                ? coverOrgLines.map(escapeHtml).join(" &nbsp;•&nbsp; ")
+                : "Министерство науки, высшего образования и инноваций КР &nbsp;•&nbsp; МУИТ"
+            }
           </p>
           ${
             coverHeadingLines.length > 0
@@ -973,16 +989,17 @@ export function PrintProgramModal({
               </summary>
               <div className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-2.5 text-xs">
                 <label className="flex flex-col gap-1">
-                  <span className="font-semibold text-slate-600">Доп. организация (строка под МУИТ)</span>
-                  <input
+                  <span className="font-semibold text-slate-600">Шапка вместо «Министерство… / МУИТ» (каждая строка отдельно)</span>
+                  <textarea
+                    rows={2}
                     value={coverDraft.organization}
                     onChange={(e) => setCoverDraft((c) => ({ ...c, organization: e.target.value }))}
                     placeholder="Например: РОССИЙСКО-КЫРГЫЗСКИЙ ИНСТИТУТ АВТОМАТИЗАЦИИ УПРАВЛЕНИЯ БИЗНЕСА"
-                    className="px-2.5 py-1.5 rounded-lg border border-[#1a4d3e]/20 bg-white text-[#1a4d3e] focus:outline-none focus:border-[#1a4d3e]"
+                    className="px-2.5 py-1.5 rounded-lg border border-[#1a4d3e]/20 bg-white text-[#1a4d3e] focus:outline-none focus:border-[#1a4d3e] resize-y"
                   />
                 </label>
                 <label className="flex flex-col gap-1">
-                  <span className="font-semibold text-slate-600">Посвящение (плашка над заголовком)</span>
+                  <span className="font-semibold text-slate-600">Посвящение (строка под заголовком)</span>
                   <input
                     value={coverDraft.dedication}
                     onChange={(e) => setCoverDraft((c) => ({ ...c, dedication: e.target.value }))}
@@ -1013,7 +1030,7 @@ export function PrintProgramModal({
               </div>
               <div className="mt-2 flex flex-wrap items-center justify-end gap-2 text-xs">
                 <span className="mr-auto text-slate-500">
-                  Пустые поля — как у общей программы. Предпросмотр ниже обновляется сразу.
+                  Если заполнен заголовок, титульник печатается как отдельное мероприятие — без блока конференции. Пустые поля — как у общей программы.
                 </span>
                 {savedCover && (
                   <button
@@ -1403,58 +1420,68 @@ export function PrintProgramModal({
                 style={{ minHeight: paperFormat === "A5" ? "120mm" : "180mm" }}
               >
                 <div className="space-y-1">
-                  <p className="font-extrabold uppercase tracking-widest text-[10px] sm:text-xs text-[#1a4d3e]">
-                    Министерство науки, высшего образования и инноваций КР
-                  </p>
-                  <p className="font-bold text-xs sm:text-sm text-neutral-800">
-                    Международный университет инновационных технологий (МУИТ)
-                  </p>
-                  {coverOrganization && (
-                    <p className="font-bold text-xs sm:text-sm text-neutral-800">{coverOrganization}</p>
+                  {coverOrgLines.length > 0 ? (
+                    coverOrgLines.map((line, i) => (
+                      <p key={i} className="font-black uppercase text-xs sm:text-sm text-black">
+                        {line}
+                      </p>
+                    ))
+                  ) : (
+                    <>
+                      <p className="font-extrabold uppercase tracking-widest text-[10px] sm:text-xs text-[#1a4d3e]">
+                        Министерство науки, высшего образования и инноваций КР
+                      </p>
+                      <p className="font-bold text-xs sm:text-sm text-neutral-800">
+                        Международный университет инновационных технологий (МУИТ)
+                      </p>
+                    </>
                   )}
                 </div>
 
-                <div className="my-8 space-y-3 max-w-lg">
-                  <span className="inline-block px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border border-amber-300 bg-amber-50 text-amber-900">
-                    {coverDedication}
-                  </span>
-                  {coverHeadingLines.length > 0 ? (
-                    coverHeadingLines.map((line, i) =>
-                      i === 0 ? (
-                        <h1 key={i} className="text-sm sm:text-base md:text-lg font-black text-black leading-snug">
-                          {line}
-                        </h1>
-                      ) : (
-                        <h2 key={i} className="text-sm sm:text-base md:text-lg font-black text-[#1a4d3e] leading-snug">
-                          {line}
-                        </h2>
-                      )
-                    )
-                  ) : (
-                    <>
-                      <h1 className="text-sm sm:text-base md:text-lg font-black text-black leading-snug">
-                        XVIII МЕЖДУНАРОДНАЯ НАУЧНО-ПРАКТИЧЕСКАЯ КОНФЕРЕНЦИЯ-КОНКУРС
-                      </h1>
-                      <h2 className="text-base sm:text-xl md:text-2xl font-black text-[#1a4d3e] leading-tight">
-                        «ИННОВАЦИОННЫЕ ТЕХНОЛОГИИ И ПЕРЕДОВЫЕ РЕШЕНИЯ»
-                      </h2>
-                    </>
-                  )}
-                  <div className="pt-2">
-                    <span className="inline-block px-4 py-1.5 border-y-2 border-black font-extrabold text-xs sm:text-sm uppercase tracking-widest text-neutral-800">
-                      {coverSection ? "ПРОГРАММА ЗАСЕДАНИЯ СЕКЦИИ" : "ПРОГРАММА И РЕГЛАМЕНТ ЗАСЕДАНИЙ"}
-                    </span>
-                  </div>
-                  {coverSection && (
-                    <div
-                      className={`mt-4 px-4 py-3 rounded-lg border-2 ${
-                        colorMode === "mono" ? "border-black" : "border-[#1a4d3e]"
-                      }`}
-                    >
-                      <p className="text-[10px] sm:text-xs font-extrabold uppercase tracking-widest text-neutral-500">
-                        Секция № {coverSectionNo}
+                {isCustomCover ? (
+                  <div className="my-8 space-y-1 max-w-lg">
+                    {coverHeadingLines.map((line, i) => (
+                      <p
+                        key={i}
+                        className={`font-black uppercase text-black leading-snug text-xs sm:text-sm md:text-base ${i === 0 ? "pb-3" : ""}`}
+                      >
+                        {line}
                       </p>
-                      {coverHeadingLines.length === 0 && (
+                    ))}
+                    {coverDedicationText && (
+                      <p className="font-black uppercase text-black text-xs sm:text-sm md:text-base">{coverDedicationText}</p>
+                    )}
+                    <div className="pt-6">
+                      <span className="inline-block px-4 py-1.5 border-y-2 border-black font-extrabold text-xs sm:text-sm uppercase tracking-widest text-neutral-800">
+                        ПРОГРАММА
+                      </span>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="my-8 space-y-3 max-w-lg">
+                    <span className="inline-block px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border border-amber-300 bg-amber-50 text-amber-900">
+                      {coverDedicationText || "Посвящается Дню науки"}
+                    </span>
+                    <h1 className="text-sm sm:text-base md:text-lg font-black text-black leading-snug">
+                      XVIII МЕЖДУНАРОДНАЯ НАУЧНО-ПРАКТИЧЕСКАЯ КОНФЕРЕНЦИЯ-КОНКУРС
+                    </h1>
+                    <h2 className="text-base sm:text-xl md:text-2xl font-black text-[#1a4d3e] leading-tight">
+                      «ИННОВАЦИОННЫЕ ТЕХНОЛОГИИ И ПЕРЕДОВЫЕ РЕШЕНИЯ»
+                    </h2>
+                    <div className="pt-2">
+                      <span className="inline-block px-4 py-1.5 border-y-2 border-black font-extrabold text-xs sm:text-sm uppercase tracking-widest text-neutral-800">
+                        {coverSection ? "ПРОГРАММА ЗАСЕДАНИЯ СЕКЦИИ" : "ПРОГРАММА И РЕГЛАМЕНТ ЗАСЕДАНИЙ"}
+                      </span>
+                    </div>
+                    {coverSection && (
+                      <div
+                        className={`mt-4 px-4 py-3 rounded-lg border-2 ${
+                          colorMode === "mono" ? "border-black" : "border-[#1a4d3e]"
+                        }`}
+                      >
+                        <p className="text-[10px] sm:text-xs font-extrabold uppercase tracking-widest text-neutral-500">
+                          Секция № {coverSectionNo}
+                        </p>
                         <p
                           className={`mt-1 text-sm sm:text-base md:text-lg font-black leading-snug ${
                             colorMode === "mono" ? "text-black" : "text-[#1a4d3e]"
@@ -1462,15 +1489,15 @@ export function PrintProgramModal({
                         >
                           {coverSection.title}
                         </p>
-                      )}
-                      {coverSection.supervisor && (
-                        <p className="mt-2 text-[11px] sm:text-xs text-neutral-700">
-                          Руководитель секции: <strong>{coverSection.supervisor}</strong>
-                        </p>
-                      )}
-                    </div>
-                  )}
-                </div>
+                        {coverSection.supervisor && (
+                          <p className="mt-2 text-[11px] sm:text-xs text-neutral-700">
+                            Руководитель секции: <strong>{coverSection.supervisor}</strong>
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 <div className="space-y-1 text-xs text-neutral-600">
                   {coverDetailLines.length > 0 ? (
@@ -1503,8 +1530,9 @@ export function PrintProgramModal({
                   density === "tiny" ? "text-[9px]" : density === "compact" ? "text-[10px]" : "text-xs"
                 } ${colorMode === "mono" ? "text-black" : "text-[#1a4d3e]"}`}
               >
-                Министерство науки, высшего образования и инноваций КР • МУИТ
-                {coverOrganization && <> • {coverOrganization}</>}
+                {coverOrgLines.length > 0
+                  ? coverOrgLines.join(" • ")
+                  : "Министерство науки, высшего образования и инноваций КР • МУИТ"}
               </p>
               <h1
                 className={`font-black text-black leading-snug ${

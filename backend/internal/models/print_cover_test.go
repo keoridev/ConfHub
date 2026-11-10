@@ -26,11 +26,11 @@ func TestPrintCoverNormalizeEmpty(t *testing.T) {
 
 func TestPrintCoverNormalizeTooLong(t *testing.T) {
 	// Length is counted in characters, so 300 Cyrillic letters fit
-	ok := SectionPrintCover{Organization: strings.Repeat("Ж", 300)}
+	ok := SectionPrintCover{Dedication: strings.Repeat("Ж", 300)}
 	if _, err := ok.Normalize(); err != nil {
 		t.Errorf("300 characters should fit: %v", err)
 	}
-	long := SectionPrintCover{Organization: strings.Repeat("Ж", 301)}
+	long := SectionPrintCover{Dedication: strings.Repeat("Ж", 301)}
 	if _, err := long.Normalize(); err == nil {
 		t.Error("expected a length error")
 	}
