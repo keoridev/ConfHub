@@ -32,6 +32,9 @@ export type BorderStyle = "full" | "minimal" | "none";
 export type PrintDensity = "normal" | "compact" | "tiny";
 export type LayoutMode = "text" | "table";
 
+const escapeHtml = (s: string) =>
+  s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
+
 export function PrintProgramModal({
   isOpen,
   onClose,
@@ -155,6 +158,11 @@ export function PrintProgramModal({
     // Only show sections that have talks or if a specific section was selected
     return entries.filter((g) => g.talks.length > 0 || selectedSectionId !== "all");
   }, [approvedTalks, sections, selectedSectionId]);
+
+  // A single chosen section gets its own cover page and header
+  const coverSectionIndex = sections.findIndex((s) => String(s.id) === selectedSectionId);
+  const coverSection = coverSectionIndex >= 0 ? sections[coverSectionIndex] : null;
+  const coverSectionNo = coverSection ? coverSection.sortOrder || coverSectionIndex + 1 : 0;
 
   const totalFilteredTalks = useMemo(() => {
     return sectionGroups.reduce((acc, g) => acc + g.talks.length, 0);
@@ -529,8 +537,25 @@ export function PrintProgramModal({
               «ИННОВАЦИОННЫЕ ТЕХНОЛОГИИ И ПЕРЕДОВЫЕ РЕШЕНИЯ»
             </h2>
             <div style="font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: 2px; color: #333; border-top: 1px solid #bbb; border-bottom: 1px solid #bbb; padding: 6px 0; display: inline-block; min-width: 200px;">
-              ПРОГРАММА И РЕГЛАМЕНТ ЗАСЕДАНИЙ
+              ${coverSection ? "ПРОГРАММА ЗАСЕДАНИЯ СЕКЦИИ" : "ПРОГРАММА И РЕГЛАМЕНТ ЗАСЕДАНИЙ"}
             </div>
+            ${
+              coverSection
+                ? `<div style="margin: 20px auto 0 auto; max-width: 92%; padding: 14px 16px; border: 2px solid ${isMono ? "#000" : "#1a4d3e"}; border-radius: 8px;">
+                    <p style="font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 2px; color: #555; margin: 0 0 6px 0;">
+                      Секция № ${coverSectionNo}
+                    </p>
+                    <p style="font-size: 17px; font-weight: 900; line-height: 1.3; color: ${isMono ? "#000" : "#1a4d3e"}; margin: 0;">
+                      ${escapeHtml(coverSection.title)}
+                    </p>
+                    ${
+                      coverSection.supervisor
+                        ? `<p style="font-size: 11px; color: #333; margin: 8px 0 0 0;">Руководитель секции: <strong>${escapeHtml(coverSection.supervisor)}</strong></p>`
+                        : ""
+                    }
+                  </div>`
+                : ""
+            }
           </div>
 
           <div>
@@ -659,6 +684,13 @@ export function PrintProgramModal({
           <p class="header-sub">
             «ИННОВАЦИОННЫЕ ТЕХНОЛОГИИ И ПЕРЕДОВЫЕ РЕШЕНИЯ»
           </p>
+          ${
+            coverSection
+              ? `<p style="font-size: 13px; font-weight: 900; color: ${isMono ? "#000" : "#1a4d3e"}; margin: 6px 0 2px 0;">
+                  Секция № ${coverSectionNo}: ${escapeHtml(coverSection.title)}
+                </p>`
+              : ""
+          }
           <div class="header-meta">
             <strong>Дата:</strong> 10 – 18 ноября 2026 г. &nbsp;•&nbsp;
             <strong>Место:</strong> МУИТ, г. Бишкек (очно и онлайн)
@@ -838,16 +870,18 @@ export function PrintProgramModal({
 
             {/* Filter by section */}
             <div className="flex items-center gap-1.5 text-xs">
-              <span className="font-semibold text-slate-600">Секция:</span>
+              <span className="font-semibold text-slate-600" title="Титульный лист и программа будут только для выбранной секции">
+                Секция:
+              </span>
               <select
                 value={selectedSectionId}
                 onChange={(e) => setSelectedSectionId(e.target.value)}
                 className="px-2.5 py-1 rounded-lg border border-[#1a4d3e]/20 bg-white font-semibold text-[#1a4d3e] focus:outline-none cursor-pointer max-w-[200px] truncate"
               >
                 <option value="all">Все секции ({sections.length})</option>
-                {sections.map((s) => (
+                {sections.map((s, i) => (
                   <option key={s.id} value={String(s.id)}>
-                    №{s.id}: {s.title}
+                    №{s.sortOrder || i + 1}: {s.title}
                   </option>
                 ))}
               </select>
@@ -1240,9 +1274,32 @@ export function PrintProgramModal({
                   </h2>
                   <div className="pt-2">
                     <span className="inline-block px-4 py-1.5 border-y-2 border-black font-extrabold text-xs sm:text-sm uppercase tracking-widest text-neutral-800">
-                      ПРОГРАММА И РЕГЛАМЕНТ ЗАСЕДАНИЙ
+                      {coverSection ? "ПРОГРАММА ЗАСЕДАНИЯ СЕКЦИИ" : "ПРОГРАММА И РЕГЛАМЕНТ ЗАСЕДАНИЙ"}
                     </span>
                   </div>
+                  {coverSection && (
+                    <div
+                      className={`mt-4 px-4 py-3 rounded-lg border-2 ${
+                        colorMode === "mono" ? "border-black" : "border-[#1a4d3e]"
+                      }`}
+                    >
+                      <p className="text-[10px] sm:text-xs font-extrabold uppercase tracking-widest text-neutral-500">
+                        Секция № {coverSectionNo}
+                      </p>
+                      <p
+                        className={`mt-1 text-sm sm:text-base md:text-lg font-black leading-snug ${
+                          colorMode === "mono" ? "text-black" : "text-[#1a4d3e]"
+                        }`}
+                      >
+                        {coverSection.title}
+                      </p>
+                      {coverSection.supervisor && (
+                        <p className="mt-2 text-[11px] sm:text-xs text-neutral-700">
+                          Руководитель секции: <strong>{coverSection.supervisor}</strong>
+                        </p>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 <div className="space-y-1 text-xs text-neutral-600">
@@ -1282,6 +1339,15 @@ export function PrintProgramModal({
               >
                 «ИННОВАЦИОННЫЕ ТЕХНОЛОГИИ И ПЕРЕДОВЫЕ РЕШЕНИЯ»
               </p>
+              {coverSection && (
+                <p
+                  className={`font-black leading-snug ${
+                    density === "tiny" ? "text-[11px]" : density === "compact" ? "text-xs sm:text-sm" : "text-sm sm:text-base"
+                  } ${colorMode === "mono" ? "text-black" : "text-[#1a4d3e]"}`}
+                >
+                  Секция № {coverSectionNo}: {coverSection.title}
+                </p>
+              )}
 
               <div
                 className={`pt-1 flex flex-wrap items-center justify-center gap-2.5 font-semibold text-black ${
