@@ -116,6 +116,9 @@ export function useCurrentUserQuery() {
       }
       return null;
     },
+    // Show the saved user at once, but check the token with the server right away:
+    // an expired token on a phone otherwise looks like a valid session with empty data.
+    initialDataUpdatedAt: 0,
     staleTime: 1000 * 60 * 5,
   });
 }
@@ -282,6 +285,7 @@ export function useTalksQuery(conferenceId: number = 1, status?: string) {
 }
 
 export function useJuryQueueQuery(conferenceId: number = 1, status: string = "pending_review") {
+  const qc = useQueryClient();
   return useQuery({
     queryKey: ["talks", "jury-queue", conferenceId, status],
     queryFn: async () => {
@@ -291,12 +295,20 @@ export function useJuryQueueQuery(conferenceId: number = 1, status: string = "pe
         });
         return Array.isArray(res.data) ? res.data : [];
       } catch (err: any) {
-        if (err?.response?.status === 404 || err?.response?.status === 403) {
+        if (err?.response?.status === 403) {
+          // The token was not accepted (expired or password changed elsewhere):
+          // re-check the session so an invalid one ends on the login page.
+          qc.invalidateQueries({ queryKey: queryKeys.auth.user });
+          return [];
+        }
+        if (err?.response?.status === 404) {
           return [];
         }
         throw err;
       }
     },
+    // New submissions show up without a manual reload
+    refetchInterval: 60_000,
   });
 }
 
