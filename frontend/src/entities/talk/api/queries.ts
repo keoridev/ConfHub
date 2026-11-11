@@ -233,9 +233,14 @@ export function useReviewTalkMutation() {
 export function useSetKeynoteMutation() {
   const qc = useQueryClient();
   return useMutation({
-    // Available to both jury and admin
+    // Available to both jury and admin. For a scheduled talk the server also resizes its slot
+    // and shifts the following talks in the room; `shifted` says how many moved.
     mutationFn: async ({ talkId, isKeynote }: { talkId: number; isKeynote: boolean }) =>
-      (await apiClient.patch<Talk>(`/jury/talks/${talkId}/keynote`, { isKeynote })).data,
+      (
+        await apiClient.patch<Talk & { shifted?: number; warning?: string }>(`/jury/talks/${talkId}/keynote`, {
+          isKeynote,
+        })
+      ).data,
     onSuccess: (_, { talkId }) => {
       qc.invalidateQueries({ queryKey: queryKeys.talks.detail(talkId) });
       qc.invalidateQueries({ queryKey: queryKeys.talks.all });

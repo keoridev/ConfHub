@@ -769,6 +769,74 @@ type ReviewRequest struct {
 	IsKeynote *bool `json:"isKeynote,omitempty"`
 }
 
+// KeynoteResult reports what marking/unmarking a key talk did to the timetable.
+type KeynoteResult struct {
+	Shifted int    `json:"shifted"`           // other talks whose time changed
+	Warning string `json:"warning,omitempty"` // e.g. talks now run past the end of the day
+}
+
+// SetTalkKeynote marks or unmarks a key talk. For a talk already in the timetable its slot is
+// resized to the keynote/regular length from the conference settings, and the following talks
+// in the same room and day are shifted so nothing overlaps.
+func (s *Service) SetTalkKeynote(ctx context.Context, talk *models.Talk, isKeynote bool) (*KeynoteResult, error) {
+	result := &KeynoteResult{}
+	if talk.Status != "approved" || talk.RoomID == nil || talk.StartTime == nil || talk.EndTime == nil {
+		return result, s.DB.SetTalkKeynote(ctx, talk.ID, isKeynote)
+	}
+
+	settings := models.DefaultScheduleSettings()
+	if conf, err := s.DB.GetConference(ctx, talk.ConferenceID); err == nil && conf != nil && conf.Schedule != nil {
+		settings = *conf.Schedule
+	}
+	minutes := settings.TalkMinutes
+	if isKeynote {
+		minutes = settings.KeynoteMinutes
+	}
+
+	start := talk.StartTime.In(s.Loc)
+	dayStart := time.Date(start.Year(), start.Month(), start.Day(), 0, 0, 0, 0, s.Loc)
+	sameDay, err := s.DB.ListApprovedInRoom(ctx, *talk.RoomID, dayStart, dayStart.AddDate(0, 0, 1))
+	if err != nil {
+		return nil, fmt.Errorf("ошибка загрузки расписания аудитории")
+	}
+	var following []models.TimedTalk
+	for _, t := range sameDay {
+		if t.ID != talk.ID && t.Start.After(*talk.StartTime) {
+			following = append(following, t)
+		}
+	}
+
+	var lunchStart, lunchEnd *time.Time
+	if settings.LunchStart != "" && settings.LunchEnd != "" {
+		ls, err1 := models.ClockOn(dayStart, settings.LunchStart)
+		le, err2 := models.ClockOn(dayStart, settings.LunchEnd)
+		if err1 == nil && err2 == nil {
+			lunchStart, lunchEnd = &ls, &le
+		}
+	}
+
+	changes := models.PlanDurationReflow(
+		models.TimedTalk{ID: talk.ID, Start: *talk.StartTime, End: *talk.EndTime},
+		time.Duration(minutes)*time.Minute, following, lunchStart, lunchEnd,
+	)
+	if err := s.DB.SetKeynoteWithTimes(ctx, talk.ID, isKeynote, changes); err != nil {
+		return nil, fmt.Errorf("не удалось пересчитать расписание аудитории: %w", err)
+	}
+
+	if len(changes) > 0 {
+		result.Shifted = len(changes) - 1
+	}
+	if dayEnd, err := models.ClockOn(dayStart, settings.DayEnd); err == nil {
+		for _, c := range changes {
+			if c.End.After(dayEnd) {
+				result.Warning = fmt.Sprintf("часть докладов в этой аудитории теперь заканчивается после %s — проверьте расписание", settings.DayEnd)
+				break
+			}
+		}
+	}
+	return result, nil
+}
+
 // ScheduleConflictError means the chosen room is already taken at that time.
 type ScheduleConflictError struct {
 	Title    string

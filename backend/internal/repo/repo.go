@@ -601,6 +601,49 @@ func (db *DB) FindRoomConflict(ctx context.Context, roomID int64, start, end tim
 	return t, err
 }
 
+// ListApprovedInRoom returns approved talks of the room starting in [from, to), ordered by start.
+func (db *DB) ListApprovedInRoom(ctx context.Context, roomID int64, from, to time.Time) ([]models.TimedTalk, error) {
+	rows, err := db.Pool.Query(ctx,
+		`SELECT id, start_time, end_time FROM talks
+		 WHERE status = 'approved' AND room_id = $1 AND start_time >= $2 AND start_time < $3
+		 ORDER BY start_time`, roomID, from, to)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var list []models.TimedTalk
+	for rows.Next() {
+		var t models.TimedTalk
+		if err := rows.Scan(&t.ID, &t.Start, &t.End); err != nil {
+			return nil, err
+		}
+		list = append(list, t)
+	}
+	return list, rows.Err()
+}
+
+// SetKeynoteWithTimes sets the key-talk mark and applies new slots in the given order,
+// all in one transaction (the room overlap constraint is checked after every UPDATE).
+func (db *DB) SetKeynoteWithTimes(ctx context.Context, talkID int64, isKeynote bool, changes []models.TimeChange) error {
+	tx, err := db.Pool.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback(ctx)
+	for _, c := range changes {
+		if _, err := tx.Exec(ctx,
+			`UPDATE talks SET start_time = $2, end_time = $3, updated_at = NOW() WHERE id = $1`,
+			c.ID, c.Start, c.End); err != nil {
+			return err
+		}
+	}
+	if _, err := tx.Exec(ctx,
+		`UPDATE talks SET is_keynote = $2, updated_at = NOW() WHERE id = $1`, talkID, isKeynote); err != nil {
+		return err
+	}
+	return tx.Commit(ctx)
+}
+
 func (db *DB) SetTalkKeynote(ctx context.Context, talkID int64, isKeynote bool) error {
 	_, err := db.Pool.Exec(ctx,
 		`UPDATE talks SET is_keynote = $2, updated_at = NOW() WHERE id = $1`, talkID, isKeynote)

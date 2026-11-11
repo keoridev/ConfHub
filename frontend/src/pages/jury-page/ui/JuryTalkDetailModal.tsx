@@ -76,8 +76,14 @@ export function JuryTalkDetailModal({
   const handleToggleKeynote = async () => {
     try {
       const next = !talk.isKeynote;
-      await keynoteMutation.mutateAsync({ talkId: talk.id, isKeynote: next });
+      const res = await keynoteMutation.mutateAsync({ talkId: talk.id, isKeynote: next });
       toast.success(next ? `Доклад назначен ключевым секции (${keynoteMin} мин)!` : "Снят статус ключевого");
+      if (res.shifted) {
+        toast.info(`Время следующих докладов в аудитории пересчитано: сдвинуто ${res.shifted}`);
+      }
+      if (res.warning) {
+        toast.warning(res.warning);
+      }
     } catch (err: any) {
       toast.error(err?.response?.data?.error?.message || "Ошибка изменения статуса");
     }

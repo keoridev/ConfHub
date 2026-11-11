@@ -121,7 +121,7 @@ export function AllTalksTable({ talks, loading, sections: propSections }: AllTal
   const handleToggleKeynote = async (talk: Talk) => {
     const nextState = !talk.isKeynote;
     try {
-      await setKeynoteMutation.mutateAsync({
+      const res = await setKeynoteMutation.mutateAsync({
         talkId: talk.id,
         isKeynote: nextState,
       });
@@ -130,8 +130,14 @@ export function AllTalksTable({ talks, loading, sections: propSections }: AllTal
       } else {
         toast.info(`С доклада «${talk.title}» снят статус ключевого.`);
       }
+      if (res.shifted) {
+        toast.info(`Время следующих докладов в аудитории пересчитано: сдвинуто ${res.shifted}`);
+      }
+      if (res.warning) {
+        toast.warning(res.warning);
+      }
       if (previewTalk?.id === talk.id) {
-        setPreviewTalk({ ...previewTalk, isKeynote: nextState });
+        setPreviewTalk({ ...previewTalk, isKeynote: nextState, startTime: res.startTime, endTime: res.endTime });
       }
     } catch (err: any) {
       toast.error(err.response?.data?.error?.message || "Ошибка смены статуса доклада");

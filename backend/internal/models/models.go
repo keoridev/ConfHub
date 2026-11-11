@@ -80,6 +80,29 @@ type ScheduleSettings struct {
 	LunchEnd       string   `json:"lunchEnd"`
 }
 
+// DefaultScheduleSettings is used until an admin saves a timetable (same as the frontend default).
+func DefaultScheduleSettings() ScheduleSettings {
+	return ScheduleSettings{
+		Days:           []string{"2026-11-10", "2026-11-11"},
+		DayStart:       "10:00",
+		DayEnd:         "16:00",
+		TalkMinutes:    10,
+		KeynoteMinutes: 15,
+		LunchStart:     "12:00",
+		LunchEnd:       "14:00",
+	}
+}
+
+// ClockOn returns the given "HH:MM" on the calendar day of day (in day's location).
+func ClockOn(day time.Time, hhmm string) (time.Time, error) {
+	m, err := parseClock(hhmm)
+	if err != nil {
+		return time.Time{}, err
+	}
+	y, mo, d := day.Date()
+	return time.Date(y, mo, d, m/60, m%60, 0, 0, day.Location()), nil
+}
+
 func parseClock(s string) (int, error) {
 	t, err := time.Parse("15:04", s)
 	if err != nil {

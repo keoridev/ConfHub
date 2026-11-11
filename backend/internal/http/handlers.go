@@ -828,8 +828,10 @@ func (h *Handler) SetTalkKeynote(c *gin.Context) {
 		mw.WriteError(c, http.StatusNotFound, "NOT_FOUND", "заявка не найдена")
 		return
 	}
-	if err := h.db.SetTalkKeynote(c.Request.Context(), talkID, *req.IsKeynote); err != nil {
-		mw.WriteError(c, http.StatusInternalServerError, "INTERNAL", "ошибка сохранения")
+	result, err := h.svc.SetTalkKeynote(c.Request.Context(), talk, *req.IsKeynote)
+	if err != nil {
+		h.logger.Error("set keynote failed", "talkID", talkID, "error", err)
+		mw.WriteError(c, http.StatusInternalServerError, "INTERNAL", "не удалось пересчитать расписание аудитории")
 		return
 	}
 	updated, err := h.db.GetTalkWithJoins(c.Request.Context(), talkID)
@@ -837,7 +839,10 @@ func (h *Handler) SetTalkKeynote(c *gin.Context) {
 		mw.WriteError(c, http.StatusInternalServerError, "INTERNAL", "ошибка загрузки заявки")
 		return
 	}
-	mw.WriteJSON(c, http.StatusOK, updated)
+	mw.WriteJSON(c, http.StatusOK, struct {
+		*models.Talk
+		*service.KeynoteResult
+	}{updated, result})
 }
 
 func (h *Handler) GetJuryTalk(c *gin.Context) {
