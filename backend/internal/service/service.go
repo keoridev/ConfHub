@@ -765,6 +765,8 @@ type ReviewRequest struct {
 	RoomID      *int64     `json:"roomId"`
 	StartTime   *time.Time `json:"startTime"`
 	EndTime     *time.Time `json:"endTime"`
+	// Optional: mark/unmark as the section's key talk together with the approval
+	IsKeynote *bool `json:"isKeynote,omitempty"`
 }
 
 // ScheduleConflictError means the chosen room is already taken at that time.
@@ -824,6 +826,9 @@ func (s *Service) ReviewTalk(ctx context.Context, talk *models.Talk, juryID int6
 		talk.RoomID = req.RoomID
 		talk.StartTime = req.StartTime
 		talk.EndTime = req.EndTime
+		if req.IsKeynote != nil {
+			talk.IsKeynote = *req.IsKeynote
+		}
 	} else {
 		// Clear schedule for non-approved statuses
 		talk.RoomID = nil

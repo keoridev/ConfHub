@@ -449,14 +449,14 @@ func (db *DB) GetTalk(ctx context.Context, id int64) (*models.Talk, error) {
 		        t.grade_or_group, t.supervisor, t.abstract, t.tags, t.co_authors, t.keywords,
 		        t.author_email, t.university, t.status,
 		        t.jury_comment, t.reviewed_by, t.reviewed_at,
-		        t.room_id, t.start_time, t.end_time, t.ai_attempts,
+		        t.room_id, t.start_time, t.end_time, t.ai_attempts, t.is_keynote,
 		        t.created_at, t.updated_at
 		 FROM talks t WHERE t.id = $1`, id,
 	).Scan(&t.ID, &t.ConferenceID, &t.SectionID, &t.AuthorID, &t.Title, &t.SpeakerName,
 		&t.GradeOrGroup, &t.Supervisor, &t.Abstract, &t.Tags, &t.CoAuthors, &t.Keywords,
 		&t.AuthorEmail, &t.University, &t.Status,
 		&t.JuryComment, &t.ReviewedBy, &t.ReviewedAt,
-		&t.RoomID, &t.StartTime, &t.EndTime, &t.AIAttempts,
+		&t.RoomID, &t.StartTime, &t.EndTime, &t.AIAttempts, &t.IsKeynote,
 		&t.CreatedAt, &t.UpdatedAt)
 	if err == pgx.ErrNoRows {
 		return nil, nil
@@ -508,7 +508,7 @@ func (db *DB) ListTalksByAuthor(ctx context.Context, authorID int64) ([]models.T
 		        t.grade_or_group, t.supervisor, t.abstract, t.tags, t.co_authors, t.keywords,
 		        t.author_email, t.university, t.status,
 		        t.jury_comment, t.reviewed_by, t.reviewed_at,
-		        t.room_id, t.start_time, t.end_time, t.ai_attempts,
+		        t.room_id, t.start_time, t.end_time, t.ai_attempts, t.is_keynote,
 		        t.created_at, t.updated_at
 		 FROM talks t WHERE t.author_id = $1 ORDER BY t.created_at DESC`, authorID)
 	if err != nil {
@@ -524,7 +524,7 @@ func (db *DB) ListTalks(ctx context.Context, conferenceID int64, status, section
 	                 t.grade_or_group, t.supervisor, t.abstract, t.tags, t.co_authors, t.keywords,
 	                 t.author_email, t.university, t.status,
 	                 t.jury_comment, t.reviewed_by, t.reviewed_at,
-	                 t.room_id, t.start_time, t.end_time, t.ai_attempts,
+	                 t.room_id, t.start_time, t.end_time, t.ai_attempts, t.is_keynote,
 	                 t.created_at, t.updated_at
 	          FROM talks t WHERE t.conference_id = $1`
 	args := []interface{}{conferenceID}
@@ -575,12 +575,12 @@ func (db *DB) UpdateTalk(ctx context.Context, t *models.Talk) error {
 		`UPDATE talks SET section_id=$2, title=$3, supervisor=$4, abstract=$5, tags=$6,
 		        co_authors=$7, keywords=$8, author_email=$9, university=$10, grade_or_group=$11,
 		        status=$12, jury_comment=$13, reviewed_by=$14, reviewed_at=$15,
-		        room_id=$16, start_time=$17, end_time=$18, speaker_name=$19, updated_at=NOW()
+		        room_id=$16, start_time=$17, end_time=$18, speaker_name=$19, is_keynote=$20, updated_at=NOW()
 		 WHERE id=$1`,
 		t.ID, t.SectionID, t.Title, t.Supervisor, t.Abstract, t.Tags,
 		t.CoAuthors, t.Keywords, t.AuthorEmail, t.University, t.GradeOrGroup,
 		t.Status, t.JuryComment, t.ReviewedBy, t.ReviewedAt,
-		t.RoomID, t.StartTime, t.EndTime, t.SpeakerName)
+		t.RoomID, t.StartTime, t.EndTime, t.SpeakerName, t.IsKeynote)
 	return err
 }
 
@@ -599,6 +599,12 @@ func (db *DB) FindRoomConflict(ctx context.Context, roomID int64, start, end tim
 		return nil, nil
 	}
 	return t, err
+}
+
+func (db *DB) SetTalkKeynote(ctx context.Context, talkID int64, isKeynote bool) error {
+	_, err := db.Pool.Exec(ctx,
+		`UPDATE talks SET is_keynote = $2, updated_at = NOW() WHERE id = $1`, talkID, isKeynote)
+	return err
 }
 
 func (db *DB) IncrementAIAttempts(ctx context.Context, talkID int64) error {
@@ -626,7 +632,7 @@ func scanTalks(rows pgx.Rows) ([]models.Talk, error) {
 			&t.GradeOrGroup, &t.Supervisor, &t.Abstract, &t.Tags, &t.CoAuthors, &t.Keywords,
 			&t.AuthorEmail, &t.University, &t.Status,
 			&t.JuryComment, &t.ReviewedBy, &t.ReviewedAt,
-			&t.RoomID, &t.StartTime, &t.EndTime, &t.AIAttempts,
+			&t.RoomID, &t.StartTime, &t.EndTime, &t.AIAttempts, &t.IsKeynote,
 			&t.CreatedAt, &t.UpdatedAt); err != nil {
 			return nil, err
 		}

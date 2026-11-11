@@ -233,17 +233,9 @@ export function useReviewTalkMutation() {
 export function useSetKeynoteMutation() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ talkId, isKeynote }: { talkId: number; isKeynote: boolean }) => {
-      try {
-        return (await apiClient.patch<Talk>(`/admin/talks/${talkId}/keynote`, { isKeynote })).data;
-      } catch {
-        try {
-          return (await apiClient.patch<Talk>(`/jury/talks/${talkId}/keynote`, { isKeynote })).data;
-        } catch {
-          return (await apiClient.patch<Talk>(`/talks/${talkId}/keynote`, { isKeynote })).data;
-        }
-      }
-    },
+    // Available to both jury and admin
+    mutationFn: async ({ talkId, isKeynote }: { talkId: number; isKeynote: boolean }) =>
+      (await apiClient.patch<Talk>(`/jury/talks/${talkId}/keynote`, { isKeynote })).data,
     onSuccess: (_, { talkId }) => {
       qc.invalidateQueries({ queryKey: queryKeys.talks.detail(talkId) });
       qc.invalidateQueries({ queryKey: queryKeys.talks.all });

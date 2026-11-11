@@ -6,7 +6,6 @@ import { pathKeys } from "~shared/lib";
 import { ConfirmLogoutModal } from "~shared/ui";
 import {
   useReviewTalkMutation,
-  useSetKeynoteMutation,
   useJuryQueueQuery,
   useTalksQuery,
   useRoomsQuery,
@@ -47,7 +46,6 @@ export function JuryPage() {
   const { data: sections = [] } = useSectionsQuery();
 
   const reviewMutation = useReviewTalkMutation();
-  const keynoteMutation = useSetKeynoteMutation();
 
   const [targetTalk, setTargetTalk] = useState<Talk | null>(null);
   const [selectedDetailTalk, setSelectedDetailTalk] = useState<Talk | null>(null);
@@ -107,6 +105,13 @@ export function JuryPage() {
       .sort((a, b) => a.start - b.start);
   }, [approvedTalks, targetTalk, approveRoomId, selectedDate]);
 
+  // The open dossier follows refetched data (e.g. after toggling the key-talk mark)
+  const detailTalk = selectedDetailTalk
+    ? (Array.isArray(talks) ? talks : []).find((t) => t.id === selectedDetailTalk.id) ??
+      approvedTalks.find((t) => t.id === selectedDetailTalk.id) ??
+      selectedDetailTalk
+    : null;
+
   const talkSlots = useMemo(
     () => buildSlots(schedule, schedule.talkMinutes, busyInRoom),
     [schedule, busyInRoom]
@@ -160,13 +165,7 @@ export function JuryPage() {
     }
 
     try {
-      if (isKeynoteOption !== Boolean(targetTalk.isKeynote)) {
-        await keynoteMutation.mutateAsync({
-          talkId: targetTalk.id,
-          isKeynote: isKeynoteOption,
-        });
-      }
-
+      // One request: approval, slot and key-talk mark are saved together
       await reviewMutation.mutateAsync({
         id: targetTalk.id,
         data: {
@@ -174,6 +173,7 @@ export function JuryPage() {
           roomId: Number(approveRoomId),
           startTime: startIso,
           endTime: endIso,
+          isKeynote: isKeynoteOption,
         },
       });
       toast.success(`Доклад «${targetTalk.title}» одобрен и добавлен в расписание!`);
@@ -331,8 +331,8 @@ export function JuryPage() {
       </div>
 
       <JuryTalkDetailModal
-        talk={selectedDetailTalk}
-        isOpen={Boolean(selectedDetailTalk)}
+        talk={detailTalk}
+        isOpen={Boolean(detailTalk)}
         onClose={() => setSelectedDetailTalk(null)}
         onApproveClick={handleOpenApprove}
         onRejectClick={(t) => handleOpenFeedback(t, "rejected")}

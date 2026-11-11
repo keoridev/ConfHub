@@ -267,6 +267,7 @@ type Talk struct {
 	RoomID        *int64     `json:"roomId,omitempty"`
 	StartTime     *time.Time `json:"startTime,omitempty"`
 	EndTime       *time.Time `json:"endTime,omitempty"`
+	IsKeynote     bool       `json:"isKeynote"` // key talk of its section: longer slot, goes first
 	AIAttempts    int        `json:"aiAttempts"`
 	CreatedAt     time.Time  `json:"createdAt"`
 	UpdatedAt     time.Time  `json:"updatedAt"`
@@ -298,6 +299,7 @@ type TalkPublic struct {
 	Room         *Room      `json:"room,omitempty"`
 	StartTime    *time.Time `json:"startTime,omitempty"`
 	EndTime      *time.Time `json:"endTime,omitempty"`
+	IsKeynote    bool       `json:"isKeynote"`
 	CreatedAt    time.Time  `json:"createdAt"`
 }
 
@@ -321,6 +323,7 @@ func (t *Talk) ToPublic() TalkPublic {
 		Room:         t.Room,
 		StartTime:    t.StartTime,
 		EndTime:      t.EndTime,
+		IsKeynote:    t.IsKeynote,
 		CreatedAt:    t.CreatedAt,
 	}
 }

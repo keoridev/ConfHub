@@ -80,6 +80,7 @@ func NewRouter(h *Handler, jwtSecret string, db *repo.DB, corsOrigins []string) 
 				jury.GET("/api/jury/talks/:id/document", h.DownloadDocument)
 				jury.GET("/api/jury/talks/:id/presentation", h.DownloadPresentation)
 				jury.PATCH("/api/jury/talks/:id/review", h.ReviewTalk)
+				jury.PATCH("/api/jury/talks/:id/keynote", h.SetTalkKeynote)
 				jury.DELETE("/api/jury/talks/:id", h.AdminDeleteTalk)
 			}
 

@@ -809,6 +809,37 @@ func (h *Handler) GetAIResult(c *gin.Context) {
 
 // ── Jury ─────────────────────────────────────
 
+// SetTalkKeynote marks or unmarks a talk as the key talk of its section.
+func (h *Handler) SetTalkKeynote(c *gin.Context) {
+	talkID, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		mw.WriteError(c, http.StatusBadRequest, "INVALID_PARAM", "неверный id")
+		return
+	}
+	var req struct {
+		IsKeynote *bool `json:"isKeynote"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil || req.IsKeynote == nil {
+		mw.WriteError(c, http.StatusBadRequest, "INVALID_JSON", "нужно поле isKeynote")
+		return
+	}
+	talk, err := h.db.GetTalk(c.Request.Context(), talkID)
+	if err != nil || talk == nil {
+		mw.WriteError(c, http.StatusNotFound, "NOT_FOUND", "заявка не найдена")
+		return
+	}
+	if err := h.db.SetTalkKeynote(c.Request.Context(), talkID, *req.IsKeynote); err != nil {
+		mw.WriteError(c, http.StatusInternalServerError, "INTERNAL", "ошибка сохранения")
+		return
+	}
+	updated, err := h.db.GetTalkWithJoins(c.Request.Context(), talkID)
+	if err != nil || updated == nil {
+		mw.WriteError(c, http.StatusInternalServerError, "INTERNAL", "ошибка загрузки заявки")
+		return
+	}
+	mw.WriteJSON(c, http.StatusOK, updated)
+}
+
 func (h *Handler) GetJuryTalk(c *gin.Context) {
 	talkID, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
