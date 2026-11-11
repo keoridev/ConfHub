@@ -30,18 +30,29 @@ const toMinutes = (hhmm: string) => {
 const toClock = (minutes: number) =>
   `${String(Math.floor(minutes / 60)).padStart(2, "0")}:${String(minutes % 60).padStart(2, "0")}`;
 
-/** Consecutive "HH:MM - HH:MM" slots of the given length that fit the day and skip lunch. */
-export function buildSlots(settings: ScheduleSettings, minutes: number): string[] {
+/** A taken interval in minutes since local midnight */
+export interface BusyInterval {
+  start: number;
+  end: number;
+}
+
+/**
+ * Consecutive "HH:MM - HH:MM" slots of the given length that fit the day and skip lunch
+ * and busy intervals; after a busy talk the next slot starts right when it ends.
+ */
+export function buildSlots(settings: ScheduleSettings, minutes: number, busy: BusyInterval[] = []): string[] {
   const end = toMinutes(settings.dayEnd);
-  const hasLunch = Boolean(settings.lunchStart && settings.lunchEnd);
-  const lunchStart = hasLunch ? toMinutes(settings.lunchStart) : -1;
-  const lunchEnd = hasLunch ? toMinutes(settings.lunchEnd) : -1;
+  const blocked: BusyInterval[] = [...busy];
+  if (settings.lunchStart && settings.lunchEnd) {
+    blocked.push({ start: toMinutes(settings.lunchStart), end: toMinutes(settings.lunchEnd) });
+  }
 
   const slots: string[] = [];
   let t = toMinutes(settings.dayStart);
   while (minutes > 0 && t + minutes <= end) {
-    if (hasLunch && t < lunchEnd && t + minutes > lunchStart) {
-      t = lunchEnd;
+    const hit = blocked.find((b) => t < b.end && t + minutes > b.start);
+    if (hit) {
+      t = Math.max(t + 1, hit.end);
       continue;
     }
     slots.push(`${toClock(t)} - ${toClock(t + minutes)}`);
@@ -49,6 +60,15 @@ export function buildSlots(settings: ScheduleSettings, minutes: number): string[
   }
   return slots;
 }
+
+/** Local (Asia/Bishkek) day "YYYY-MM-DD" and minutes since midnight for an ISO time */
+export function toLocalDayMinutes(iso: string): { day: string; minutes: number } {
+  // sv-SE formats as "YYYY-MM-DD HH:MM:SS"
+  const [day, clock] = new Date(iso).toLocaleString("sv-SE", { timeZone: "Asia/Bishkek" }).split(" ");
+  return { day, minutes: toMinutes(clock.slice(0, 5)) };
+}
+
+export { toClock as minutesToClock };
 
 /** "10 нояб, вт" */
 export function formatDayLabel(day: string): string {

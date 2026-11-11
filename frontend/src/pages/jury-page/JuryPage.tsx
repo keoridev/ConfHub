@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { toast } from "sonner";
 import { Clock } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -8,13 +8,19 @@ import {
   useReviewTalkMutation,
   useSetKeynoteMutation,
   useJuryQueueQuery,
+  useTalksQuery,
   useRoomsQuery,
   useSectionsQuery,
   useCurrentUserQuery,
   useLogout,
 } from "~entities/talk/api/queries";
 import type { Talk } from "~entities/talk/model/types";
-import { buildSlots, useScheduleSettingsQuery } from "~entities/conference";
+import {
+  buildSlots,
+  minutesToClock,
+  toLocalDayMinutes,
+  useScheduleSettingsQuery,
+} from "~entities/conference";
 import { coAuthorLabels } from "~entities/talk/lib/coAuthors";
 
 import { JuryCard } from "./ui/JuryCard";
@@ -70,13 +76,63 @@ export function JuryPage() {
         ? String(rooms[0].id)
         : "1"
     );
-    setSelectedDate(schedule.days[0] ?? "");
     setIsKeynoteOption(Boolean(talk.isKeynote));
-    setSelectedSlot(
-      buildSlots(schedule, talk.isKeynote ? schedule.keynoteMinutes : schedule.talkMinutes)[0] ?? ""
-    );
+    if (talk.startTime && talk.endTime) {
+      // Rescheduling: open on the talk's current day and time
+      const start = toLocalDayMinutes(talk.startTime);
+      const end = toLocalDayMinutes(talk.endTime);
+      setSelectedDate(start.day);
+      setSelectedSlot(`${minutesToClock(start.minutes)} - ${minutesToClock(end.minutes)}`);
+    } else {
+      setSelectedDate(schedule.days[0] ?? "");
+      setSelectedSlot(""); // the first free slot is picked below once room and day are known
+    }
     setIsApproveModalOpen(true);
   };
+
+  // Talks already in the programme occupy their room; new slots are built around them
+  const { data: approvedTalks = [] } = useTalksQuery(1);
+  const busyInRoom = useMemo(() => {
+    if (!targetTalk || !approveRoomId || !selectedDate) return [];
+    return approvedTalks
+      .filter((t) => t.id !== targetTalk.id && String(t.room?.id) === approveRoomId && t.startTime && t.endTime)
+      .map((t) => ({ t, start: toLocalDayMinutes(t.startTime!), end: toLocalDayMinutes(t.endTime!) }))
+      .filter(({ start }) => start.day === selectedDate)
+      .map(({ t, start, end }) => ({
+        start: start.minutes,
+        end: end.minutes,
+        title: t.title,
+        isKeynote: Boolean(t.isKeynote),
+      }))
+      .sort((a, b) => a.start - b.start);
+  }, [approvedTalks, targetTalk, approveRoomId, selectedDate]);
+
+  const talkSlots = useMemo(
+    () => buildSlots(schedule, schedule.talkMinutes, busyInRoom),
+    [schedule, busyInRoom]
+  );
+  const keynoteSlots = useMemo(
+    () => buildSlots(schedule, schedule.keynoteMinutes, busyInRoom),
+    [schedule, busyInRoom]
+  );
+
+  // Keep the chosen slot free: when room, day or keynote changes, fall back to the first free slot
+  const ownSlot = useMemo(() => {
+    if (!targetTalk?.startTime || !targetTalk.endTime || String(targetTalk.room?.id) !== approveRoomId) return null;
+    const start = toLocalDayMinutes(targetTalk.startTime);
+    const end = toLocalDayMinutes(targetTalk.endTime);
+    return { day: start.day, slot: `${minutesToClock(start.minutes)} - ${minutesToClock(end.minutes)}` };
+  }, [targetTalk, approveRoomId]);
+
+  useEffect(() => {
+    if (!isApproveModalOpen || customStartTime) return;
+    // The talk's own current time stays valid while rescheduling within its room
+    if (ownSlot && ownSlot.day === selectedDate && ownSlot.slot === selectedSlot) return;
+    const allowed = isKeynoteOption ? [...keynoteSlots, ...talkSlots] : talkSlots;
+    if (!allowed.includes(selectedSlot)) {
+      setSelectedSlot((isKeynoteOption ? keynoteSlots : talkSlots)[0] ?? "");
+    }
+  }, [isApproveModalOpen, customStartTime, isKeynoteOption, keynoteSlots, talkSlots, selectedSlot, ownSlot, selectedDate]);
 
   const handleConfirmApprove = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -289,6 +345,9 @@ export function JuryPage() {
         targetTalk={targetTalk}
         rooms={rooms}
         schedule={schedule}
+        talkSlots={talkSlots}
+        keynoteSlots={keynoteSlots}
+        busyInRoom={busyInRoom}
         approveRoomId={approveRoomId}
         setApproveRoomId={setApproveRoomId}
         selectedDate={selectedDate}

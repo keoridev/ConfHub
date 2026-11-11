@@ -584,6 +584,23 @@ func (db *DB) UpdateTalk(ctx context.Context, t *models.Talk) error {
 	return err
 }
 
+// FindRoomConflict returns an approved talk in the room whose time overlaps [start, end),
+// ignoring excludeTalkID (the talk being rescheduled). Mirrors the talks EXCLUDE constraint.
+func (db *DB) FindRoomConflict(ctx context.Context, roomID int64, start, end time.Time, excludeTalkID int64) (*models.Talk, error) {
+	t := &models.Talk{}
+	err := db.Pool.QueryRow(ctx,
+		`SELECT id, title, start_time, end_time FROM talks
+		 WHERE status = 'approved' AND room_id = $1 AND id <> $4
+		   AND tstzrange(start_time, end_time) && tstzrange($2, $3)
+		 ORDER BY start_time LIMIT 1`,
+		roomID, start, end, excludeTalkID,
+	).Scan(&t.ID, &t.Title, &t.StartTime, &t.EndTime)
+	if err == pgx.ErrNoRows {
+		return nil, nil
+	}
+	return t, err
+}
+
 func (db *DB) IncrementAIAttempts(ctx context.Context, talkID int64) error {
 	_, err := db.Pool.Exec(ctx,
 		`UPDATE talks SET ai_attempts = ai_attempts + 1 WHERE id = $1`, talkID)

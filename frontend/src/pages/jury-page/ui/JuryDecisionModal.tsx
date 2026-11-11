@@ -2,7 +2,7 @@ import React from "react";
 import { Check, X, AlertCircle, Zap, Star } from "lucide-react";
 import { Button } from "@heroui/react";
 import type { Room, Talk } from "~entities/talk/model/types";
-import { buildSlots, formatDayLabel, type ScheduleSettings } from "~entities/conference";
+import { formatDayLabel, minutesToClock, type ScheduleSettings } from "~entities/conference";
 import { COMMENT_PRESETS } from "../model/types";
 
 interface JuryApproveModalProps {
@@ -11,6 +11,10 @@ interface JuryApproveModalProps {
   targetTalk: Talk | null;
   rooms: Room[];
   schedule: ScheduleSettings;
+  /** Free slots for the chosen room and day (busy time already skipped) */
+  talkSlots: string[];
+  keynoteSlots: string[];
+  busyInRoom: Array<{ start: number; end: number; title: string; isKeynote: boolean }>;
   approveRoomId: string;
   setApproveRoomId: (id: string) => void;
   selectedDate: string;
@@ -32,6 +36,9 @@ export function JuryApproveModal({
   targetTalk,
   rooms,
   schedule,
+  talkSlots,
+  keynoteSlots,
+  busyInRoom,
   approveRoomId,
   setApproveRoomId,
   selectedDate,
@@ -51,8 +58,6 @@ export function JuryApproveModal({
   const isKeynote = isKeynoteOption ?? targetTalk.isKeynote;
   const talkMin = schedule.talkMinutes;
   const keynoteMin = schedule.keynoteMinutes;
-  const talkSlots = buildSlots(schedule, talkMin);
-  const keynoteSlots = buildSlots(schedule, keynoteMin);
   const [slotStart, slotEnd] = selectedSlot ? selectedSlot.split(" - ") : ["", ""];
 
   return (
@@ -175,6 +180,33 @@ export function JuryApproveModal({
                 )}
               </span>
             </div>
+
+            {busyInRoom.length > 0 && (
+              <div className="mb-3 p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs space-y-1.5">
+                <span className="font-bold text-slate-700 block">
+                  Уже занято в этой аудитории в этот день — слоты ниже идут в обход:
+                </span>
+                <ul className="space-y-1 max-h-36 overflow-y-auto pr-1">
+                  {busyInRoom.map((b) => (
+                    <li key={`${b.start}-${b.title}`} className="flex items-start gap-2 text-slate-600">
+                      <span className="shrink-0 px-1.5 py-0.5 rounded-md bg-slate-200 text-slate-700 font-mono font-bold text-[11px]">
+                        {minutesToClock(b.start)}–{minutesToClock(b.end)}
+                      </span>
+                      <span className="min-w-0 line-clamp-1" title={b.title}>
+                        {b.isKeynote && <Star className="inline size-3 mr-1 fill-amber-500 text-amber-500 align-[-2px]" />}
+                        {b.title}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {talkSlots.length === 0 && keynoteSlots.length === 0 && (
+              <div className="mb-3 p-2.5 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-800 font-semibold">
+                Свободного времени в этой аудитории в этот день нет — выберите другой день или аудиторию.
+              </div>
+            )}
 
             {isKeynote && (
               <div className="mb-3 p-2.5 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-900 flex items-center gap-2">

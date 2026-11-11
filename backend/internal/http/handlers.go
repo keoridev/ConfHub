@@ -3,6 +3,7 @@ package handler
 import (
 	"crypto/rand"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"io"
 	"log/slog"
@@ -792,8 +793,14 @@ func (h *Handler) GetAIResult(c *gin.Context) {
 	}
 
 	result, err := h.db.GetLatestAIResult(c.Request.Context(), talkID)
-	if err != nil || result == nil {
-		mw.WriteError(c, http.StatusNotFound, "NOT_RUN", "AI-проверка ещё не запускалась")
+	if err != nil {
+		mw.WriteError(c, http.StatusInternalServerError, "INTERNAL", "ошибка загрузки AI-проверки")
+		return
+	}
+	// No check run yet is a normal state, not an error: the jury list asks for every card,
+	// and a 404 per talk flooded the browser console.
+	if result == nil {
+		mw.WriteJSON(c, http.StatusOK, nil)
 		return
 	}
 
@@ -890,9 +897,15 @@ func (h *Handler) ReviewTalk(c *gin.Context) {
 	}
 
 	if err := h.svc.ReviewTalk(c.Request.Context(), talk, user.ID, req); err != nil {
+		var conflict *service.ScheduleConflictError
+		if errors.As(err, &conflict) {
+			mw.WriteError(c, http.StatusConflict, "SCHEDULE_CONFLICT", conflict.Error())
+			return
+		}
 		errMsg := err.Error()
+		// Race with another jury member: the database exclusion constraint caught the overlap
 		if strings.Contains(errMsg, "exclude") || strings.Contains(errMsg, "overlap") || strings.Contains(errMsg, "conflicting") {
-			mw.WriteError(c, http.StatusConflict, "SCHEDULE_CONFLICT", errMsg)
+			mw.WriteError(c, http.StatusConflict, "SCHEDULE_CONFLICT", "это время в аудитории только что занял другой доклад. Обновите страницу и выберите другой слот")
 			return
 		}
 		mw.WriteError(c, http.StatusBadRequest, "BAD_REQUEST", errMsg)

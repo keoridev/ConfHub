@@ -767,6 +767,16 @@ type ReviewRequest struct {
 	EndTime     *time.Time `json:"endTime"`
 }
 
+// ScheduleConflictError means the chosen room is already taken at that time.
+type ScheduleConflictError struct {
+	Title    string
+	From, To string
+}
+
+func (e *ScheduleConflictError) Error() string {
+	return fmt.Sprintf("время в этой аудитории уже занято докладом «%s» (%s–%s). Выберите другой слот или аудиторию", e.Title, e.From, e.To)
+}
+
 func (s *Service) ReviewTalk(ctx context.Context, talk *models.Talk, juryID int64, req ReviewRequest) error {
 	validStatuses := map[string]bool{
 		"approved": true, "rejected": true, "needs_revision": true,
@@ -784,6 +794,23 @@ func (s *Service) ReviewTalk(ctx context.Context, talk *models.Talk, juryID int6
 	if req.Status == "approved" {
 		if req.RoomID == nil || req.StartTime == nil || req.EndTime == nil {
 			return fmt.Errorf("для одобрения нужны аудитория и время")
+		}
+	}
+
+	if req.Status == "approved" {
+		if !req.EndTime.After(*req.StartTime) {
+			return fmt.Errorf("время окончания должно быть позже начала")
+		}
+		conflict, err := s.DB.FindRoomConflict(ctx, *req.RoomID, *req.StartTime, *req.EndTime, talk.ID)
+		if err != nil {
+			return fmt.Errorf("ошибка проверки расписания")
+		}
+		if conflict != nil {
+			return &ScheduleConflictError{
+				Title: conflict.Title,
+				From:  conflict.StartTime.In(s.Loc).Format("15:04"),
+				To:    conflict.EndTime.In(s.Loc).Format("15:04"),
+			}
 		}
 	}
 
