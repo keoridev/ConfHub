@@ -17,11 +17,15 @@ export const parseKeywords = (val: string): string[] => {
   return val.trim().split(/\s+/).filter(Boolean);
 };
 
+export const TITLE_MAX_LENGTH = 500;
+
 export const submissionSchema = z.object({
   title: z
     .string()
     .min(5, "Минимум 5 символов")
-    .max(200, "Максимум 200 символов"),
+    .max(TITLE_MAX_LENGTH, `Максимум ${TITLE_MAX_LENGTH} символов`)
+    // Pasted titles may contain line breaks; store them as one line
+    .transform((v) => v.replace(/\s*\n\s*/g, " ").trim()),
   sectionId: z.string().min(1, "Выберите секцию"),
   speakerName: z.string().optional().or(z.literal("")),
   university: z.string().optional().or(z.literal("")),

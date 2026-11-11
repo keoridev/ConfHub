@@ -23,6 +23,7 @@ import { Card, Button } from "@heroui/react";
 import type { Section } from "~entities/talk/model/types";
 import { getSectionMeta } from "~shared/lib";
 import type { SubmissionFormValues, CoAuthorItem } from "../model/types";
+import { TITLE_MAX_LENGTH } from "../model/types";
 import { CoAuthorsEditor } from "./CoAuthorsEditor";
 import { KeywordsInput } from "./KeywordsInput";
 import { AbstractInput } from "./AbstractInput";
@@ -98,26 +99,36 @@ export function SubmissionForm({
                   Очистить
                 </button>
               )}
-              <span className="text-xs font-mono text-muted-foreground">
-                {titleValue.length}/200
+              <span
+                className={`text-xs font-mono ${
+                  titleValue.length > TITLE_MAX_LENGTH ? "text-danger font-bold" : "text-muted-foreground"
+                }`}
+              >
+                {titleValue.length}/{TITLE_MAX_LENGTH}
               </span>
             </div>
           </div>
 
           <div className="relative group">
-            <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#1a4d3e]/40 group-focus-within:text-[#1a4d3e] transition-colors">
+            <div className="absolute top-3.5 left-0 pl-3.5 flex items-center pointer-events-none text-[#1a4d3e]/40 group-focus-within:text-[#1a4d3e] transition-colors">
               <BookOpen className="size-4" />
             </div>
-            <input
+            {/* Long titles wrap onto several lines; the field grows with the text */}
+            <textarea
               {...register("title")}
+              rows={2}
+              onKeyDown={(e) => {
+                // A title is one paragraph: Enter must not insert a line break
+                if (e.key === "Enter") e.preventDefault();
+              }}
               placeholder="Например: Разработка нейросетевой модели для классификации текстов..."
-              className="w-full pl-10 pr-10 py-3 rounded-2xl bg-[#f5f3ed]/60 border-2 border-[#1a4d3e]/15 hover:border-[#1a4d3e]/30 text-sm text-[#1a4d3e] placeholder:text-[#1a4d3e]/40 focus:outline-none focus:border-[#1a4d3e] focus:ring-4 focus:ring-[#1a4d3e]/10 focus:bg-white transition-all font-medium"
+              className="w-full min-h-[3.25rem] field-sizing-content resize-y pl-10 pr-10 py-3 rounded-2xl bg-[#f5f3ed]/60 border-2 border-[#1a4d3e]/15 hover:border-[#1a4d3e]/30 text-sm leading-relaxed text-[#1a4d3e] placeholder:text-[#1a4d3e]/40 focus:outline-none focus:border-[#1a4d3e] focus:ring-4 focus:ring-[#1a4d3e]/10 focus:bg-white transition-all font-medium"
             />
             {titleValue && (
               <button
                 type="button"
                 onClick={() => setValue("title", "", { shouldValidate: true })}
-                className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-[#1a4d3e]/40 hover:text-[#1a4d3e] transition-colors cursor-pointer"
+                className="absolute top-3.5 right-0 pr-3.5 flex items-center text-[#1a4d3e]/40 hover:text-[#1a4d3e] transition-colors cursor-pointer"
                 title="Очистить"
               >
                 <span className="size-4 rounded-full bg-[#1a4d3e]/10 flex items-center justify-center text-xs">
