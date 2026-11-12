@@ -28,6 +28,26 @@ import { JuryApproveModal, JuryFeedbackModal } from "./ui/JuryDecisionModal";
 import { JuryAuthGuard } from "./ui/JuryAuthGuard";
 import { JuryHeader } from "./ui/JuryHeader";
 
+// Last room and day used when approving, kept per browser so the next approval starts there
+const LAST_APPROVE_KEY = "conf_hub_jury_last_approve";
+
+function readLastApproveChoice(): { roomId: string; date: string } | null {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(LAST_APPROVE_KEY) || "null");
+    return parsed && typeof parsed.roomId === "string" && typeof parsed.date === "string" ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+function saveLastApproveChoice(choice: { roomId: string; date: string }) {
+  try {
+    localStorage.setItem(LAST_APPROVE_KEY, JSON.stringify(choice));
+  } catch {
+    // storage unavailable (private mode): just don't remember
+  }
+}
+
 export function JuryPage() {
   const { data: user } = useCurrentUserQuery();
   const logout = useLogout();
@@ -67,12 +87,14 @@ export function JuryPage() {
 
   const handleOpenApprove = (talk: Talk) => {
     setTargetTalk(talk);
+    // Jury approve talks in batches for one room and day: start from the last choice
+    const last = readLastApproveChoice();
+    const lastRoom = last && rooms.some((r) => String(r.id) === last.roomId) ? last.roomId : null;
+    const lastDay = last && schedule.days.includes(last.date) ? last.date : null;
     setApproveRoomId(
       talk.room?.id
         ? String(talk.room.id)
-        : rooms[0]?.id
-        ? String(rooms[0].id)
-        : "1"
+        : lastRoom ?? (rooms[0]?.id ? String(rooms[0].id) : "1")
     );
     setIsKeynoteOption(Boolean(talk.isKeynote));
     if (talk.startTime && talk.endTime) {
@@ -82,7 +104,7 @@ export function JuryPage() {
       setSelectedDate(start.day);
       setSelectedSlot(`${minutesToClock(start.minutes)} - ${minutesToClock(end.minutes)}`);
     } else {
-      setSelectedDate(schedule.days[0] ?? "");
+      setSelectedDate(lastDay ?? schedule.days[0] ?? "");
       setSelectedSlot(""); // the first free slot is picked below once room and day are known
     }
     setIsApproveModalOpen(true);
@@ -177,6 +199,7 @@ export function JuryPage() {
         },
       });
       toast.success(`Доклад «${targetTalk.title}» одобрен и добавлен в расписание!`);
+      saveLastApproveChoice({ roomId: approveRoomId, date: selectedDate });
       setIsApproveModalOpen(false);
       setTargetTalk(null);
     } catch (err: any) {
